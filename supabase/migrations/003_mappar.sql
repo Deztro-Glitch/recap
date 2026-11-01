@@ -1,7 +1,6 @@
 -- Recap – tillägg 3: egna mappar, detaljer (t.ex. färgkod) och klickbar planritning.
--- Kör hela filen i Supabase → SQL Editor → New query → Run (en gång, efter 002).
+-- Kör hela filen i Supabase → SQL Editor → New query → Run (efter 002). Går att köra flera gånger.
 
--- Mappar: egna samlingar som "Köksrenovering" eller "Möbler".
 create table if not exists public.folders (
   id          uuid primary key default gen_random_uuid(),
   project_id  uuid not null references public.projects on delete cascade,
@@ -15,9 +14,15 @@ create table if not exists public.folders (
 );
 
 alter table public.folders enable row level security;
+drop policy if exists "mappar" on public.folders;
 create policy "mappar" on public.folders for all using (is_member(project_id)) with check (is_member(project_id));
 grant select, insert, update, delete on public.folders to authenticated;
-alter publication supabase_realtime add table public.folders;
+
+do $$ begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'folders') then
+    alter publication supabase_realtime add table public.folders;
+  end if;
+end $$;
 
 -- Allt kan ligga i en mapp.
 alter table public.purchases add column if not exists folder_id uuid references public.folders on delete set null;
