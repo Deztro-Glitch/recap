@@ -16,9 +16,12 @@ export interface Project {
   created_at: string
 }
 
-// Planritningen som rutnät: varje ruta är tom (0), en egen vägg (255) eller ett rum (index i ids + 1).
-// data är körlängdskodad: [värde, antal, värde, antal, …].
-export interface PlanMap { cols: number; rows: number; ids: string[]; data: number[] }
+// Rummen på planritningen som former: hörn som andelar (0–1) av bildens bredd och höjd.
+export interface Pt { x: number; y: number }
+export interface PlanMapV2 { v: 2; rooms: Record<string, Pt[]> }
+// Äldre format: ett körlängdskodat rutnät där varje ruta hör till ett rum (index i ids + 1).
+export interface PlanMapV1 { cols: number; rows: number; ids: string[]; data: number[] }
+export type PlanMap = PlanMapV1 | PlanMapV2
 
 export interface Member {
   project_id: string

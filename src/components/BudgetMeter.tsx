@@ -1,6 +1,6 @@
 import { kr } from '../lib/format'
 
-export function BudgetMeter({ budget, spent, planned, stays, mine }: { budget: number; spent: number; planned: number; stays: number; mine: number }) {
+export function BudgetMeter({ budget, spent, planned }: { budget: number; spent: number; planned: number }) {
   const scale = Math.max(budget, planned, spent, 1)
   const pct = (n: number) => `${(n / scale) * 100}%`
   const overSpent = budget > 0 && spent > budget
@@ -14,37 +14,29 @@ export function BudgetMeter({ budget, spent, planned, stays, mine }: { budget: n
           <div className="kpi__value">{kr(spent)}</div>
         </div>
         <div className="kpi">
-          <div className="meta">Planerat</div>
+          <div className="meta">{budget ? `Planerat av ${kr(budget)}` : 'Planerat'}</div>
           <div className="kpi__value">{kr(planned)}</div>
         </div>
-        <div className="kpi">
-          <div className="meta">Följer med lägenheten</div>
-          <div className="kpi__value">{kr(stays)}</div>
-        </div>
-        <div className="kpi">
-          <div className="meta">Mitt</div>
-          <div className="kpi__value">{kr(mine)}</div>
-        </div>
-      </div>
-
-      <div className="budget-track" aria-hidden>
-        <span className="is-planned" style={{ width: pct(planned) }} />
-        <span className={overSpent ? 'is-over' : 'is-spent'} style={{ width: pct(spent) }} />
-        {budget > 0 && budget < scale && <span className="marker" style={{ left: pct(budget) }} />}
       </div>
 
       {budget > 0 && (
-        <div className="budget-status">
-          {overSpent ? (
-            <span className="status status--lost">{kr(spent - budget)} över budget</span>
-          ) : overPlanned ? (
-            <span className="status status--warning">Planerat ligger {kr(planned - budget)} över budget</span>
-          ) : (
-            <span className="status status--won">{kr(budget - planned)} kvar att planera av {kr(budget)}</span>
-          )}
-        </div>
+        <>
+          <div className="budget-track" aria-hidden>
+            <span className="is-planned" style={{ width: pct(planned) }} />
+            <span className={overSpent ? 'is-over' : 'is-spent'} style={{ width: pct(spent) }} />
+            {budget < scale && <span className="marker" style={{ left: pct(budget) }} />}
+          </div>
+          <div className="budget-status">
+            {overSpent ? (
+              <span className="status status--lost">{kr(spent - budget)} över budget</span>
+            ) : overPlanned ? (
+              <span className="status status--warning">Planerat ligger {kr(planned - budget)} över budget</span>
+            ) : (
+              <span className="status status--won">{kr(budget - planned)} kvar att planera</span>
+            )}
+          </div>
+        </>
       )}
-      {!budget && <div className="budget-status"><span className="status status--draft">Ingen budget satt</span></div>}
     </div>
   )
 }

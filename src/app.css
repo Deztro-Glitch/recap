@@ -187,8 +187,17 @@ a { color: inherit; }
 
 .plan { position: relative; max-width: 880px; border-radius: var(--r-sm); overflow: hidden; background: #fff; user-select: none; -webkit-user-select: none; }
 .plan img { display: block; width: 100%; height: auto; pointer-events: none; }
-.plan__layer { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; mix-blend-mode: multiply; }
-.plan.is-editing .plan__layer { cursor: crosshair; touch-action: none; }
+.plan__layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.plan.is-editing .plan__layer { touch-action: none; }
+.plan__room { fill-opacity: .62; mix-blend-mode: multiply; cursor: pointer; stroke: none; transition: fill-opacity var(--t-fast); }
+.plan__room:hover { fill-opacity: .8; }
+.plan.is-editing .plan__room { fill-opacity: .45; }
+.plan .plan__room.is-selected { fill-opacity: .7; stroke: var(--accent); stroke-width: 2.5; vector-effect: non-scaling-stroke; cursor: move; mix-blend-mode: normal; }
+.plan__vertex { fill: #fff; stroke: var(--accent); stroke-width: 3; vector-effect: non-scaling-stroke; cursor: grab; }
+.plan__vertex.is-active { fill: var(--accent); }
+.plan__mid { fill: var(--accent); fill-opacity: .6; pointer-events: none; }
+.plan__vertex { pointer-events: none; }
+.plan__hit { fill: transparent; cursor: grab; }
 .plan__label {
   position: absolute; transform: translate(-50%, -50%);
   font: 400 12.5px var(--font-display); white-space: nowrap;
@@ -196,10 +205,6 @@ a { color: inherit; }
   background: rgba(255, 255, 255, .85);
   pointer-events: none;
 }
-.plan3d { position: relative; max-width: 880px; border-radius: var(--r-sm); overflow: hidden; background: var(--hover); touch-action: none; }
-.plan3d canvas { display: block; cursor: grab; }
-.plan3d canvas:active { cursor: grabbing; }
-.plan3d__labels { position: absolute; inset: 0; pointer-events: none; }
 .plan-tools { display: flex; flex-direction: column; gap: var(--s-3); margin-bottom: var(--s-3); }
 .btn:disabled { opacity: .4; cursor: default; }
 

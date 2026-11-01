@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 import { kr } from '../../lib/format'
 import { totals, useBudget } from '../../lib/useProject'
@@ -31,7 +31,7 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
     <div>
       <div className="section">
         <div className="section-head"><h1>Översikt</h1></div>
-        <BudgetMeter budget={b.budget} spent={b.spent} planned={b.planned} stays={b.stays} mine={b.mine} />
+        <BudgetMeter budget={b.budget} spent={b.spent} planned={b.planned} />
       </div>
 
       <div className="section">
@@ -74,6 +74,8 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
         </div>
       )}
 
+      {/* Med en planritning är det den som visar rummen; rutorna behövs bara utan ritning. */}
+      {!project?.floorplan_path && (
       <div className="section">
         <div className="section-head">
           <h2>Rum</h2>
@@ -94,6 +96,7 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
           })}
         </div>
       </div>
+      )}
     </div>
   )
 }
@@ -104,11 +107,38 @@ export function RoomSheet({ room, state, open, onClose }: { room: Room | null; s
   const rt = room ? state.tasks.filter((t) => t.room_id === room.id) : []
   const ri = room ? state.ideas.filter((i) => i.room_id === room.id) : []
   const s = totals(rp, rt)
+  const [rename, setRename] = useState<{ name: string; color: Palette } | null>(null)
+  useEffect(() => setRename(null), [room?.id])
+
+  const saveRename = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!room || !rename?.name.trim()) return
+    await api.update('rooms', room.id, { name: rename.name.trim(), color: rename.color })
+    await state.reload()
+    setRename(null)
+    onClose()
+  }
 
   return (
     <Sheet open={!!room} onClose={onClose} title={room?.name ?? ''}>
-      {room && (
+      {room && rename && (
+        <form className="form section" onSubmit={saveRename}>
+          <Field label="Namn">
+            <input className="input" value={rename.name} onChange={(e) => setRename({ ...rename, name: e.target.value })} required />
+          </Field>
+          <div className="field">
+            <span className="field__label">Färg</span>
+            <Chips value={rename.color} onChange={(c) => setRename({ ...rename, color: c })} options={PALETTE.map((c) => ({ value: c, label: COLOR_LABEL[c] }))} />
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn--secondary">Spara</button>
+            <button type="button" className="btn btn--ghost" onClick={() => setRename(null)}>Avbryt</button>
+          </div>
+        </form>
+      )}
+      {room && !rename && (
         <div>
+          <button className="btn btn--ghost" style={{ marginLeft: -16, marginTop: -8, marginBottom: 8 }} onClick={() => setRename({ name: room.name, color: room.color })}>Byt namn eller färg</button>
           <div className="kpis section">
             <div className="kpi"><div className="meta">Spenderat</div><div className="kpi__value">{kr(s.spent)}</div></div>
             <div className="kpi"><div className="meta">Planerat</div><div className="kpi__value">{kr(s.planned)}</div></div>

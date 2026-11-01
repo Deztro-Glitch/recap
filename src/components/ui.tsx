@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { IconCheck, IconX } from '@tabler/icons-react'
+import { IconCheck, IconChevronDown, IconX } from '@tabler/icons-react'
 
 // Samma kurva som --ease i design.css.
 export const ease = [0.65, 0, 0.35, 1] as const
@@ -41,6 +41,21 @@ export function Field({ label, error, children }: { label: string; error?: strin
       {children}
       {error && <span className="field__error">{error}</span>}
     </label>
+  )
+}
+
+// Fält som sällan behövs, gömda bakom "Fler detaljer" så att formuläret blir kort.
+export function More({ open: initial, children }: { open?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(!!initial)
+  useEffect(() => setOpen(!!initial), [initial])
+  return open ? (
+    <>{children}</>
+  ) : (
+    <div>
+      <button type="button" className="btn btn--ghost" style={{ marginLeft: -16 }} onClick={() => setOpen(true)}>
+        <IconChevronDown size={16} /> Fler detaljer
+      </button>
+    </div>
   )
 }
 

@@ -4,7 +4,7 @@ import { IconExternalLink, IconReceiptOff, IconSearch } from '@tabler/icons-reac
 import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
 import { paid } from '../../lib/useProject'
-import { Checkbox, Chips, Field, Primary, Sheet, rowAnim, useToast } from '../../components/ui'
+import { Checkbox, Chips, Field, More, Primary, Sheet, useToast } from '../../components/ui'
 import { FileField, FileThumb } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
 import { SwipeRow } from '../../components/SwipeRow'
@@ -235,12 +235,15 @@ export function PurchaseSheet({ item, state, onClose, receiptMode, title }: {
           <input className="input" placeholder="Väggfärg Alcro Bestå" value={f.title} onChange={set('title')} required />
         </Field>
         <div className="form__row">
-          <Field label="Mapp">
-            <select className="select" value={f.folder_id} onChange={set('folder_id')}>
-              <option value="">Ingen mapp</option>
-              {state.folders.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-            </select>
-          </Field>
+          {f.bought ? (
+            <Field label="Betalt">
+              <input className="input" inputMode="decimal" placeholder="1 295" value={f.price} onChange={set('price')} required={quick} />
+            </Field>
+          ) : (
+            <Field label="Pris ungefär">
+              <input className="input" inputMode="decimal" placeholder="1 295" value={f.est} onChange={set('est')} />
+            </Field>
+          )}
           <Field label="Rum">
             <select className="select" value={f.room_id} onChange={set('room_id')}>
               <option value="">Inget rum</option>
@@ -248,42 +251,8 @@ export function PurchaseSheet({ item, state, onClose, receiptMode, title }: {
             </select>
           </Field>
         </div>
-        <div className="field">
-          <span className="field__label">Vem äger det</span>
-          <Chips value={f.stays} onChange={(v) => setF({ ...f, stays: v })} options={[{ value: false, label: 'Mitt' }, { value: true, label: 'Följer med lägenheten' }]} />
-        </div>
-        <div className="form__row">
-          {f.bought ? (
-            <Field label="Betalt">
-              <input className="input" inputMode="decimal" placeholder="1 295" value={f.price} onChange={set('price')} required={quick} />
-            </Field>
-          ) : (
-            <Field label="Uppskattat pris">
-              <input className="input" inputMode="decimal" placeholder="1 295" value={f.est} onChange={set('est')} />
-            </Field>
-          )}
-          {f.bought ? (
-            <Field label="Köpdatum">
-              <input className="input" type="date" value={f.bought_on} onChange={set('bought_on')} />
-            </Field>
-          ) : (
-            <div className="field">
-              <span className="field__label">Prio</span>
-              <Chips value={f.priority} onChange={(v) => setF({ ...f, priority: v })} options={([1, 2, 3] as Priority[]).map((v) => ({ value: v, label: PRIORITY_LABEL[v] }))} />
-            </div>
-          )}
-        </div>
         <Field label="Butik">
           <input className="input" placeholder="Colorama Södermalm" value={f.store} onChange={set('store')} />
-        </Field>
-        <DetailsField value={f.details} onChange={(d) => setF({ ...f, details: d })} />
-        {!quick && (
-          <Field label="Länk">
-            <input className="input" type="url" inputMode="url" placeholder="https://" value={f.link} onChange={set('link')} />
-          </Field>
-        )}
-        <Field label="Anteckning">
-          <textarea className="textarea" rows={2} value={f.note} onChange={set('note')} />
         </Field>
         {!quick && (
           <label className="checkbox">
@@ -293,6 +262,41 @@ export function PurchaseSheet({ item, state, onClose, receiptMode, title }: {
           </label>
         )}
         {!quick && f.bought && receiptField}
+
+        <More open={!!(p && (p.folder_id || p.stays || p.priority !== 2 || p.details?.length || p.link || p.note))}>
+          <div className="field">
+            <span className="field__label">Vem äger det</span>
+            <Chips value={f.stays} onChange={(v) => setF({ ...f, stays: v })} options={[{ value: false, label: 'Mitt' }, { value: true, label: 'Följer med lägenheten' }]} />
+          </div>
+          <div className="form__row">
+            <Field label="Mapp">
+              <select className="select" value={f.folder_id} onChange={set('folder_id')}>
+                <option value="">Ingen mapp</option>
+                {state.folders.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+              </select>
+            </Field>
+            {f.bought ? (
+              <Field label="Köpdatum">
+                <input className="input" type="date" value={f.bought_on} onChange={set('bought_on')} />
+              </Field>
+            ) : (
+              <div className="field">
+                <span className="field__label">Prio</span>
+                <Chips value={f.priority} onChange={(v) => setF({ ...f, priority: v })} options={([1, 2, 3] as Priority[]).map((v) => ({ value: v, label: PRIORITY_LABEL[v] }))} />
+              </div>
+            )}
+          </div>
+          <DetailsField value={f.details} onChange={(d) => setF({ ...f, details: d })} />
+          {!quick && (
+            <Field label="Länk">
+              <input className="input" type="url" inputMode="url" placeholder="https://" value={f.link} onChange={set('link')} />
+            </Field>
+          )}
+          <Field label="Anteckning">
+            <textarea className="textarea" rows={2} value={f.note} onChange={set('note')} />
+          </Field>
+        </More>
+
         <div className="form__actions">
           <Primary>{quick ? 'Spara kvitto' : p ? 'Spara inköp' : 'Lägg till inköp'}</Primary>
           {p && <button type="button" className="btn btn--danger" onClick={del}>Ta bort inköp</button>}

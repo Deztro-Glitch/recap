@@ -14,5 +14,5 @@ Färger, typsnitt och komponenter följer designsystemet i [docs/designsystem/CL
 
 - Hem → rum, mappar, inköp, jobb, idéer, foton. Inköp och jobb kan ligga i en mapp och/eller ett rum.
 - Databasändringar läggs som nya filer i `supabase/migrations/` som användaren kör i Supabase SQL Editor. Publicera inte kod som kräver en migration förrän användaren har kört den.
-- Planritningen är ett rutnät (se [src/lib/plangrid.ts](src/lib/plangrid.ts)): väggar läses ur bilden, rummen fylls eller målas.
+- Planritningen: rumsnamn läses med textigenkänning ([src/lib/readplan.ts](src/lib/readplan.ts)), rummen fylls ut i ett rutnät och görs om till former med hörn ([src/lib/plangrid.ts](src/lib/plangrid.ts)). Sparas som `{ v: 2, rooms: { rumId: [hörn] } }` i `projects.floorplan_map`. Användaren justerar genom att dra i hörnen.
 - `npm run dev:demo` kör demoläge (data i webbläsaren) även när `.env.local` pekar på Supabase.

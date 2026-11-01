@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { IconReceipt } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
-import { Chips, Field, Primary, Sheet, rowAnim, useToast } from '../../components/ui'
+import { Chips, Field, More, Primary, Sheet, useToast } from '../../components/ui'
 import { FileField } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
 import { PRIORITY_LABEL, type Detail, type Priority, type Task, type TaskStatus } from '../../types'
@@ -146,20 +146,22 @@ export function TaskSheet({ item, state, onClose }: { item: Task | TaskDraft | n
             </div>
           )}
         </div>
-        <DetailsField value={f.details} onChange={(d) => setF({ ...f, details: d })} />
-        <FileField
-          pid={state.project!.id}
-          label="Kvitto eller faktura"
-          path={f.receipt}
-          url={receiptUrl}
-          onChange={(path, url) => {
-            setF((c) => ({ ...c, receipt: path }))
-            setReceiptUrl(url)
-          }}
-        />
-        <Field label="Anteckning">
-          <textarea className="textarea" rows={2} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
-        </Field>
+        <More open={!!(t && (t.details?.length || t.receipt_path || t.note))}>
+          <DetailsField value={f.details} onChange={(d) => setF({ ...f, details: d })} />
+          <FileField
+            pid={state.project!.id}
+            label="Kvitto eller faktura"
+            path={f.receipt}
+            url={receiptUrl}
+            onChange={(path, url) => {
+              setF((c) => ({ ...c, receipt: path }))
+              setReceiptUrl(url)
+            }}
+          />
+          <Field label="Anteckning">
+            <textarea className="textarea" rows={2} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
+          </Field>
+        </More>
         <div className="form__actions">
           <Primary>{t ? 'Spara jobb' : 'Lägg till jobb'}</Primary>
           {t && <button type="button" className="btn btn--danger" onClick={del}>Ta bort jobb</button>}
