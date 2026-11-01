@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { IconCheck, IconX } from '@tabler/icons-react'
 
@@ -9,6 +9,12 @@ const isMobile = () => matchMedia('(max-width: 760px)').matches
 
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const from = isMobile() ? { y: '100%' } : { x: '105%' }
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [open, onClose])
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -58,7 +64,7 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean; onCha
   )
 }
 
-export function Chips<T extends string | null>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
+export function Chips<T extends string | number | boolean | null>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
   return (
     <div className="chips">
       {options.map((o) => (

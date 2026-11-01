@@ -127,6 +127,45 @@ a { color: inherit; }
 .viewer img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
 .viewer__bar { display: flex; align-items: center; gap: var(--s-2); }
 
+/* ---------- Filer (kvitton, idébilder) ---------- */
+
+.file { display: flex; align-items: center; gap: var(--s-3); }
+.file__preview {
+  width: 72px; height: 72px; flex: none;
+  border-radius: var(--r-sm); overflow: hidden;
+  background: var(--hover); color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
+}
+.file__preview img { width: 100%; height: 100%; object-fit: cover; }
+.file__actions { display: flex; gap: var(--s-2); }
+.thumb {
+  flex: none; border-radius: var(--r-xs); overflow: hidden;
+  background: var(--hover); color: var(--text-2);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- Planritning ---------- */
+
+.plan { position: relative; max-width: 880px; border-radius: var(--r-sm); overflow: hidden; background: var(--raised); user-select: none; }
+.plan img { display: block; width: 100%; height: auto; pointer-events: none; }
+.plan.is-editing { cursor: crosshair; touch-action: none; }
+.plan__room {
+  position: absolute; border: 0; padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--room-bg) 72%, transparent);
+  color: var(--room-fg);
+  display: flex; align-items: flex-start; justify-content: flex-start;
+  font: 400 13px var(--font-display); text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.plan__room:hover { background: color-mix(in srgb, var(--room-bg) 90%, transparent); }
+.plan.is-editing .plan__room { pointer-events: none; }
+.plan__room.is-selected { box-shadow: inset 0 0 0 2px var(--accent); }
+.plan__draft { position: absolute; border-radius: var(--r-xs); box-shadow: inset 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); pointer-events: none; }
+.plan-tools { display: flex; flex-direction: column; gap: var(--s-3); margin-bottom: var(--s-3); }
+
 /* ---------- Inloggning ---------- */
 
 .auth { min-height: 100dvh; padding: var(--s-2); display: flex; }

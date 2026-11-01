@@ -18,9 +18,10 @@ npm run dev
 
 1. Skapa ett projekt på [supabase.com](https://supabase.com) (region: Stockholm/EU).
 2. **SQL Editor → New query**: klistra in hela [supabase/schema.sql](supabase/schema.sql) och tryck **Run**.
-3. **Authentication → Sign In / Providers → Email**: stäng av **Allow new users to sign up**, så att bara du kan skapa konton.
-4. **Project Settings → API**: kopiera *Project URL* och *anon public key*.
-5. Lokalt: kopiera `.env.example` till `.env.local` och fyll i värdena.
+3. Kör sedan filerna i [supabase/migrations](supabase/migrations) i nummerordning, på samma sätt.
+4. **Authentication → Sign In / Providers → Email**: stäng av **Allow new users to sign up**, så att bara du kan skapa konton.
+5. **Project Settings → API**: kopiera *Project URL* och *anon public key*.
+6. Lokalt: kopiera `.env.example` till `.env.local` och fyll i värdena.
 
 ### Skapa konton åt vänner
 

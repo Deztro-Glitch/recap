@@ -4,7 +4,11 @@ import type { Member, Photo, PhotoKind, Project } from '../types'
 // Appen pratar med Supabase om nycklar finns, annars körs ett demoläge
 // där allt sparas i webbläsaren (bra för att testa utan konto).
 
-export type Table = 'rooms' | 'purchases' | 'tasks' | 'photos'
+export type Table = 'rooms' | 'purchases' | 'tasks' | 'photos' | 'ideas'
+export const TABLES: Table[] = ['rooms', 'purchases', 'tasks', 'photos', 'ideas']
+
+// Kolumner som pekar på en fil i lagringen och ska tas bort tillsammans med raden.
+const FILE_COL: Partial<Record<Table, string>> = { photos: 'path', purchases: 'receipt_path', tasks: 'receipt_path', ideas: 'image_path' }
 export interface User { id: string; email: string }
 type Row = Record<string, any>
 
@@ -31,6 +35,11 @@ export interface Api {
 
   uploadPhoto(pid: string, file: File, roomId: string | null, kind: PhotoKind): Promise<Photo>
   photoUrls(photos: Photo[]): Promise<Photo[]>
+
+  // Kvitton, planritningar och idébilder. Bilder komprimeras, PDF:er sparas som de är.
+  uploadFile(pid: string, file: File): Promise<string>
+  fileUrls(paths: string[]): Promise<Record<string, string>>
+  removeFile(path: string): Promise<void>
 
   subscribe(pid: string, onChange: () => void): () => void
 }
@@ -107,9 +116,11 @@ function supabaseApi(sb: SupabaseClient): Api {
       check(await sb.from(table).update(patch).eq('id', id))
     },
     async remove(table, id) {
-      if (table === 'photos') {
-        const { data } = await sb.from('photos').select('path').eq('id', id).single()
-        if (data) await sb.storage.from('photos').remove([data.path])
+      const col = FILE_COL[table]
+      if (col) {
+        const { data } = await sb.from(table).select(col).eq('id', id).single()
+        const path = (data as Row | null)?.[col]
+        if (path) await sb.storage.from('photos').remove([path])
       }
       check(await sb.from(table).delete().eq('id', id))
     },
@@ -127,9 +138,26 @@ function supabaseApi(sb: SupabaseClient): Api {
       return photos.map((p, i) => ({ ...p, url: data?.[i]?.signedUrl ?? undefined }))
     },
 
+    async uploadFile(pid, file) {
+      const isImage = file.type.startsWith('image/')
+      const blob = isImage ? await compressImage(file, 2400) : file
+      const ext = isImage ? 'jpg' : (file.name.split('.').pop() ?? 'pdf').toLowerCase()
+      const path = `${pid}/files/${crypto.randomUUID()}.${ext}`
+      check(await sb.storage.from('photos').upload(path, blob, { contentType: isImage ? 'image/jpeg' : file.type }))
+      return path
+    },
+    async fileUrls(paths) {
+      if (!paths.length) return {}
+      const { data } = await sb.storage.from('photos').createSignedUrls(paths, 60 * 60)
+      return Object.fromEntries((data ?? []).filter((d) => d.signedUrl && d.path).map((d) => [d.path!, d.signedUrl!]))
+    },
+    async removeFile(path) {
+      await sb.storage.from('photos').remove([path])
+    },
+
     subscribe(pid, onChange) {
       const ch = sb.channel(`project-${pid}`)
-      for (const table of ['rooms', 'purchases', 'tasks', 'photos']) {
+      for (const table of TABLES) {
         ch.on('postgres_changes', { event: '*', schema: 'public', table, filter: `project_id=eq.${pid}` }, onChange)
       }
       ch.on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${pid}` }, onChange)
@@ -145,7 +173,7 @@ function demoApi(): Api {
   const KEY = 'recap-demo'
   const me: User = { id: 'demo-user', email: 'demo@recap.se' }
   type Store = { signedIn: boolean; projects: Project[]; members: Member[] } & Record<Table, Row[]>
-  const empty: Store = { signedIn: false, projects: [], members: [], rooms: [], purchases: [], tasks: [], photos: [] }
+  const empty: Store = { signedIn: false, projects: [], members: [], rooms: [], purchases: [], tasks: [], photos: [], ideas: [] }
 
   const load = (): Store => {
     try {
@@ -193,7 +221,7 @@ function demoApi(): Api {
     },
     async createProject(p) {
       const s = load()
-      const project: Project = { ...p, id: crypto.randomUUID(), created_by: me.id, created_at: now() }
+      const project: Project = { ...p, floorplan_path: null, id: crypto.randomUUID(), created_by: me.id, created_at: now() }
       s.projects.push(project)
       s.members.push({ project_id: project.id, user_id: me.id, email: me.email, role: 'owner' })
       save(s)
@@ -207,7 +235,7 @@ function demoApi(): Api {
     async deleteProject(id) {
       const s = load()
       s.projects = s.projects.filter((p) => p.id !== id)
-      for (const t of ['rooms', 'purchases', 'tasks', 'photos'] as Table[]) s[t] = s[t].filter((r) => r.project_id !== id)
+      for (const t of TABLES) s[t] = s[t].filter((r) => r.project_id !== id)
       save(s)
     },
 
@@ -257,6 +285,20 @@ function demoApi(): Api {
     async photoUrls(photos) {
       return photos.map((p) => ({ ...p, url: p.path }))
     },
+
+    // I demoläget är "sökvägen" själva filen som data-URL.
+    async uploadFile(_pid, file) {
+      const blob = file.type.startsWith('image/') ? await compressImage(file, 1400) : file
+      return new Promise<string>((res) => {
+        const fr = new FileReader()
+        fr.onload = () => res(fr.result as string)
+        fr.readAsDataURL(blob)
+      })
+    },
+    async fileUrls(paths) {
+      return Object.fromEntries(paths.map((p) => [p, p]))
+    },
+    async removeFile() {},
 
     subscribe(_pid, onChange) {
       listeners.add(onChange)

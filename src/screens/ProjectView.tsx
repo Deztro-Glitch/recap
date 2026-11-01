@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { IconArrowLeft, IconChevronLeft, IconChevronRight, IconHammer, IconLayoutGrid, IconPhoto, IconSettings, IconShoppingCart } from '@tabler/icons-react'
+import { IconArrowLeft, IconBulb, IconChevronLeft, IconChevronRight, IconHammer, IconLayoutGrid, IconPhoto, IconReceipt, IconSettings, IconShoppingCart } from '@tabler/icons-react'
 import type { User } from '../lib/api'
 import { kr } from '../lib/format'
 import { useBudget, useProject } from '../lib/useProject'
@@ -12,11 +12,15 @@ import { Purchases } from './tabs/Purchases'
 import { Timeline } from './tabs/Timeline'
 import { Photos } from './tabs/Photos'
 import { Settings } from './tabs/Settings'
+import { Receipts } from './tabs/Receipts'
+import { Ideas } from './tabs/Ideas'
 
 const VIEWS = [
   { id: 'overview', label: 'Översikt', icon: IconLayoutGrid, action: 'Lägg till rum' },
   { id: 'purchases', label: 'Inköp', icon: IconShoppingCart, action: 'Lägg till inköp' },
+  { id: 'receipts', label: 'Kvitton', icon: IconReceipt, action: 'Lägg till kvitto' },
   { id: 'timeline', label: 'Renovering', icon: IconHammer, action: 'Lägg till jobb' },
+  { id: 'ideas', label: 'Idéer', icon: IconBulb, action: 'Lägg till idé' },
   { id: 'photos', label: 'Foton', icon: IconPhoto, action: 'Lägg till foto' },
   { id: 'settings', label: 'Inställningar', icon: IconSettings, action: 'Spara ändringar' },
 ] as const
@@ -137,8 +141,10 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       ) : (
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease }}>
-            {view === 'overview' && <Overview {...props} onOpenRoom={(id) => go('purchases', id)} onShowPhase={showPhase} />}
+            {view === 'overview' && <Overview {...props} onGo={(v, id) => go(v, id)} onShowPhase={showPhase} />}
             {view === 'purchases' && <Purchases {...props} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
+            {view === 'receipts' && <Receipts {...props} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
+            {view === 'ideas' && <Ideas {...props} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
             {view === 'timeline' && <Timeline {...props} phase={viewing} onPhase={showPhase} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
             {view === 'photos' && <Photos {...props} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
             {view === 'settings' && <Settings {...props} user={user} onDeleted={onBack} />}

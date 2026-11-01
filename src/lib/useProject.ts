@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, type Table } from './api'
-import type { Photo, Project, Purchase, Room, Task } from '../types'
+import type { Idea, Photo, Project, Purchase, Room, Task } from '../types'
 
 export interface ProjectData {
   project: Project | null
@@ -8,31 +8,45 @@ export interface ProjectData {
   purchases: Purchase[]
   tasks: Task[]
   photos: Photo[]
+  ideas: Idea[]
+  urls: Record<string, string>   // filsökväg → visningsbar adress (kvitton, planritning, idébilder)
   loading: boolean
 }
 
+// Prio först, sedan i den ordning de lades till.
+const byPriority = <T extends { priority?: number }>(a: T, b: T) => (a.priority ?? 2) - (b.priority ?? 2)
+
 // Laddar allt för ett projekt och håller det uppdaterat (även när någon annan ändrar).
 export function useProject(pid: string) {
-  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], loading: true })
+  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], ideas: [], urls: {}, loading: true })
   const urlCache = useRef(new Map<string, string>())
 
   const reload = useCallback(async () => {
-    const [projects, rooms, purchases, tasks, rawPhotos] = await Promise.all([
+    const [projects, rooms, purchases, tasks, rawPhotos, ideas] = await Promise.all([
       api.listProjects(),
       api.list<Room>('rooms', pid),
       api.list<Purchase>('purchases', pid),
       api.list<Task>('tasks', pid),
       api.list<Photo>('photos', pid),
+      api.list<Idea>('ideas', pid).catch(() => [] as Idea[]),
     ])
-    const missing = rawPhotos.filter((p) => !urlCache.current.has(p.id))
-    for (const p of await api.photoUrls(missing)) if (p.url) urlCache.current.set(p.id, p.url)
-    const photos = rawPhotos.map((p) => ({ ...p, url: urlCache.current.get(p.id) }))
+    const project = projects.find((p) => p.id === pid) ?? null
+
+    const missingPhotos = rawPhotos.filter((p) => !urlCache.current.has(p.path))
+    for (const p of await api.photoUrls(missingPhotos)) if (p.url) urlCache.current.set(p.path, p.url)
+
+    const files = [project?.floorplan_path, ...purchases.map((p) => p.receipt_path), ...tasks.map((t) => t.receipt_path), ...ideas.map((i) => i.image_path)]
+    const missingFiles = files.filter((f): f is string => !!f && !urlCache.current.has(f))
+    for (const [path, url] of Object.entries(await api.fileUrls(missingFiles))) urlCache.current.set(path, url)
+
     setData({
-      project: projects.find((p) => p.id === pid) ?? null,
+      project,
       rooms: rooms.sort((a, b) => a.sort - b.sort),
-      purchases,
-      tasks,
-      photos,
+      purchases: purchases.sort(byPriority),
+      tasks: tasks.sort(byPriority),
+      photos: rawPhotos.map((p) => ({ ...p, url: urlCache.current.get(p.path) })),
+      ideas,
+      urls: Object.fromEntries(urlCache.current),
       loading: false,
     })
   }, [pid])
@@ -67,16 +81,21 @@ export function useProject(pid: string) {
   return { ...data, reload, patch }
 }
 
+export const paid = (p: Purchase) => p.price ?? p.est_price
+
 export function useBudget(project: Project | null, purchases: Purchase[], tasks: Task[]) {
   return useMemo(() => {
     const budget = project?.budget ?? 0
-    const spent =
-      purchases.filter((p) => p.bought).reduce((s, p) => s + (p.price ?? p.est_price), 0) +
-      tasks.filter((t) => t.status === 'done').reduce((s, t) => s + t.cost, 0)
+    const bought = purchases.filter((p) => p.bought)
+    const doneTasks = tasks.filter((t) => t.status === 'done')
+    const spent = bought.reduce((s, p) => s + paid(p), 0) + doneTasks.reduce((s, t) => s + t.cost, 0)
     const planned =
-      purchases.reduce((s, p) => s + (p.bought ? p.price ?? p.est_price : p.est_price), 0) +
+      purchases.reduce((s, p) => s + (p.bought ? paid(p) : p.est_price), 0) +
       tasks.reduce((s, t) => s + t.cost, 0)
-    return { budget, spent, planned, left: budget - spent, overSpent: budget > 0 && spent > budget, overPlanned: budget > 0 && planned > budget }
+    // Det som stannar i lägenheten: fasta inköp och allt renoveringsarbete.
+    const stays = bought.filter((p) => p.stays).reduce((s, p) => s + paid(p), 0) + doneTasks.reduce((s, t) => s + t.cost, 0)
+    const mine = bought.filter((p) => !p.stays).reduce((s, p) => s + paid(p), 0)
+    return { budget, spent, planned, stays, mine, left: budget - spent, overSpent: budget > 0 && spent > budget, overPlanned: budget > 0 && planned > budget }
   }, [project, purchases, tasks])
 }
 

@@ -10,6 +10,7 @@ export interface Project {
   kind: Kind
   address: string | null
   budget: number
+  floorplan_path: string | null
   created_by: string
   created_at: string
 }
@@ -28,7 +29,14 @@ export interface Room {
   icon: RoomIcon
   color: Palette
   sort: number
+  plan: PlanRect | null
 }
+
+// Rummets ruta på planritningen, som andelar (0–1) av bildens bredd och höjd.
+export interface PlanRect { x: number; y: number; w: number; h: number }
+
+export type Priority = 1 | 2 | 3
+export const PRIORITY_LABEL: Record<Priority, string> = { 1: 'Hög', 2: 'Normal', 3: 'Låg' }
 
 // Innehållspaletten i design.css (--c-<namn>-bg / -fg).
 export type Palette = 'sand' | 'coral' | 'steel' | 'sun' | 'mint' | 'sky' | 'lilac' | 'rose'
@@ -46,6 +54,21 @@ export interface Purchase {
   store: string | null
   link: string | null
   note: string | null
+  priority: Priority
+  stays: boolean          // följer med lägenheten (kök, golv) i stället för att vara mitt (möbler)
+  receipt_path: string | null
+  bought_on: string | null
+  created_at: string
+}
+
+export interface Idea {
+  id: string
+  project_id: string
+  room_id: string | null
+  title: string
+  note: string | null
+  link: string | null
+  image_path: string | null
   created_at: string
 }
 
@@ -58,6 +81,8 @@ export interface Task {
   status: TaskStatus
   cost: number
   note: string | null
+  priority: Priority
+  receipt_path: string | null
   created_at: string
 }
 

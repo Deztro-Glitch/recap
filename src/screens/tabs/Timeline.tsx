@@ -4,8 +4,10 @@ import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
 import { blockers } from '../../lib/useProject'
 import { Chips, Field, Primary, Sheet, rowAnim, useToast } from '../../components/ui'
-import { PHASES, type Task, type TaskStatus } from '../../types'
+import { FileField } from '../../components/FileField'
+import { PHASES, PRIORITY_LABEL, type Priority, type Task, type TaskStatus } from '../../types'
 import type { ViewProps } from '../ProjectView'
+import { PriorityTag } from './Purchases'
 
 const NEXT: Record<TaskStatus, TaskStatus> = { todo: 'doing', doing: 'done', done: 'todo' }
 const LABEL: Record<TaskStatus, string> = { todo: 'Att göra', doing: 'Pågår', done: 'Klar' }
@@ -47,6 +49,7 @@ export function Timeline({ state, room, q, adding, setAdding, phase, onPhase, fi
                       <div className="row__title">{t.title}</div>
                       <div className="meta">{[roomName(t.room_id) ?? 'Hela hemmet', t.cost ? kr(t.cost) : null].filter(Boolean).join(' · ')}</div>
                       {blocked.length > 0 && <span className="status status--warning">{PHASES[blocked[0].phase].name} är inte klar: {blocked[0].title}</span>}
+                      {t.status !== 'done' && <PriorityTag priority={t.priority} />}
                     </div>
                     <button
                       className="status-btn"
@@ -103,10 +106,11 @@ export function Timeline({ state, room, q, adding, setAdding, phase, onPhase, fi
   )
 }
 
-function TaskSheet({ item, defaultRoom, state, onClose }: { item: Task | { phase: number } | null; defaultRoom: string | null; state: ViewProps['state']; onClose: () => void }) {
+export function TaskSheet({ item, defaultRoom, state, onClose }: { item: Task | { phase: number } | null; defaultRoom: string | null; state: ViewProps['state']; onClose: () => void }) {
   const toast = useToast()
   const t = item && 'id' in item ? item : null
-  const [f, setF] = useState({ title: '', room_id: '', phase: 0, cost: '', note: '', status: 'todo' as TaskStatus })
+  const [f, setF] = useState({ title: '', room_id: '', phase: 0, cost: '', note: '', status: 'todo' as TaskStatus, priority: 2 as Priority, receipt: null as string | null })
+  const [receiptUrl, setReceiptUrl] = useState<string | undefined>()
 
   useEffect(() => {
     if (!item) return
@@ -117,15 +121,20 @@ function TaskSheet({ item, defaultRoom, state, onClose }: { item: Task | { phase
       cost: t?.cost ? String(t.cost) : '',
       note: t?.note ?? '',
       status: t?.status ?? 'todo',
+      priority: (t?.priority ?? 2) as Priority,
+      receipt: t?.receipt_path ?? null,
     })
+    setReceiptUrl(t?.receipt_path ? state.urls[t.receipt_path] : undefined)
   }, [item])
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
-    const row = { title: f.title.trim(), room_id: f.room_id || null, phase: f.phase, cost: parseNum(f.cost), note: f.note.trim() || null, status: f.status }
+    const row = { title: f.title.trim(), room_id: f.room_id || null, phase: f.phase, cost: parseNum(f.cost), note: f.note.trim() || null, status: f.status, priority: f.priority, receipt_path: f.receipt }
     try {
-      if (t) await api.update('tasks', t.id, row)
-      else await api.insert('tasks', { ...row, project_id: state.project!.id })
+      if (t) {
+        if (t.receipt_path && t.receipt_path !== f.receipt) await api.removeFile(t.receipt_path)
+        await api.update('tasks', t.id, row)
+      } else await api.insert('tasks', { ...row, project_id: state.project!.id })
       await state.reload()
       toast(t ? 'Ändringarna är sparade' : `${row.title} är tillagt`)
       onClose()
@@ -165,6 +174,20 @@ function TaskSheet({ item, defaultRoom, state, onClose }: { item: Task | { phase
           <span className="field__label">Status</span>
           <Chips value={f.status} onChange={(s) => setF({ ...f, status: s })} options={(['todo', 'doing', 'done'] as TaskStatus[]).map((s) => ({ value: s, label: LABEL[s] }))} />
         </div>
+        <div className="field">
+          <span className="field__label">Prio</span>
+          <Chips value={f.priority} onChange={(v) => setF({ ...f, priority: v })} options={([1, 2, 3] as Priority[]).map((v) => ({ value: v, label: PRIORITY_LABEL[v] }))} />
+        </div>
+        <FileField
+          pid={state.project!.id}
+          label="Kvitto eller faktura"
+          path={f.receipt}
+          url={receiptUrl}
+          onChange={(path, url) => {
+            setF((c) => ({ ...c, receipt: path }))
+            setReceiptUrl(url)
+          }}
+        />
         <Field label="Anteckning">
           <textarea className="textarea" rows={3} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
         </Field>

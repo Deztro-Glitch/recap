@@ -1,6 +1,6 @@
 import { kr } from '../lib/format'
 
-export function BudgetMeter({ budget, spent, planned }: { budget: number; spent: number; planned: number }) {
+export function BudgetMeter({ budget, spent, planned, stays, mine }: { budget: number; spent: number; planned: number; stays: number; mine: number }) {
   const scale = Math.max(budget, planned, spent, 1)
   const pct = (n: number) => `${(n / scale) * 100}%`
   const overSpent = budget > 0 && spent > budget
@@ -16,6 +16,14 @@ export function BudgetMeter({ budget, spent, planned }: { budget: number; spent:
         <div className="kpi">
           <div className="meta">Planerat</div>
           <div className="kpi__value">{kr(planned)}</div>
+        </div>
+        <div className="kpi">
+          <div className="meta">Följer med lägenheten</div>
+          <div className="kpi__value">{kr(stays)}</div>
+        </div>
+        <div className="kpi">
+          <div className="meta">Mitt</div>
+          <div className="kpi__value">{kr(mine)}</div>
         </div>
       </div>
 
