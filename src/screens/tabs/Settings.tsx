@@ -4,6 +4,7 @@ import { api, type User } from '../../lib/api'
 import { parseNum } from '../../lib/format'
 import { Chips, Field, useToast } from '../../components/ui'
 import { initials } from '../../components/Shell'
+import { ModePicker } from '../../components/ModePicker'
 import { KIND_LABEL, type Kind, type Member } from '../../types'
 import type { ViewProps } from '../ProjectView'
 
@@ -50,6 +51,18 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
   return (
     <div>
       <div className="section-head"><h1>Inställningar</h1></div>
+
+      <div className="section" style={{ maxWidth: 460 }}>
+        <div className="section-head"><h2>Vad gör du i hemmet</h2></div>
+        <ModePicker
+          value={p.mode ?? 'full'}
+          onChange={async (mode) => {
+            await api.updateProject(p.id, { mode })
+            await state.reload()
+            toast(mode === 'simple' ? 'Mappar och jobb är dolda' : 'Mappar och jobb visas')
+          }}
+        />
+      </div>
 
       <form className="section form" style={{ maxWidth: 460 }} onSubmit={save}>
         <Field label="Namn">

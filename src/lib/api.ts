@@ -20,7 +20,7 @@ export interface Api {
   signOut(): Promise<void>
 
   listProjects(): Promise<Project[]>
-  createProject(p: Pick<Project, 'name' | 'kind' | 'address' | 'budget'>): Promise<Project>
+  createProject(p: Pick<Project, 'name' | 'kind' | 'address' | 'budget' | 'mode'>): Promise<Project>
   updateProject(id: string, patch: Partial<Project>): Promise<void>
   deleteProject(id: string): Promise<void>
 

@@ -270,12 +270,12 @@ export function PurchaseSheet({ item, state, onClose, receiptMode, title }: {
             <Chips value={f.stays} onChange={(v) => setF({ ...f, stays: v })} options={[{ value: false, label: 'Mitt' }, { value: true, label: 'Följer med lägenheten' }]} />
           </div>
           <div className="form__row">
-            <Field label="Mapp">
+            {state.folders.length > 0 && (<Field label="Mapp">
               <select className="select" value={f.folder_id} onChange={set('folder_id')}>
                 <option value="">Ingen mapp</option>
                 {state.folders.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
               </select>
-            </Field>
+            </Field>)}
             {f.bought ? (
               <Field label="Köpdatum">
                 <input className="input" type="date" value={f.bought_on} onChange={set('bought_on')} />

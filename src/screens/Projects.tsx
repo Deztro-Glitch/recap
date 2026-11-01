@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react'
 import { IconBuilding, IconChevronRight, IconHome, IconHomeEco, IconLogout } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
 import { kr, parseNum } from '../lib/format'
-import { Chips, Field, Loader, Primary, Sheet, rowAnim, useToast } from '../components/ui'
+import { Chips, Field, Loader, More, Primary, Sheet, rowAnim, useToast } from '../components/ui'
+import { ModePicker } from '../components/ModePicker'
 import { NavItem, Shell } from '../components/Shell'
-import { KIND_LABEL, ROOM_PRESETS, type Kind, type Project } from '../types'
+import { KIND_LABEL, ROOM_PRESETS, type Kind, type Mode, type Project } from '../types'
 
 const KIND_ICON = { lagenhet: IconBuilding, hus: IconHome, annat: IconHomeEco }
 
@@ -79,6 +80,7 @@ function NewProjectSheet({ open, onClose, onCreated }: { open: boolean; onClose:
   const [address, setAddress] = useState('')
   const [budget, setBudget] = useState('')
   const [rooms, setRooms] = useState<string[]>(['Kök', 'Vardagsrum', 'Sovrum', 'Badrum', 'Hall'])
+  const [mode, setMode] = useState<Mode>('simple')
   const [busy, setBusy] = useState(false)
 
   const toggle = (r: string) => setRooms((rs) => (rs.includes(r) ? rs.filter((x) => x !== r) : [...rs, r]))
@@ -87,7 +89,7 @@ function NewProjectSheet({ open, onClose, onCreated }: { open: boolean; onClose:
     e.preventDefault()
     setBusy(true)
     try {
-      const p = await api.createProject({ name: name.trim(), kind, address: address.trim() || null, budget: parseNum(budget) })
+      const p = await api.createProject({ name: name.trim(), kind, address: address.trim() || null, budget: parseNum(budget), mode })
       await Promise.all(
         ROOM_PRESETS.filter((r) => rooms.includes(r.name)).map((r, i) =>
           api.insert('rooms', { project_id: p.id, name: r.name, icon: r.icon, color: r.color, sort: i }),
@@ -104,6 +106,10 @@ function NewProjectSheet({ open, onClose, onCreated }: { open: boolean; onClose:
   return (
     <Sheet open={open} onClose={onClose} title="Nytt hem">
       <form className="form" onSubmit={submit}>
+        <div className="field">
+          <span className="field__label">Vad ska du göra</span>
+          <ModePicker value={mode} onChange={setMode} />
+        </div>
         <Field label="Namn">
           <input className="input" placeholder="Tvåan på Södermannagatan" value={name} onChange={(e) => setName(e.target.value)} required />
         </Field>
@@ -111,22 +117,24 @@ function NewProjectSheet({ open, onClose, onCreated }: { open: boolean; onClose:
           <span className="field__label">Typ</span>
           <Chips value={kind} onChange={setKind} options={(['lagenhet', 'hus', 'annat'] as Kind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }))} />
         </div>
-        <Field label="Adress">
-          <input className="input" placeholder="Södermannagatan 12, Stockholm" value={address} onChange={(e) => setAddress(e.target.value)} />
-        </Field>
-        <Field label="Budget i kr">
-          <input className="input" inputMode="numeric" placeholder="150 000" value={budget} onChange={(e) => setBudget(e.target.value)} />
-        </Field>
-        <div className="field">
-          <span className="field__label">Rum</span>
-          <div className="chips">
-            {ROOM_PRESETS.map((r) => (
-              <button type="button" key={r.name} className={`chip ${rooms.includes(r.name) ? 'is-active' : ''}`} onClick={() => toggle(r.name)}>
-                {r.name}
-              </button>
-            ))}
+        <More>
+          <Field label="Adress">
+            <input className="input" placeholder="Södermannagatan 12, Stockholm" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </Field>
+          <Field label="Budget i kr">
+            <input className="input" inputMode="numeric" placeholder="150 000" value={budget} onChange={(e) => setBudget(e.target.value)} />
+          </Field>
+          <div className="field">
+            <span className="field__label">Rum</span>
+            <div className="chips">
+              {ROOM_PRESETS.map((r) => (
+                <button type="button" key={r.name} className={`chip ${rooms.includes(r.name) ? 'is-active' : ''}`} onClick={() => toggle(r.name)}>
+                  {r.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </More>
         <div className="form__actions">
           <Primary disabled={busy || !name.trim()}>Skapa hem</Primary>
         </div>

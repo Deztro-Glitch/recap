@@ -103,12 +103,12 @@ export function IdeaSheet({ item, state, onClose, onConvert }: { item: Idea | Id
           <input className="input" placeholder="Fiskbensparkett i hallen" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} required />
         </Field>
         <div className="form__row">
-          <Field label="Mapp">
+          {state.folders.length > 0 && (<Field label="Mapp">
             <select className="select" value={f.folder_id} onChange={(e) => setF({ ...f, folder_id: e.target.value })}>
               <option value="">Ingen mapp</option>
               {state.folders.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
             </select>
-          </Field>
+          </Field>)}
           <Field label="Rum">
             <select className="select" value={f.room_id} onChange={(e) => setF({ ...f, room_id: e.target.value })}>
               <option value="">Hela hemmet</option>

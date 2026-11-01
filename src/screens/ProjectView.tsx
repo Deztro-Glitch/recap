@@ -129,20 +129,32 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const props: ViewProps = { state, room, open }
   const filter = <Chips value={room} onChange={setRoom} options={[{ value: null, label: 'Alla rum' }, ...state.rooms.map((r) => ({ value: r.id as string | null, label: r.name }))]} />
 
+  // I läget "Inköp och kvitton" döljs mappar och jobb helt.
+  const simple = state.project?.mode === 'simple'
+  const views = VIEWS.filter((v) => !(simple && v.id === 'folders'))
+  const moreViews: ViewId[] = simple ? ['photos', 'settings'] : ['ideas', 'photos', 'settings']
+
   const tabs: Tab[] = [
     { id: 'overview', label: 'Översikt', icon: IconLayoutGrid, active: view === 'overview', onClick: () => go('overview') },
-    { id: 'folders', label: 'Mappar', icon: IconFolder, active: view === 'folders', onClick: () => { setFolder(null); go('folders') } },
-    { id: 'purchases', label: 'Inköp', icon: IconShoppingCart, active: view === 'purchases', onClick: () => go('purchases') },
-    { id: 'more', label: 'Mer', icon: IconDots, active: ['ideas', 'photos', 'settings'].includes(view), onClick: () => open({ t: 'more' }) },
+    ...(simple
+      ? [
+          { id: 'purchases', label: 'Inköp', icon: IconShoppingCart, active: view === 'purchases', onClick: () => go('purchases') },
+          { id: 'ideas', label: 'Idéer', icon: IconBulb, active: view === 'ideas', onClick: () => go('ideas') },
+        ]
+      : [
+          { id: 'folders', label: 'Mappar', icon: IconFolder, active: view === 'folders', onClick: () => { setFolder(null); go('folders') } },
+          { id: 'purchases', label: 'Inköp', icon: IconShoppingCart, active: view === 'purchases', onClick: () => go('purchases') },
+        ]),
+    { id: 'more', label: 'Mer', icon: IconDots, active: moreViews.includes(view), onClick: () => open({ t: 'more' }) },
   ]
 
   const addRows = [
     { icon: IconReceipt, title: 'Kvitto', meta: 'Fota kvittot, fyll i resten sen', on: () => open({ t: 'receipt', item: { ...here } }) },
     { icon: IconShoppingCart, title: 'Inköp', meta: 'Något du ska köpa', on: () => open({ t: 'purchase', item: { ...here } }) },
-    { icon: IconChecklist, title: 'Jobb', meta: 'Något som ska göras', on: () => open({ t: 'task', item: { ...here } }) },
+    ...(simple ? [] : [{ icon: IconChecklist, title: 'Jobb', meta: 'Något som ska göras', on: () => open({ t: 'task', item: { ...here } }) }]),
     { icon: IconBulb, title: 'Idé', meta: 'Med bild eller länk', on: () => open({ t: 'idea', item: { ...here } }) },
     { icon: IconCamera, title: 'Foto', meta: 'Före, efter eller inspiration', on: () => open({ t: 'photo' }) },
-    { icon: IconFolderPlus, title: 'Mapp', meta: 'Samla ett projekt, t.ex. Köksrenovering', on: () => open({ t: 'folder' }) },
+    ...(simple ? [] : [{ icon: IconFolderPlus, title: 'Mapp', meta: 'Samla ett projekt, t.ex. Köksrenovering', on: () => open({ t: 'folder' }) }]),
     { icon: IconHome, title: 'Rum', meta: 'Till planritningen och filtren', on: () => open({ t: 'room' }) },
   ]
 
@@ -156,7 +168,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       nav={
         <>
           <NavItem icon={IconArrowLeft} label="Mina hem" onClick={onBack} />
-          {VIEWS.map((v) => (
+          {views.map((v) => (
             <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => { if (v.id === 'folders') setFolder(null); go(v.id) }} />
           ))}
         </>
@@ -221,7 +233,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
 
           <Sheet open={sheet?.t === 'more'} onClose={close} title="Mer">
             <div className="rows">
-              {VIEWS.filter((v) => ['ideas', 'photos', 'settings'].includes(v.id)).map((v) => (
+              {VIEWS.filter((v) => moreViews.includes(v.id)).map((v) => (
                 <div key={v.id} className="row" onClick={() => go(v.id)}>
                   <div className="row__main"><span className="menu-row__icon"><v.icon size={18} /></span><div className="row__title">{v.label}</div></div>
                 </div>

@@ -1,6 +1,12 @@
 import type { CSSProperties } from 'react'
 
 export type Kind = 'lagenhet' | 'hus' | 'annat'
+// Hur mycket man ska göra: bara inköp och kvitton, eller renovering med mappar och jobb.
+export type Mode = 'simple' | 'full'
+export const MODE_LABEL: Record<Mode, { name: string; meta: string }> = {
+  simple: { name: 'Inköp och kvitton', meta: 'Möbler, inredning och kvitton' },
+  full: { name: 'Renovering', meta: 'Även jobb, mappar och budget' },
+}
 export type TaskStatus = 'todo' | 'doing' | 'done'
 export type PhotoKind = 'before' | 'after' | 'inspo'
 
@@ -12,6 +18,7 @@ export interface Project {
   budget: number
   floorplan_path: string | null
   floorplan_map: PlanMap | null
+  mode: Mode
   created_by: string
   created_at: string
 }

@@ -17,13 +17,14 @@ import { COLOR_LABEL, FolderTiles } from './Folders'
 export function Overview({ state, open, openFolder }: ViewProps & { openFolder: (id: string) => void }) {
   const { project, rooms, purchases, tasks, folders } = state
   const b = useBudget(project, purchases, tasks)
+  const simple = project?.mode === 'simple'
   const folderName = (id: string | null) => folders.find((f) => f.id === id)?.name
   const roomName = (id: string | null) => rooms.find((r) => r.id === id)?.name
 
   // Det viktigaste som är kvar: hög prio först, sådant som pågår före det som inte börjat.
   const todo = [
     ...purchases.filter((p) => !p.bought).map((p) => ({ id: p.id, title: p.title, priority: p.priority ?? 2, order: 1, meta: ['Inköp', folderName(p.folder_id), roomName(p.room_id)], right: kr(p.est_price), onClick: () => open({ t: 'purchase', item: p }) })),
-    ...tasks.filter((t) => t.status !== 'done').map((t) => ({ id: t.id, title: t.title, priority: t.priority ?? 2, order: t.status === 'doing' ? 0 : 1, meta: [folderName(t.folder_id), roomName(t.room_id)], right: <TaskStatusLabel status={t.status} />, onClick: () => open({ t: 'task', item: t }) })),
+    ...tasks.filter((t) => !simple && t.status !== 'done').map((t) => ({ id: t.id, title: t.title, priority: t.priority ?? 2, order: t.status === 'doing' ? 0 : 1, meta: [folderName(t.folder_id), roomName(t.room_id)], right: <TaskStatusLabel status={t.status} />, onClick: () => open({ t: 'task', item: t }) })),
   ].sort((a, b) => a.priority - b.priority || a.order - b.order).slice(0, 5)
 
   const isEmpty = !purchases.length && !tasks.length && !folders.length
@@ -68,7 +69,7 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
           <div className="section-head"><h2>Kom igång</h2></div>
           <div className="rows">
             <div className="row" onClick={() => open({ t: 'receipt' })}><div className="row__text"><div className="row__title">Spara ett kvitto</div><div className="meta">Fota kvittot från något du köpt</div></div></div>
-            <div className="row" onClick={() => open({ t: 'folder' })}><div className="row__text"><div className="row__title">Skapa en mapp</div><div className="meta">Till exempel Köksrenovering eller Möbler</div></div></div>
+            {!simple && <div className="row" onClick={() => open({ t: 'folder' })}><div className="row__text"><div className="row__title">Skapa en mapp</div><div className="meta">Till exempel Köksrenovering eller Möbler</div></div></div>}
             <div className="row" onClick={() => open({ t: 'purchase', item: {} })}><div className="row__text"><div className="row__title">Lägg till något att köpa</div><div className="meta">Med pris, butik och prio</div></div></div>
           </div>
         </div>
@@ -92,7 +93,7 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
         </div>
       )}
 
-      {folders.length > 0 && (
+      {!simple && folders.length > 0 && (
         <div className="section">
           <div className="section-head"><h2>Mappar</h2></div>
           <FolderTiles state={state} onOpen={openFolder} />
@@ -177,13 +178,13 @@ export function RoomSheet({ room, state, open, onClose }: { room: Room | null; s
             {rp.length ? <div className="rows">{rp.map((p) => <PurchaseRow key={p.id} p={p} state={state} showFolder onEdit={() => open({ t: 'purchase', item: p })} />)}</div> : <p className="meta">Inga inköp</p>}
           </div>
 
-          <div className="section">
+          {state.project?.mode !== 'simple' && (<div className="section">
             <div className="section-head">
               <h2>Jobb</h2>
               <button className="btn btn--ghost" onClick={() => open({ t: 'task', item: { room_id: room.id } })}>Lägg till</button>
             </div>
             {rt.length ? <div className="rows">{rt.map((t) => <TaskRow key={t.id} t={t} state={state} showFolder onEdit={() => open({ t: 'task', item: t })} />)}</div> : <p className="meta">Inga jobb</p>}
-          </div>
+          </div>)}
 
           {ri.length > 0 && (
             <div className="section">
