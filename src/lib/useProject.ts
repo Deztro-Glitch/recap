@@ -84,19 +84,21 @@ export function useProject(pid: string) {
   return { ...data, reload, patch }
 }
 
-export const paid = (p: Purchase) => p.price ?? p.est_price
+export const paid = (p: Purchase) => Number(p.price ?? p.est_price) || 0
+const cost = (t: Task) => Number(t.cost) || 0
+const est = (p: Purchase) => Number(p.est_price) || 0
 
 export function useBudget(project: Project | null, purchases: Purchase[], tasks: Task[]) {
   return useMemo(() => {
     const budget = project?.budget ?? 0
     const bought = purchases.filter((p) => p.bought)
     const doneTasks = tasks.filter((t) => t.status === 'done')
-    const spent = bought.reduce((s, p) => s + paid(p), 0) + doneTasks.reduce((s, t) => s + t.cost, 0)
+    const spent = bought.reduce((s, p) => s + paid(p), 0) + doneTasks.reduce((s, t) => s + cost(t), 0)
     const planned =
-      purchases.reduce((s, p) => s + (p.bought ? paid(p) : p.est_price), 0) +
-      tasks.reduce((s, t) => s + t.cost, 0)
+      purchases.reduce((s, p) => s + (p.bought ? paid(p) : est(p)), 0) +
+      tasks.reduce((s, t) => s + cost(t), 0)
     // Det som stannar i lägenheten: fasta inköp och allt renoveringsarbete.
-    const stays = bought.filter((p) => p.stays).reduce((s, p) => s + paid(p), 0) + doneTasks.reduce((s, t) => s + t.cost, 0)
+    const stays = bought.filter((p) => p.stays).reduce((s, p) => s + paid(p), 0) + doneTasks.reduce((s, t) => s + cost(t), 0)
     const mine = bought.filter((p) => !p.stays).reduce((s, p) => s + paid(p), 0)
     return { budget, spent, planned, stays, mine, left: budget - spent, overSpent: budget > 0 && spent > budget, overPlanned: budget > 0 && planned > budget }
   }, [project, purchases, tasks])
@@ -104,8 +106,8 @@ export function useBudget(project: Project | null, purchases: Purchase[], tasks:
 
 // Summor för en delmängd (ett rum eller en mapp).
 export function totals(purchases: Purchase[], tasks: Task[]) {
-  const spent = purchases.filter((p) => p.bought).reduce((s, p) => s + paid(p), 0) + tasks.filter((t) => t.status === 'done').reduce((s, t) => s + t.cost, 0)
-  const planned = purchases.reduce((s, p) => s + (p.bought ? paid(p) : p.est_price), 0) + tasks.reduce((s, t) => s + t.cost, 0)
+  const spent = purchases.filter((p) => p.bought).reduce((s, p) => s + paid(p), 0) + tasks.filter((t) => t.status === 'done').reduce((s, t) => s + cost(t), 0)
+  const planned = purchases.reduce((s, p) => s + (p.bought ? paid(p) : est(p)), 0) + tasks.reduce((s, t) => s + cost(t), 0)
   const items = purchases.length + tasks.length
   const done = purchases.filter((p) => p.bought).length + tasks.filter((t) => t.status === 'done').length
   return { spent, planned, items, done }

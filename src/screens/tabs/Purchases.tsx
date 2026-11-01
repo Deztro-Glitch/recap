@@ -7,6 +7,7 @@ import { paid } from '../../lib/useProject'
 import { Checkbox, Chips, Field, Primary, Sheet, rowAnim, useToast } from '../../components/ui'
 import { FileField, FileThumb } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
+import { SwipeRow } from '../../components/SwipeRow'
 import { PRIORITY_LABEL, type Detail, type Priority, type Purchase } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 
@@ -100,7 +101,7 @@ export function PurchaseRow({ p, state, onEdit, showReceipt, showFolder }: { p: 
   const room = state.rooms.find((r) => r.id === p.room_id)
   const folder = showFolder ? state.folders.find((f) => f.id === p.folder_id) : undefined
   return (
-    <motion.div layout="position" {...rowAnim} className={`row ${p.bought && !showReceipt ? 'is-done' : ''}`} onClick={onEdit}>
+    <SwipeRow className={p.bought && !showReceipt ? 'is-done' : ''} onClick={onEdit} onDelete={() => removeRow(state, 'purchases', p.id, p.title)}>
       <div className="row__main">
         {showReceipt ? (
           p.receipt_path ? <FileThumb path={p.receipt_path} url={state.urls[p.receipt_path]} /> : <span className="thumb" style={{ width: 40, height: 40 }}><IconReceiptOff size={18} /></span>
@@ -123,8 +124,15 @@ export function PurchaseRow({ p, state, onEdit, showReceipt, showFolder }: { p: 
         </a>
       )}
       <span className="row__amount">{kr(p.bought ? paid(p) : p.est_price)}</span>
-    </motion.div>
+    </SwipeRow>
   )
+}
+
+// Tar bort en rad direkt (används när man sveper bort den).
+export async function removeRow(state: ProjectState, table: 'purchases' | 'tasks' | 'ideas', id: string, title: string, toast?: (t: string) => void) {
+  await api.remove(table, id)
+  await state.reload()
+  toast?.(`${title} är borttagen`)
 }
 
 export type PurchaseDraft = Partial<Purchase>

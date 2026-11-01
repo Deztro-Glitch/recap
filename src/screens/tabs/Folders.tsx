@@ -5,7 +5,7 @@ import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
 import { totals } from '../../lib/useProject'
 import { ICONS, iconFor } from '../../components/icons'
-import { Chips, Field, Primary, Sheet, ease, useToast } from '../../components/ui'
+import { Checkbox, Chips, Field, Primary, Sheet, ease, useToast } from '../../components/ui'
 import { FileThumb } from '../../components/FileField'
 import { FOLDER_TEMPLATES, PALETTE, tileStyle, type Folder, type IconKey, type Palette } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
@@ -157,16 +157,19 @@ export function FolderSheet({ item, state, onClose, onCreated }: { item: Folder 
   const toast = useToast()
   const f = item && item !== 'new' ? item : null
   const [template, setTemplate] = useState(0)
+  const [picked, setPicked] = useState<string[]>([])
   const [form, setForm] = useState({ name: '', icon: 'folder' as IconKey, color: 'lilac' as Palette, budget: '', note: '' })
 
   useEffect(() => {
     if (!item) return
     setTemplate(0)
+    setPicked([])
     setForm({ name: f?.name ?? '', icon: f?.icon ?? 'folder', color: f?.color ?? 'lilac', budget: f?.budget ? String(f.budget) : '', note: f?.note ?? '' })
   }, [item])
 
   const pickTemplate = (i: number) => {
     setTemplate(i)
+    setPicked([])
     const t = FOLDER_TEMPLATES[i]
     setForm((c) => ({ ...c, name: i === 0 ? c.name : t.name, icon: t.icon, color: t.color }))
   }
@@ -182,8 +185,8 @@ export function FolderSheet({ item, state, onClose, onCreated }: { item: Folder 
         onClose()
       } else {
         const created = await api.insert<Folder>('folders', { ...row, project_id: state.project!.id, sort: state.folders.length })
-        // Mallens jobb läggs in i mappen.
-        for (const title of FOLDER_TEMPLATES[template].tasks) await api.insert('tasks', { project_id: state.project!.id, folder_id: created.id, title, status: 'todo', cost: 0, priority: 2 })
+        // Bara de förslag man kryssat i läggs in.
+        for (const title of FOLDER_TEMPLATES[template].tasks.filter((t) => picked.includes(t))) await api.insert('tasks', { project_id: state.project!.id, folder_id: created.id, title, status: 'todo', cost: 0, priority: 2 })
         await state.reload()
         toast(`${row.name} är skapad`)
         onCreated(created.id)
@@ -208,7 +211,19 @@ export function FolderSheet({ item, state, onClose, onCreated }: { item: Folder 
           <div className="field">
             <span className="field__label">Mall</span>
             <Chips value={template} onChange={pickTemplate} options={FOLDER_TEMPLATES.map((t, i) => ({ value: i, label: t.name }))} />
-            {FOLDER_TEMPLATES[template].tasks.length > 0 && <span className="meta">{FOLDER_TEMPLATES[template].tasks.length} jobb läggs in: {FOLDER_TEMPLATES[template].tasks.slice(0, 3).join(', ').toLowerCase()} …</span>}
+          </div>
+        )}
+        {!f && FOLDER_TEMPLATES[template].tasks.length > 0 && (
+          <div className="field">
+            <span className="field__label">Förslag på jobb</span>
+            <div className="rows">
+              {FOLDER_TEMPLATES[template].tasks.map((t) => (
+                <div key={t} className="row" style={{ justifyContent: 'flex-start' }} onClick={() => setPicked((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))}>
+                  <Checkbox checked={picked.includes(t)} onChange={(on) => setPicked((p) => (on ? [...p, t] : p.filter((x) => x !== t)))} label={t} />
+                  <span>{t}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         <Field label="Namn">

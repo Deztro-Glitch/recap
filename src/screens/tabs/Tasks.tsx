@@ -8,7 +8,8 @@ import { FileField } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
 import { PRIORITY_LABEL, type Detail, type Priority, type Task, type TaskStatus } from '../../types'
 import type { ProjectState } from '../ProjectView'
-import { PriorityTag, fmtDate, today } from './Purchases'
+import { PriorityTag, fmtDate, removeRow, today } from './Purchases'
+import { SwipeRow } from '../../components/SwipeRow'
 
 const NEXT: Record<TaskStatus, TaskStatus> = { todo: 'doing', doing: 'done', done: 'todo' }
 export const STATUS_LABEL: Record<TaskStatus, string> = { todo: 'Att göra', doing: 'Pågår', done: 'Klar' }
@@ -24,7 +25,7 @@ export function TaskRow({ t, state, onEdit, showFolder }: { t: Task; state: Proj
   const status = t.status ?? 'todo'
   const next = NEXT[status]
   return (
-    <motion.div layout="position" {...rowAnim} className={`row ${t.status === 'done' ? 'is-done' : ''}`} onClick={onEdit}>
+    <SwipeRow className={t.status === 'done' ? 'is-done' : ''} onClick={onEdit} onDelete={() => removeRow(state, 'tasks', t.id, t.title)}>
       <div className="row__text">
         <div className="row__title">{t.title}</div>
         <div className="meta">
@@ -44,7 +45,7 @@ export function TaskRow({ t, state, onEdit, showFolder }: { t: Task; state: Proj
       >
         <TaskStatusLabel status={status} />
       </button>
-    </motion.div>
+    </SwipeRow>
   )
 }
 

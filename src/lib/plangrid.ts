@@ -104,6 +104,60 @@ export function fill(grid: Uint8Array, b: Barriers, start: number, value: number
   return 'ok'
 }
 
+// Fyller flera rum på en gång från var sitt startställe (där rumsnamnet står).
+// Där rum hänger ihop utan vägg delas ytan där fronterna möts. Utsidan växer från bildens kant
+// samtidigt, så att ett rum med en öppning mot trapphuset inte tar över hela bilden.
+export function growRooms(grid: Uint8Array, b: Barriers, seeds: { cell: number; value: number }[], openBoxes: { x0: number; y0: number; x1: number; y1: number }[]) {
+  const { cols, rows } = b
+  const wall = b.wall.slice()
+  // Texten där rumsnamnen står är inte väggar.
+  for (const r of openBoxes) {
+    for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) if (x >= 0 && y >= 0 && x < cols && y < rows) wall[y * cols + x] = 0
+  }
+  for (let i = 0; i < grid.length; i++) if (grid[i] !== WALL) grid[i] = 0
+
+  const OUTSIDE = 254
+  const owner = new Uint8Array(grid.length)
+  let queue: number[] = []
+  const open = (i: number) => !wall[i] && grid[i] !== WALL && !owner[i]
+  for (const s of seeds) {
+    if (!open(s.cell)) continue
+    owner[s.cell] = s.value
+    queue.push(s.cell)
+  }
+  for (let i = 0; i < grid.length; i++) {
+    const x = i % cols
+    if ((x === 0 || x === cols - 1 || i < cols || i >= cols * (rows - 1)) && open(i)) {
+      owner[i] = OUTSIDE
+      queue.push(i)
+    }
+  }
+  // Bredden först, en våg i taget, så att alla växer lika fort.
+  while (queue.length) {
+    const next: number[] = []
+    for (const i of queue) {
+      for (const n of neighbors(i, cols, rows)) {
+        if (open(n)) {
+          owner[n] = owner[i]
+          next.push(n)
+        }
+      }
+    }
+    queue = next
+  }
+
+  const regions = new Map<number, number[]>()
+  for (let i = 0; i < grid.length; i++) {
+    const v = owner[i]
+    if (!v || v === OUTSIDE) continue
+    grid[i] = v
+    let r = regions.get(v)
+    if (!r) regions.set(v, (r = []))
+    r.push(i)
+  }
+  for (const [v, region] of regions) absorbIslands(grid, cols, rows, region, v)
+}
+
 // Text och möbelsymboler inne i rummet blir små öar av ofyllda rutor. Öar som bara
 // gränsar mot rummet tas med. Riktiga väggar hänger ihop med resten av huset och är för stora.
 function absorbIslands(grid: Uint8Array, cols: number, rows: number, region: number[], value: number) {

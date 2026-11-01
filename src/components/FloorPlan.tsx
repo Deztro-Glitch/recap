@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { IconArrowBackUp } from '@tabler/icons-react'
 import { api } from '../lib/api'
-import { WALL, decode, encode, fill, labelPoints, loadBarriers, paint, roomAt, type Barriers, COLS } from '../lib/plangrid'
+import { lazy, Suspense } from 'react'
+import { WALL, decode, encode, fill, growRooms, labelPoints, loadBarriers, paint, roomAt, type Barriers, COLS } from '../lib/plangrid'
+import { readRoomNames } from '../lib/readplan'
+
+// 3D-vyn och three.js laddas först när man väljer 3D.
+const Plan3D = lazy(() => import('./Plan3D'))
 import type { Room } from '../types'
 import type { ProjectState } from '../screens/ProjectView'
 import { Chips, Loader, useToast } from './ui'
@@ -38,6 +43,9 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
   const [message, setMessage] = useState<{ kind: 'sent' | 'warning'; text: string } | null>(null)
   const last = useRef<number | null>(null)
   const saveTimer = useRef<number>(undefined)
+  const autoDetect = useRef(false)
+  const [detecting, setDetecting] = useState<number | null>(null)
+  const [view3d, setView3d] = useState(false)
 
   // Läs in väggarna ur bilden när den byts.
   useEffect(() => {
@@ -56,6 +64,11 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
         grid.current = d.grid
         ids.current = d.ids
         setVersion((v) => v + 1)
+        // En nyss uppladdad ritning läses direkt.
+        if (autoDetect.current) {
+          autoDetect.current = false
+          detect(b, url)
+        }
       })
     return () => {
       cancelled = true
@@ -190,6 +203,46 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
     save()
   }
 
+  // Läser rumsnamnen i ritningen, skapar rummen som saknas och fyller dem.
+  const detect = async (b = barriers, src = url) => {
+    if (!b || !src) return
+    setDetecting(0)
+    setEditing(false)
+    try {
+      const found = await readRoomNames(src, setDetecting)
+      if (!found.length) {
+        startEditing()
+        setMessage({ kind: 'warning', text: 'Hittade inga rumsnamn i ritningen. Tryck i rummen själv.' })
+        return
+      }
+      const rooms = [...state.rooms]
+      const seeds: { cell: number; value: number }[] = []
+      const boxes: { x0: number; y0: number; x1: number; y1: number }[] = []
+      for (const f of found) {
+        let room = rooms.find((r) => r.name.toLowerCase() === f.name.toLowerCase())
+        if (!room) {
+          room = await api.insert<Room>('rooms', { project_id: project.id, name: f.name, icon: f.icon, color: f.color, sort: rooms.length })
+          rooms.push(room)
+        }
+        const cx = Math.min(b.cols - 1, Math.floor(f.x * b.cols))
+        const cy = Math.min(b.rows - 1, Math.floor(f.y * b.rows))
+        seeds.push({ cell: cy * b.cols + cx, value: valueFor(room.id) })
+        boxes.push({ x0: Math.floor(f.box.x0 * b.cols) - 1, y0: Math.floor(f.box.y0 * b.rows) - 1, x1: Math.ceil(f.box.x1 * b.cols) + 1, y1: Math.ceil(f.box.y1 * b.rows) + 1 })
+      }
+      snapshot()
+      growRooms(grid.current, b, seeds, boxes)
+      setVersion((v) => v + 1)
+      save()
+      await state.reload()
+      const missing = rooms.filter((r) => !found.some((f) => f.name.toLowerCase() === r.name.toLowerCase()))
+      toast({ title: `Hittade ${found.length} rum`, body: found.map((f) => f.name).join(', ') + (missing.length ? `. ${missing.map((r) => r.name).join(', ')} fyller du själv under Justera.` : '') })
+    } catch (err: any) {
+      toast({ title: 'Ritningen kunde inte läsas', body: err.message })
+    } finally {
+      setDetecting(null)
+    }
+  }
+
   const upload = async (file: File | undefined) => {
     if (!file) return
     setBusy(true)
@@ -199,7 +252,7 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
       await api.updateProject(project.id, { floorplan_path: path, floorplan_map: null })
       undo.current = []
       await state.reload()
-      startEditing()
+      autoDetect.current = true
     } catch (err: any) {
       toast({ title: 'Planritningen kunde inte laddas upp', body: err.message })
     } finally {
@@ -266,12 +319,30 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
             <button className="btn btn--secondary" onClick={() => setEditing(false)}>Klar</button>
           </>
         ) : (
-          <>
-            <button className="btn btn--ghost" onClick={() => input.current?.click()}>Byt bild</button>
-            <button className="btn btn--secondary" onClick={startEditing} disabled={!barriers}>Markera rum</button>
-          </>
+          <Chips value={view3d} onChange={setView3d} options={[{ value: false, label: '2D' }, { value: true, label: '3D' }]} />
         )}
       </div>
+
+      {!editing && detecting === null && (
+        <div className="plan-tools" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 'var(--s-2)' }}>
+          <button className="btn btn--secondary" onClick={() => detect()} disabled={!barriers}>Hitta rum</button>
+          <button className="btn btn--ghost" onClick={() => { setView3d(false); startEditing() }} disabled={!barriers}>Justera</button>
+          <button className="btn btn--ghost" onClick={() => input.current?.click()}>Byt bild</button>
+        </div>
+      )}
+
+      {detecting !== null && (
+        <div className="plan-tools">
+          <Loader />
+          <span className="status status--sent">{detecting > 0 ? `Läser rumsnamnen i ritningen, ${Math.round(detecting * 100)} %` : 'Förbereder läsningen av ritningen'}</span>
+        </div>
+      )}
+
+      {view3d && !editing && barriers && (
+        <Suspense fallback={<Loader />}>
+          <Plan3D url={url} barriers={barriers} grid={grid.current} version={version} rooms={state.rooms} ids={ids.current} onRoom={onRoom} />
+        </Suspense>
+      )}
 
       {editing && (
         <div className="plan-tools">
@@ -289,7 +360,7 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
         </div>
       )}
 
-      <div className={`plan ${editing ? 'is-editing' : ''}`}>
+      <div className={`plan ${editing ? 'is-editing' : ''}`} hidden={view3d && !editing}>
         <img src={url} alt="Planritning" crossOrigin="anonymous" />
         <canvas ref={canvas} className="plan__layer" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} />
         {barriers &&

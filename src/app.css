@@ -53,6 +53,16 @@ a { color: inherit; }
 
 /* ---------- Rader ---------- */
 
+.swipe { position: relative; border-radius: var(--r-sm); overflow: hidden; }
+.swipe__delete {
+  position: absolute; inset: 0 0 0 auto; width: 100%;
+  border: 0; border-radius: var(--r-sm); cursor: pointer;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: var(--s-4);
+  background: var(--danger); color: #fff; font-weight: 600;
+}
+.swipe__front { position: relative; background: var(--surface); touch-action: pan-y; }
+.swipe__front:hover { background: var(--hover); }
+
 .row__main { display: flex; align-items: center; gap: var(--s-3); min-width: 0; flex: 1; }
 .row__text { min-width: 0; }
 .row__text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -186,6 +196,10 @@ a { color: inherit; }
   background: rgba(255, 255, 255, .85);
   pointer-events: none;
 }
+.plan3d { position: relative; max-width: 880px; border-radius: var(--r-sm); overflow: hidden; background: var(--hover); touch-action: none; }
+.plan3d canvas { display: block; cursor: grab; }
+.plan3d canvas:active { cursor: grabbing; }
+.plan3d__labels { position: absolute; inset: 0; pointer-events: none; }
 .plan-tools { display: flex; flex-direction: column; gap: var(--s-3); margin-bottom: var(--s-3); }
 .btn:disabled { opacity: .4; cursor: default; }
 

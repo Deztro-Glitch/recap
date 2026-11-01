@@ -6,6 +6,8 @@ import { Field, Primary, Sheet, rowAnim, useToast } from '../../components/ui'
 import { FileField, FileThumb } from '../../components/FileField'
 import type { Idea } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
+import { SwipeRow } from '../../components/SwipeRow'
+import { removeRow } from './Purchases'
 
 const host = (link: string) => {
   try {
@@ -35,7 +37,7 @@ export function Ideas({ state, room, open, filter }: ViewProps & { filter: React
         <div className="rows">
           <AnimatePresence initial={false}>
             {list.map((i) => (
-              <motion.div key={i.id} layout="position" {...rowAnim} className="row" onClick={() => open({ t: 'idea', item: i })}>
+              <SwipeRow key={i.id} onClick={() => open({ t: 'idea', item: i })} onDelete={() => removeRow(state, 'ideas', i.id, i.title)}>
                 <div className="row__main">
                   {i.image_path ? <FileThumb path={i.image_path} url={state.urls[i.image_path]} size={48} /> : <span className="thumb" style={{ width: 48, height: 48 }}><IconBulb size={20} /></span>}
                   <div className="row__text">
@@ -48,7 +50,7 @@ export function Ideas({ state, room, open, filter }: ViewProps & { filter: React
                     <IconExternalLink size={16} />
                   </a>
                 )}
-              </motion.div>
+              </SwipeRow>
             ))}
           </AnimatePresence>
         </div>
