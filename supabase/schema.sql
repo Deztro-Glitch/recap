@@ -128,6 +128,17 @@ create policy "inköp"    on public.purchases for all using (is_member(project_i
 create policy "uppgifter" on public.tasks    for all using (is_member(project_id)) with check (is_member(project_id));
 create policy "foton"    on public.photos    for all using (is_member(project_id)) with check (is_member(project_id));
 
+-- ---------- Åtkomst för inloggade ----------
+-- Bara inloggade användare når tabellerna (raderna begränsas av policyerna ovan).
+-- Utloggade (anon) får ingenting.
+
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on
+  public.projects, public.project_members, public.rooms, public.purchases, public.tasks, public.photos
+  to authenticated;
+grant execute on function public.is_member(uuid), public.is_owner(uuid), public.invite_member(uuid, text) to authenticated;
+revoke execute on function public.invite_member(uuid, text) from anon, public;
+
 -- ---------- Bildlagring ----------
 -- Filer sparas som "<projekt-id>/<filnamn>" i en privat bucket.
 
