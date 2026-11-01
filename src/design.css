@@ -1,0 +1,485 @@
+/* ==========================================================================
+   design.css — Teddys designsystem
+   Läs CLAUDE.md för reglerna. Ändra värden här, inte i enskilda komponenter.
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   1. Tokens — ljust läge (standard)
+   -------------------------------------------------------------------------- */
+:root {
+  /* Accent: den ENDA färgen som betyder "framåt / aktivt / valt".
+     Byt bara dessa två för en kunds varumärkesfärg. */
+  --accent: #6B4EFF;
+  --on-accent: #FFFFFF;
+
+  /* Ytor — lila-tonade neutraler, aldrig ren grå */
+  --shell: #E7E4F0;        /* appens yttersta bakgrund, sidomeny, processlist */
+  --surface: #F6F5FA;      /* huvudytan där innehållet bor */
+  --raised: #FFFFFF;       /* enstaka upphöjda ytor, t.ex. notiser */
+  --hover: #ECEAF4;        /* hover, valda rader, fyllda fält */
+  --track: #D3CFE0;        /* inaktiva steg, avstängd växlare */
+
+  /* Text */
+  --text: #17141F;
+  --text-2: #5E5A6E;       /* bara för detaljer som hör till något större */
+
+  /* Status */
+  --success: #1F8A4C;
+  --warning: #B7791F;
+  --danger: #C2362F;
+
+  /* Innehållsfärger — för kategorier, fraktioner, typer. Par: bakgrund + text */
+  --c-sand-bg: #E9CBA3;  --c-sand-fg: #4A2E0F;
+  --c-coral-bg: #F2A88E; --c-coral-fg: #5A1E0C;
+  --c-steel-bg: #BAC6D8; --c-steel-fg: #1E2A3D;
+  --c-sun-bg: #F0D86E;   --c-sun-fg: #4A3B00;
+  --c-mint-bg: #A9DCC1;  --c-mint-fg: #0E3D27;
+  --c-sky-bg: #A2C7F0;   --c-sky-fg: #0D2E57;
+  --c-lilac-bg: #CDBFFF; --c-lilac-fg: #2A1A6B;
+  --c-rose-bg: #F3B6CC;  --c-rose-fg: #5C1630;
+
+  /* Typografi */
+  --font: "Archivo", system-ui, sans-serif;
+  --font-display: "Archivo Black", "Archivo", sans-serif;
+  --fs-title: 20px;      /* sidrubrik */
+  --fs-section: 16px;    /* sektionsrubrik */
+  --fs-body: 14px;
+  --fs-meta: 13px;
+  --fs-small: 12.5px;    /* absolut minsta storlek */
+
+  /* Form */
+  --r-xs: 4px;           /* knappar, kryssrutor */
+  --r-sm: 6px;           /* rutor, fält, rader, navigering */
+  --r-md: 8px;           /* huvudytan */
+  --r-lg: 12px;          /* appskalet */
+
+  /* Avstånd */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px;
+
+  /* Rörelse — lugn och mjuk */
+  --ease: cubic-bezier(.65, 0, .35, 1);
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --t-fast: 300ms;
+  --t-base: 500ms;
+}
+
+/* --------------------------------------------------------------------------
+   2. Mörkt läge — sätt data-theme="dark" på <html>
+   -------------------------------------------------------------------------- */
+:root[data-theme="dark"] {
+  --accent: #9A85FF;
+  --on-accent: #FFFFFF;
+  --shell: #0E0C15;
+  --surface: #1A1724;
+  --raised: #221E2F;
+  --hover: #252134;
+  --track: #353047;
+  --text: #F1EFF7;
+  --text-2: #A9A4BC;
+  --success: #4CC985;
+  --warning: #E6B450;
+  --danger: #F0716A;
+}
+
+/* --------------------------------------------------------------------------
+   3. Bas
+   -------------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+
+body {
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--shell);
+  font-variant-numeric: tabular-nums;   /* siffror i jämna kolumner */
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--t-base), color var(--t-base);
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: var(--fs-title); }
+h2 { font-size: var(--fs-section); }
+h3 { font-size: var(--fs-body); }
+p { margin: 0; }
+
+.meta { font-size: var(--fs-meta); color: var(--text-2); }
+.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; }
+.wordmark { font-family: var(--font-display); font-size: 18px; }
+.wordmark span { color: var(--accent); }
+
+/* --------------------------------------------------------------------------
+   4. Appskal — sidomeny | huvudyta, processlist längst ner
+   -------------------------------------------------------------------------- */
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--s-2);
+  padding: var(--s-2);
+  background: var(--shell);
+}
+.app--no-process { grid-template-rows: minmax(0, 1fr); }
+
+.sidebar { display: flex; flex-direction: column; gap: 2px; padding: var(--s-3) var(--s-2); }
+.sidebar .wordmark { padding: var(--s-1) var(--s-3) var(--s-4); }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px var(--s-3);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-body); font-weight: 500;
+  color: var(--text-2);
+  text-decoration: none; cursor: pointer;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.nav-item:hover { color: var(--text); }
+.nav-item.is-active { background: var(--surface); color: var(--text); font-weight: 600; }
+
+.main {
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  min-width: 0;
+  overflow: auto;
+  transition: background var(--t-base);
+}
+
+.topbar { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-5); }
+
+.search {
+  flex: 1; max-width: 420px;
+  display: flex; align-items: center; gap: var(--s-2);
+  background: var(--hover);
+  border-radius: var(--r-sm);
+  padding: 0 var(--s-3);
+  color: var(--text-2);
+}
+.topbar > .search { margin-right: auto; }
+.search input {
+  flex: 1; border: 0; background: transparent; outline: none;
+  font: inherit; color: var(--text); padding: 10px 0;
+}
+
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--fs-meta); font-weight: 600; flex: none;
+}
+
+.section { margin-bottom: var(--s-6); }
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-3); flex-wrap: wrap;
+  margin-bottom: var(--s-3);
+}
+
+/* --------------------------------------------------------------------------
+   5. Processlisten — SIGNATUREN. Används i alla flöden med flera steg.
+   -------------------------------------------------------------------------- */
+.processbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: var(--s-4);
+  padding: var(--s-2) var(--s-3);
+}
+.processbar__context { width: 180px; flex: none; min-width: 0; }
+.processbar__context strong { display: block; font-size: var(--fs-body); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.processbar__nav {
+  width: 34px; height: 34px; flex: none;
+  border: 0; border-radius: 50%;
+  background: var(--surface); color: var(--text);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px;
+  transition: background var(--t-fast);
+}
+.processbar__nav:hover { background: var(--hover); }
+
+.steps { flex: 1; display: flex; gap: var(--s-1); min-width: 0; }
+.step { flex: 1; cursor: pointer; min-width: 0; }
+.step__track {
+  display: block; height: 4px; border-radius: 2px;
+  background: var(--track);
+  transition: background var(--t-base) var(--ease);
+}
+.step__label {
+  display: block; margin-top: 6px;
+  font-size: var(--fs-small); color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.step.is-done .step__track,
+.step.is-current .step__track { background: var(--accent); }
+.step.is-current .step__label { color: var(--text); font-weight: 600; }
+
+.processbar__total { text-align: right; flex: none; }
+.processbar__total .display { font-size: 17px; display: block; }
+
+/* --------------------------------------------------------------------------
+   6. Knappar — EN primärknapp per vy
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  border: 0; border-radius: var(--r-xs);
+  padding: 11px 16px;
+  font: 600 var(--fs-body) var(--font);
+  cursor: pointer; text-decoration: none;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.btn--secondary { background: var(--hover); color: var(--text); }
+.btn--secondary:hover { background: var(--track); }
+.btn--ghost { background: transparent; color: var(--text); }
+.btn--ghost:hover { background: var(--hover); }
+
+/* Primär: versaler, krusning vid hover */
+.btn--primary {
+  justify-content: space-between; gap: 24px;
+  min-width: 160px;
+  padding: 14px 18px;
+  background: var(--accent); color: var(--on-accent);
+  font-size: 12.5px; letter-spacing: 1.2px; text-transform: uppercase;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+}
+.btn--primary:hover { opacity: .95; }
+.btn--primary .ripple { width: 0; height: 0; border-radius: 100%; margin-right: 6px; }
+.btn--primary:hover .ripple { animation: ripple 1.8s var(--ease-out) infinite; }
+@keyframes ripple {
+  0%   { box-shadow: 0 0 0 0 rgba(255,255,255,.18), 0 0 0 20px rgba(255,255,255,.12), 0 0 0 40px rgba(255,255,255,.06), 0 0 0 60px rgba(255,255,255,.03); }
+  100% { box-shadow: 0 0 0 20px rgba(255,255,255,.12), 0 0 0 40px rgba(255,255,255,.06), 0 0 0 60px rgba(255,255,255,.03), 0 0 0 80px rgba(255,255,255,0); }
+}
+
+.btn--danger { background: transparent; color: var(--danger); }
+.btn--danger:hover { background: var(--hover); }
+
+/* --------------------------------------------------------------------------
+   7. Filterchips
+   -------------------------------------------------------------------------- */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  border: 0; border-radius: 999px;
+  padding: 6px 12px;
+  background: var(--hover); color: var(--text);
+  font: 600 var(--fs-meta) var(--font);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.chip.is-active { background: var(--text); color: var(--surface); }
+
+/* --------------------------------------------------------------------------
+   8. Innehållsrutor (tiles) — färg och ikon per kategori
+   Användning: <div class="tile" style="--tile-bg:var(--c-sand-bg);--tile-fg:var(--c-sand-fg)">
+   -------------------------------------------------------------------------- */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--s-2); }
+.tile {
+  --tile-bg: var(--c-lilac-bg); --tile-fg: var(--c-lilac-fg);
+  position: relative; overflow: hidden;
+  min-height: 110px;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-sm);
+  background: var(--tile-bg); color: var(--tile-fg);
+  cursor: pointer;
+  transition: filter var(--t-fast), box-shadow var(--t-base) var(--ease);
+}
+.tile:hover { filter: brightness(1.05); }
+.tile__name { font-family: var(--font-display); font-size: 18px; line-height: 1.1; }
+.tile__meta { font-size: var(--fs-meta); font-weight: 600; margin-top: var(--s-1); opacity: .85; }
+.tile__icon { position: absolute; right: -6px; bottom: -12px; font-size: 64px; line-height: 1; opacity: .28; pointer-events: none; }
+.tile__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .9; }
+.tile__check {
+  position: absolute; top: 10px; right: 10px;
+  width: 22px; height: 22px; border-radius: var(--r-xs);
+  border: 2px solid currentColor; opacity: .45;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--t-base) var(--ease);
+}
+.tile__check svg { width: 14px; height: 14px; opacity: 0; transition: opacity var(--t-fast); }
+.tile__check path { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.tile.is-selected { box-shadow: inset 0 0 0 3px var(--accent); }
+.tile.is-selected .tile__check { background: var(--accent); border-color: var(--accent); opacity: 1; }
+.tile.is-selected .tile__check svg { opacity: 1; }
+
+/* --------------------------------------------------------------------------
+   9. Listor och rader
+   -------------------------------------------------------------------------- */
+.rows { display: flex; flex-direction: column; gap: 2px; }
+.row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
+  padding: 11px var(--s-3);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.row:hover, .row.is-selected { background: var(--hover); }
+.row__title { font-weight: 600; }
+.row__swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+
+/* --------------------------------------------------------------------------
+   10. Tabell — inga ramar runt, bara linjer mellan rader
+   -------------------------------------------------------------------------- */
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
+.table th {
+  text-align: left; font-weight: 600; font-size: var(--fs-meta); color: var(--text-2);
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 2px solid var(--hover);
+}
+.table td { padding: 12px var(--s-3); border-bottom: 1px solid var(--hover); }
+.table tbody tr { transition: background var(--t-fast); cursor: pointer; }
+.table tbody tr:hover { background: var(--hover); }
+.table .num { text-align: right; }
+
+/* --------------------------------------------------------------------------
+   11. Status
+   -------------------------------------------------------------------------- */
+.status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--fs-meta); font-weight: 600;
+}
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+.status--draft { color: var(--text-2); }
+.status--sent { color: var(--accent); }
+.status--won { color: var(--success); }
+.status--warning { color: var(--warning); }
+.status--lost { color: var(--danger); }
+
+/* --------------------------------------------------------------------------
+   12. Fält — fyllda, inga ramar. Fokus visas med accent.
+   -------------------------------------------------------------------------- */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field__label { font-size: var(--fs-meta); font-weight: 600; }
+.input, .select, .textarea {
+  width: 100%;
+  border: 0; border-radius: var(--r-sm);
+  background: var(--hover); color: var(--text);
+  font: var(--fs-body) var(--font);
+  padding: 12px 14px;
+  outline: none;
+  box-shadow: inset 0 0 0 2px transparent;
+  transition: box-shadow var(--t-fast), background var(--t-fast);
+}
+.input::placeholder, .textarea::placeholder { color: var(--text-2); }
+.input:focus, .select:focus, .textarea:focus { box-shadow: inset 0 0 0 2px var(--accent); background: var(--surface); }
+.field__error { font-size: var(--fs-meta); color: var(--danger); font-weight: 500; }
+.field.has-error .input { box-shadow: inset 0 0 0 2px var(--danger); }
+
+/* --------------------------------------------------------------------------
+   13. Kryssruta — fylls från båda sidor, sedan ritas bocken
+   <label class="checkbox"><input type="checkbox"><span class="checkbox__box">
+     <svg viewBox="0 0 30 30"><path d="M8 15.5 L13 20.5 L22.5 10"/></svg></span>Text</label>
+   -------------------------------------------------------------------------- */
+.checkbox { display: inline-flex; align-items: center; gap: var(--s-3); cursor: pointer; font-weight: 500; }
+.checkbox input { position: absolute; opacity: 0; pointer-events: none; }
+.checkbox__box {
+  position: relative; isolation: isolate; flex: none;
+  width: 24px; height: 24px;
+  border: 2.5px solid var(--text-2); border-radius: var(--r-xs);
+  transition: border-color 1s ease, border-width .3s ease;
+}
+.checkbox:hover .checkbox__box { border-color: var(--accent); }
+.checkbox__box::before, .checkbox__box::after {
+  content: ""; position: absolute; top: 50%; width: 0; height: 0;
+  background: var(--accent); z-index: -1;
+  transition: all .5s ease;
+}
+.checkbox__box::before { left: -2.5px; }
+.checkbox__box::after { right: -2.5px; }
+.checkbox input:checked + .checkbox__box { border-color: var(--accent); }
+.checkbox input:checked + .checkbox__box::before { top: -2.5px; width: calc(50% + 2.5px); height: calc(100% + 5px); border-radius: var(--r-xs) 0 0 var(--r-xs); }
+.checkbox input:checked + .checkbox__box::after { top: -2.5px; width: calc(50% + 2.5px); height: calc(100% + 5px); border-radius: 0 var(--r-xs) var(--r-xs) 0; }
+.checkbox__box svg { position: absolute; inset: -2.5px; width: calc(100% + 5px); height: calc(100% + 5px); }
+.checkbox__box path { fill: none; stroke: var(--on-accent); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 36; stroke-dashoffset: 36; }
+.checkbox input:checked + .checkbox__box path { animation: draw-check .6s ease-out forwards .45s; }
+.checkbox input:focus-visible + .checkbox__box { outline: 2px solid var(--accent); outline-offset: 3px; }
+@keyframes draw-check { to { stroke-dashoffset: 0; } }
+
+/* --------------------------------------------------------------------------
+   14. Växlare — kantig, fyrkantig knopp. Inte iOS.
+   <label class="switch"><input type="checkbox"><span class="switch__track"></span>Text</label>
+   -------------------------------------------------------------------------- */
+.switch { display: inline-flex; align-items: center; gap: var(--s-3); cursor: pointer; font-weight: 500; }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch__track {
+  position: relative; flex: none;
+  width: 52px; height: 28px;
+  border-radius: var(--r-sm);
+  background: var(--track);
+  transition: background var(--t-base) var(--ease);
+}
+.switch__track::after {
+  content: ""; position: absolute; top: 4px; left: 4px;
+  width: 20px; height: 20px; border-radius: 3px;
+  background: var(--surface);
+  transition: left var(--t-base) var(--ease), background var(--t-base);
+}
+.switch input:checked + .switch__track { background: var(--accent); }
+.switch input:checked + .switch__track::after { left: 28px; background: #fff; }
+.switch input:focus-visible + .switch__track { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* --------------------------------------------------------------------------
+   15. Notis / bekräftelse
+   -------------------------------------------------------------------------- */
+.toast {
+  display: flex; gap: var(--s-3); align-items: flex-start;
+  max-width: 400px;
+  padding: var(--s-4);
+  border-radius: var(--r-sm);
+  background: var(--raised); color: var(--text);
+  box-shadow: 0 8px 28px rgba(23, 20, 31, .14);
+}
+.toast__icon {
+  width: 28px; height: 28px; flex: none; border-radius: var(--r-xs);
+  background: var(--accent); color: var(--on-accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.toast__title { font-weight: 600; font-size: 15px; }
+.toast__body { color: var(--text-2); margin: 2px 0 var(--s-3); }
+.toast__actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+
+/* --------------------------------------------------------------------------
+   16. Laddning — pulslinje
+   <svg class="loader" width="64" height="48"><polyline class="loader__back" points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"/>
+   <polyline class="loader__front" points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"/></svg>
+   -------------------------------------------------------------------------- */
+.loader polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.loader__back { stroke: color-mix(in srgb, var(--accent) 22%, transparent); }
+.loader__front { stroke: var(--accent); stroke-dasharray: 48, 144; stroke-dashoffset: 192; animation: pulse-line 1.4s linear infinite; }
+@keyframes pulse-line { 72.5% { opacity: 0; } to { stroke-dashoffset: 0; } }
+
+/* --------------------------------------------------------------------------
+   17. Tomt läge
+   -------------------------------------------------------------------------- */
+.empty { padding: var(--s-6) var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); align-items: flex-start; }
+
+/* --------------------------------------------------------------------------
+   18. Nyckeltal
+   -------------------------------------------------------------------------- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--s-2); }
+.kpi { background: var(--hover); border-radius: var(--r-sm); padding: var(--s-3) var(--s-4); }
+.kpi__value { font-family: var(--font-display); font-size: 24px; line-height: 1.2; margin-top: 2px; }
+
+/* --------------------------------------------------------------------------
+   19. Mobil
+   -------------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { flex-direction: row; overflow-x: auto; padding: var(--s-1); }
+  .sidebar .wordmark { display: none; }
+  .nav-item { white-space: nowrap; }
+  .main { padding: var(--s-4); }
+  .processbar { flex-wrap: wrap; gap: var(--s-3); }
+  .processbar__context { order: 1; width: auto; flex: 1 1 calc(100% - 110px); }
+  .processbar__total { order: 2; }
+  .processbar__nav[data-go="-1"] { order: 3; }
+  .steps { order: 4; flex: 1 1 calc(100% - 100px); }
+  .processbar__nav[data-go="1"] { order: 5; }
+  .processbar .btn--primary { order: 6; flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

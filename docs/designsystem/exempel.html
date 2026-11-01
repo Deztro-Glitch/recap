@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>offert. — exempel</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="design.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <nav class="sidebar">
+    <div class="wordmark">offert<span>.</span></div>
+    <a class="nav-item" data-view="oversikt"><i class="ti ti-layout-grid"></i>Översikt</a>
+    <a class="nav-item is-active" data-view="offert"><i class="ti ti-file-invoice"></i>Ny offert</a>
+    <a class="nav-item" data-view="kunder"><i class="ti ti-building"></i>Kunder</a>
+    <a class="nav-item" data-view="komponenter"><i class="ti ti-components"></i>Komponenter</a>
+  </nav>
+
+  <main class="main">
+    <div class="topbar">
+      <label class="search"><i class="ti ti-search"></i><input placeholder="Sök kund eller offert"></label>
+      <button class="btn btn--ghost" id="theme" aria-label="Byt ljust och mörkt läge"><i class="ti ti-moon"></i></button>
+      <span class="avatar">TH</span>
+    </div>
+
+    <!-- ÖVERSIKT -->
+    <section class="view" data-view="oversikt" hidden>
+      <div class="section">
+        <div class="section-head"><h1>Översikt</h1></div>
+        <div class="kpis">
+          <div class="kpi"><div class="meta">Skickade i oktober</div><div class="kpi__value">24</div></div>
+          <div class="kpi"><div class="meta">Accepterade</div><div class="kpi__value">17</div></div>
+          <div class="kpi"><div class="meta">Värde per månad</div><div class="kpi__value">186 400 kr</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h2>Senaste offerter</h2><button class="btn btn--ghost">Visa alla</button></div>
+        <table class="table">
+          <thead><tr><th>Kund</th><th>Offert</th><th>Status</th><th class="num">Per månad</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Nordic Bygg AB</strong></td><td>1042</td><td><span class="status status--draft">Utkast</span></td><td class="num">2 130 kr</td></tr>
+            <tr><td><strong>Örebro Fastigheter</strong></td><td>1041</td><td><span class="status status--sent">Skickad</span></td><td class="num">9 240 kr</td></tr>
+            <tr><td><strong>Kvarnen Logistik</strong></td><td>1040</td><td><span class="status status--won">Accepterad</span></td><td class="num">22 150 kr</td></tr>
+            <tr><td><strong>Svealands Hotell</strong></td><td>1039</td><td><span class="status status--warning">Går ut i morgon</span></td><td class="num">4 780 kr</td></tr>
+            <tr><td><strong>Bergslagens Bageri</strong></td><td>1038</td><td><span class="status status--lost">Nekad</span></td><td class="num">1 320 kr</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- NY OFFERT (flöde) -->
+    <section class="view" data-view="offert">
+      <div id="flow"></div>
+    </section>
+
+    <!-- KUNDER -->
+    <section class="view" data-view="kunder" hidden>
+      <div class="section-head"><h1>Kunder</h1><div class="chips"><button class="chip is-active">Alla</button><button class="chip">Aktiva</button><button class="chip">Nya</button></div></div>
+      <div class="rows">
+        <div class="row"><div><div class="row__title">Nordic Bygg AB</div><div class="meta">Örebro · 3 aktiva avtal</div></div><span class="status status--won">Aktiv</span></div>
+        <div class="row"><div><div class="row__title">Örebro Fastigheter</div><div class="meta">Örebro · 1 aktivt avtal</div></div><span class="status status--won">Aktiv</span></div>
+        <div class="row"><div><div class="row__title">Kvarnen Logistik</div><div class="meta">Hallsberg · ny kund</div></div><span class="status status--sent">Ny</span></div>
+        <div class="row"><div><div class="row__title">Svealands Hotell</div><div class="meta">Karlskoga · 2 aktiva avtal</div></div><span class="status status--won">Aktiv</span></div>
+      </div>
+    </section>
+
+    <!-- KOMPONENTER -->
+    <section class="view" data-view="komponenter" hidden>
+      <div class="section"><div class="section-head"><h1>Komponenter</h1></div></div>
+
+      <div class="section">
+        <h2 style="margin-bottom:12px">Knappar</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn--primary"><span>Skicka offert</span><span class="ripple"></span></button>
+          <button class="btn btn--secondary">Spara utkast</button>
+          <button class="btn btn--ghost">Avbryt</button>
+          <button class="btn btn--danger">Ta bort</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 style="margin-bottom:12px">Val</h2>
+        <div style="display:flex;gap:32px;flex-wrap:wrap">
+          <label class="checkbox"><input type="checkbox" checked><span class="checkbox__box"><svg viewBox="0 0 30 30"><path d="M8 15.5 L13 20.5 L22.5 10"/></svg></span>Inkludera moms</label>
+          <label class="checkbox"><input type="checkbox"><span class="checkbox__box"><svg viewBox="0 0 30 30"><path d="M8 15.5 L13 20.5 L22.5 10"/></svg></span>Avtal 24 mån</label>
+          <label class="switch"><input type="checkbox" checked><span class="switch__track"></span>Skicka kopia till kund</label>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 style="margin-bottom:12px">Fält</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
+          <div class="field"><label class="field__label" for="f1">Företagsnamn</label><input class="input" id="f1" placeholder="Nordic Bygg AB"></div>
+          <div class="field"><label class="field__label" for="f2">Hämtningsintervall</label><select class="select" id="f2"><option>Varannan vecka</option><option>Varje vecka</option><option>En gång i månaden</option></select></div>
+          <div class="field has-error"><label class="field__label" for="f3">Mejl</label><input class="input" id="f3" value="anna.nordicbygg.se"><span class="field__error">Mejladressen saknar @. Kontrollera den.</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 style="margin-bottom:12px">Bekräftelse och laddning</h2>
+        <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:center">
+          <div class="toast">
+            <div class="toast__icon"><i class="ti ti-check"></i></div>
+            <div>
+              <div class="toast__title">Offerten är skickad</div>
+              <p class="toast__body">Nordic Bygg AB har fått den via mejl.</p>
+              <div class="toast__actions"><button class="btn btn--secondary">Visa offert</button><button class="btn btn--ghost">Stäng</button></div>
+            </div>
+          </div>
+          <svg class="loader" width="64" height="48" aria-label="Laddar"><polyline class="loader__back" points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"/><polyline class="loader__front" points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"/></svg>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 style="margin-bottom:12px">Innehållspalett</h2>
+        <div class="tiles">
+          <div class="tile" style="--tile-bg:var(--c-sand-bg);--tile-fg:var(--c-sand-fg)"><div class="tile__name">Sand</div><i class="ti ti-box tile__icon"></i></div>
+          <div class="tile" style="--tile-bg:var(--c-coral-bg);--tile-fg:var(--c-coral-fg)"><div class="tile__name">Korall</div><i class="ti ti-flame tile__icon"></i></div>
+          <div class="tile" style="--tile-bg:var(--c-steel-bg);--tile-fg:var(--c-steel-fg)"><div class="tile__name">Stål</div><i class="ti ti-nut tile__icon"></i></div>
+          <div class="tile" style="--tile-bg:var(--c-sun-bg);--tile-fg:var(--c-sun-fg)"><div class="tile__name">Sol</div><i class="ti ti-plug tile__icon"></i></div>
+          <div class="tile" style="--tile-bg:var(--c-mint-bg);--tile-fg:var(--c-mint-fg)"><div class="tile__name">Mint</div><i class="ti ti-glass tile__icon"></i></div>
+          <div class="tile" style="--tile-bg:var(--c-sky-bg);--tile-fg:var(--c-sky-fg)"><div class="tile__name">Himmel</div><i class="ti ti-bottle tile__icon"></i></div>
+          <div class="tile" style="--tile-bg:var(--c-lilac-bg);--tile-fg:var(--c-lilac-fg)"><div class="tile__name">Syren</div><i class="ti ti-leaf tile__icon"></i></div>
+          <div class="tile" style="--tile-bg:var(--c-rose-bg);--tile-fg:var(--c-rose-fg)"><div class="tile__name">Ros</div><i class="ti ti-heart tile__icon"></i></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 style="margin-bottom:12px">Kundfärg</h2>
+        <div class="chips">
+          <button class="chip is-active" data-accent="">Egen lila</button>
+          <button class="chip" data-accent="#1F8A4C">Grön kund</button>
+          <button class="chip" data-accent="#0B5FA5">Blå kund</button>
+          <button class="chip" data-accent="#C2362F">Röd kund</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="processbar" id="processbar">
+    <div class="processbar__context"><strong>Nordic Bygg AB</strong><span class="meta">Offert 1042</span></div>
+    <button class="processbar__nav" data-go="-1" aria-label="Föregående steg"><i class="ti ti-chevron-left"></i></button>
+    <div class="steps" id="steps"></div>
+    <button class="processbar__nav" data-go="1" aria-label="Nästa steg"><i class="ti ti-chevron-right"></i></button>
+    <div class="processbar__total"><span class="display" id="total">0 kr</span><span class="meta">per månad</span></div>
+    <button class="btn btn--primary" data-go="1" id="next"><span>Fortsätt</span><span class="ripple"></span></button>
+  </footer>
+</div>
+
+<div id="toast-host" style="position:fixed;right:24px;bottom:96px;z-index:10"></div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const kr = n => n.toLocaleString('sv-SE') + ' kr';
+
+const steps = ['Kund', 'Tjänster', 'Pris', 'Skicka'];
+let current = 1;
+let customer = 0;
+let filter = 'Alla';
+
+const customers = [
+  ['Nordic Bygg AB', 'Örebro · 3 aktiva avtal'],
+  ['Örebro Fastigheter', 'Örebro · 1 aktivt avtal'],
+  ['Kvarnen Logistik', 'Hallsberg · ny kund'],
+];
+
+const services = [
+  { name: 'Wellpapp',  icon: 'ti-box',    price: 1240, color: 'sand',  group: 'Återvinning', on: true },
+  { name: 'Brännbart', icon: 'ti-flame',  price: 890,  color: 'coral', group: 'Restavfall',  on: true },
+  { name: 'Metall',    icon: 'ti-nut',    price: 640,  color: 'steel', group: 'Återvinning', on: false },
+  { name: 'Elavfall',  icon: 'ti-plug',   price: 450,  color: 'sun',   group: 'Farligt',     on: false },
+  { name: 'Glas',      icon: 'ti-glass',  price: 380,  color: 'mint',  group: 'Återvinning', on: false },
+  { name: 'Plast',     icon: 'ti-bottle', price: 520,  color: 'sky',   group: 'Återvinning', on: false },
+];
+
+const check = '<svg viewBox="0 0 14 14"><path d="M3 7.5 L6 10.5 L11.5 4"/></svg>';
+
+function renderFlow() {
+  const total = services.filter(s => s.on).reduce((a, s) => a + s.price, 0);
+  $('#total').textContent = kr(total);
+  $('.processbar__context strong').textContent = customers[customer][0];
+  $('#next span').textContent = current === 3 ? 'Skicka offert' : 'Fortsätt';
+
+  $('#steps').innerHTML = steps.map((s, i) =>
+    `<div class="step ${i < current ? 'is-done' : ''} ${i === current ? 'is-current' : ''}" data-step="${i}">
+       <span class="step__track"></span><span class="step__label">${s}</span></div>`).join('');
+
+  let h = '';
+  if (current === 0) {
+    h = '<div class="section-head"><h1>Kund</h1></div><div class="rows">' +
+      customers.map((c, i) => `<div class="row ${i === customer ? 'is-selected' : ''}" data-customer="${i}">
+        <div><div class="row__title">${c[0]}</div><div class="meta">${c[1]}</div></div>
+        ${i === customer ? '<i class="ti ti-check" style="color:var(--accent);font-size:18px"></i>' : ''}</div>`).join('') + '</div>';
+  }
+  if (current === 1) {
+    h = `<div class="section-head"><h1>Tjänster</h1><div class="chips">` +
+      ['Alla', 'Återvinning', 'Farligt'].map(c => `<button class="chip ${c === filter ? 'is-active' : ''}" data-filter="${c}">${c}</button>`).join('') +
+      `</div></div><div class="tiles">` +
+      services.map((s, i) => (filter !== 'Alla' && s.group !== filter) ? '' :
+        `<div class="tile ${s.on ? 'is-selected' : ''}" data-service="${i}" style="--tile-bg:var(--c-${s.color}-bg);--tile-fg:var(--c-${s.color}-fg)">
+          <div class="tile__name">${s.name}</div><div class="tile__meta">${kr(s.price)}/mån</div>
+          <i class="ti ${s.icon} tile__icon"></i><span class="tile__check">${check}</span></div>`).join('') + '</div>';
+  }
+  if (current === 2) {
+    h = '<div class="section-head"><h1>Pris</h1></div><div class="rows">' +
+      services.filter(s => s.on).map(s => `<div class="row"><div style="display:flex;gap:10px;align-items:center">
+        <span class="row__swatch" style="background:var(--c-${s.color}-bg)"></span>${s.name}</div><strong>${kr(s.price)}</strong></div>`).join('') +
+      `<div class="row" style="border-top:2px solid var(--hover);border-radius:0;margin-top:6px"><strong>Totalt per månad</strong><strong>${kr(total)}</strong></div></div>`;
+  }
+  if (current === 3) {
+    h = `<div class="section-head"><h1>Skicka</h1></div>
+      <div style="display:grid;gap:16px;max-width:460px">
+        <div class="field"><label class="field__label" for="to">Mottagare</label><input class="input" id="to" value="anna@nordicbygg.se"></div>
+        <label class="switch"><input type="checkbox" checked><span class="switch__track"></span>Skicka kopia till mig</label>
+      </div>`;
+  }
+  $('#flow').innerHTML = h;
+}
+
+function showToast() {
+  $('#toast-host').innerHTML = `<div class="toast"><div class="toast__icon"><i class="ti ti-check"></i></div><div>
+    <div class="toast__title">Offerten är skickad</div><p class="toast__body">${customers[customer][0]} har fått den via mejl.</p>
+    <div class="toast__actions"><button class="btn btn--ghost" data-close>Stäng</button></div></div></div>`;
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go],[data-step],[data-service],[data-filter],[data-customer],[data-view],[data-accent],[data-close],#theme');
+  if (!t) return;
+  if (t.dataset.go) {
+    if (+t.dataset.go > 0 && current === 3 && t.id === 'next') { showToast(); return; }
+    current = Math.max(0, Math.min(3, current + +t.dataset.go));
+  }
+  if (t.dataset.step) current = +t.dataset.step;
+  if (t.dataset.service) services[+t.dataset.service].on = !services[+t.dataset.service].on;
+  if (t.dataset.filter) filter = t.dataset.filter;
+  if (t.dataset.customer) customer = +t.dataset.customer;
+  if (t.hasAttribute('data-close')) { $('#toast-host').innerHTML = ''; return; }
+  if (t.id === 'theme') {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = dark ? '' : 'dark';
+    t.innerHTML = `<i class="ti ${dark ? 'ti-moon' : 'ti-sun'}"></i>`;
+    return;
+  }
+  if (t.dataset.accent !== undefined) {
+    $$('[data-accent]').forEach(c => c.classList.toggle('is-active', c === t));
+    document.documentElement.style.setProperty('--accent', t.dataset.accent || '');
+    if (!t.dataset.accent) document.documentElement.style.removeProperty('--accent');
+    return;
+  }
+  if (t.dataset.view && t.classList.contains('nav-item')) {
+    const v = t.dataset.view;
+    $$('.nav-item').forEach(n => n.classList.toggle('is-active', n === t));
+    $$('.view').forEach(s => s.hidden = s.dataset.view !== v);
+    const flow = v === 'offert';
+    $('#processbar').hidden = !flow;
+    $('#app').classList.toggle('app--no-process', !flow);
+    return;
+  }
+  renderFlow();
+});
+
+renderFlow();
+</script>
+</body>
+</html>

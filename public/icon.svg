@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#6B4EFF"/>
+  <!-- "r." ritat med former, så ikonen inte beror på installerade typsnitt -->
+  <path d="M150 380 V176 h68 v34 c18 -28 48 -42 92 -40 v72 c-56 -4 -92 16 -92 70 V380 Z" fill="#FFFFFF"/>
+  <rect x="326" y="312" width="68" height="68" fill="#FFFFFF"/>
+</svg>
