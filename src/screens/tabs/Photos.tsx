@@ -5,12 +5,12 @@ import { api } from '../../lib/api'
 import { BeforeAfter } from '../../components/BeforeAfter'
 import { Chips, Field, Loader, Primary, Sheet, ease, useToast } from '../../components/ui'
 import type { Photo, PhotoKind } from '../../types'
-import type { ViewProps } from '../ProjectView'
+import type { ProjectState, ViewProps } from '../ProjectView'
 
 const KIND_LABEL: Record<PhotoKind, string> = { before: 'Före', after: 'Efter', inspo: 'Inspiration' }
 const KINDS: PhotoKind[] = ['before', 'after', 'inspo']
 
-export function Photos({ state, room, adding, setAdding, filter }: ViewProps & { filter: ReactNode }) {
+export function Photos({ state, room, open, filter }: ViewProps & { filter: ReactNode }) {
   const [kind, setKind] = useState<PhotoKind | null>(null)
   const [viewing, setViewing] = useState<Photo | null>(null)
 
@@ -63,12 +63,11 @@ export function Photos({ state, room, adding, setAdding, filter }: ViewProps & {
         ) : (
           <div className="empty" style={{ paddingTop: 8 }}>
             <h3>Inga bilder</h3>
-            <button className="btn btn--secondary" onClick={() => setAdding(true)}>Lägg till foto</button>
+            <button className="btn btn--secondary" onClick={() => open({ t: 'photo' })}>Lägg till foto</button>
           </div>
         )}
       </div>
 
-      <UploadSheet open={adding} onClose={() => setAdding(false)} state={state} room={room} />
 
       <AnimatePresence>
         {viewing && (
@@ -104,7 +103,7 @@ export function Photos({ state, room, adding, setAdding, filter }: ViewProps & {
   )
 }
 
-function UploadSheet({ open, onClose, state, room }: { open: boolean; onClose: () => void; state: ViewProps['state']; room: string | null }) {
+export function UploadSheet({ open, onClose, state, room }: { open: boolean; onClose: () => void; state: ProjectState; room: string | null }) {
   const toast = useToast()
   const input = useRef<HTMLInputElement>(null)
   const [kind, setKind] = useState<PhotoKind>('before')

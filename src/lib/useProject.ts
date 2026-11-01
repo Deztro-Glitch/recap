@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, type Table } from './api'
-import type { Idea, Photo, Project, Purchase, Room, Task } from '../types'
+import type { Folder, Idea, Photo, Project, Purchase, Room, Task } from '../types'
 
 export interface ProjectData {
   project: Project | null
@@ -9,6 +9,7 @@ export interface ProjectData {
   tasks: Task[]
   photos: Photo[]
   ideas: Idea[]
+  folders: Folder[]
   urls: Record<string, string>   // filsökväg → visningsbar adress (kvitton, planritning, idébilder)
   loading: boolean
 }
@@ -18,17 +19,18 @@ const byPriority = <T extends { priority?: number }>(a: T, b: T) => (a.priority 
 
 // Laddar allt för ett projekt och håller det uppdaterat (även när någon annan ändrar).
 export function useProject(pid: string) {
-  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], ideas: [], urls: {}, loading: true })
+  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], ideas: [], folders: [], urls: {}, loading: true })
   const urlCache = useRef(new Map<string, string>())
 
   const reload = useCallback(async () => {
-    const [projects, rooms, purchases, tasks, rawPhotos, ideas] = await Promise.all([
+    const [projects, rooms, purchases, tasks, rawPhotos, ideas, folders] = await Promise.all([
       api.listProjects(),
       api.list<Room>('rooms', pid),
       api.list<Purchase>('purchases', pid),
       api.list<Task>('tasks', pid),
       api.list<Photo>('photos', pid),
       api.list<Idea>('ideas', pid).catch(() => [] as Idea[]),
+      api.list<Folder>('folders', pid).catch(() => [] as Folder[]),
     ])
     const project = projects.find((p) => p.id === pid) ?? null
 
@@ -46,6 +48,7 @@ export function useProject(pid: string) {
       tasks: tasks.sort(byPriority),
       photos: rawPhotos.map((p) => ({ ...p, url: urlCache.current.get(p.path) })),
       ideas,
+      folders: folders.sort((a, b) => a.sort - b.sort),
       urls: Object.fromEntries(urlCache.current),
       loading: false,
     })
@@ -99,7 +102,11 @@ export function useBudget(project: Project | null, purchases: Purchase[], tasks:
   }, [project, purchases, tasks])
 }
 
-// En uppgift "hoppar före" om en tidigare fas i samma rum inte är klar.
-export function blockers(task: Task, tasks: Task[]) {
-  return tasks.filter((t) => t.room_id === task.room_id && t.phase < task.phase && t.status !== 'done')
+// Summor för en delmängd (ett rum eller en mapp).
+export function totals(purchases: Purchase[], tasks: Task[]) {
+  const spent = purchases.filter((p) => p.bought).reduce((s, p) => s + paid(p), 0) + tasks.filter((t) => t.status === 'done').reduce((s, t) => s + t.cost, 0)
+  const planned = purchases.reduce((s, p) => s + (p.bought ? paid(p) : p.est_price), 0) + tasks.reduce((s, t) => s + t.cost, 0)
+  const items = purchases.length + tasks.length
+  const done = purchases.filter((p) => p.bought).length + tasks.filter((t) => t.status === 'done').length
+  return { spent, planned, items, done }
 }

@@ -1,10 +1,11 @@
 import {
-  IconBath, IconBed, IconBox, IconDeviceLaptop, IconDoor, IconHome, IconHorseToy,
-  IconPlant2, IconSofa, IconStairs, IconToolsKitchen2, IconWashMachine, type Icon,
+  IconArmchair, IconBath, IconBed, IconBolt, IconBox, IconDeviceLaptop, IconDoor, IconDroplet, IconFolder, IconHammer,
+  IconHome, IconHorseToy, IconLamp, IconPaint, IconPlant2, IconSofa, IconStairs, IconTool, IconToolsKitchen2,
+  IconWashMachine, type Icon,
 } from '@tabler/icons-react'
-import type { RoomIcon } from '../types'
+import type { IconKey } from '../types'
 
-export const ROOM_ICONS: Record<RoomIcon, Icon> = {
+export const ICONS: Record<IconKey, Icon> = {
   kitchen: IconToolsKitchen2,
   sofa: IconSofa,
   bed: IconBed,
@@ -17,6 +18,14 @@ export const ROOM_ICONS: Record<RoomIcon, Icon> = {
   laundry: IconWashMachine,
   stairs: IconStairs,
   box: IconBox,
+  folder: IconFolder,
+  paint: IconPaint,
+  hammer: IconHammer,
+  bolt: IconBolt,
+  droplet: IconDroplet,
+  armchair: IconArmchair,
+  lamp: IconLamp,
+  tool: IconTool,
 }
 
-export const roomIcon = (key: string | undefined) => ROOM_ICONS[key as RoomIcon] ?? IconHome
+export const iconFor = (key: string | undefined, fallback: Icon = IconHome) => ICONS[key as IconKey] ?? fallback

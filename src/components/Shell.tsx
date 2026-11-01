@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import { IconMoon, IconSearch, IconSun } from '@tabler/icons-react'
+import { IconChevronDown, IconMoon, IconPlus, IconSun } from '@tabler/icons-react'
 import type { User } from '../lib/api'
+import { Primary } from './ui'
 
-function useTheme() {
+export function useTheme() {
   const [dark, setDark] = useState(() => document.documentElement.dataset.theme === 'dark')
   const toggle = () => {
     const next = !dark
@@ -22,20 +23,32 @@ export function Wordmark() {
   return <div className="wordmark">recap<span>.</span></div>
 }
 
+type IconType = React.ComponentType<{ size?: number }>
+export interface Tab { id: string; label: string; icon: IconType; active: boolean; onClick: () => void }
+
 interface Props {
   user: User
   nav: ReactNode
   navFoot?: ReactNode
-  search?: { value: string; onChange: (v: string) => void; placeholder: string }
-  processbar?: ReactNode
+  home?: { name: string; onClick: () => void }  // hemmets namn uppe till vänster
+  onAdd?: () => void                             // "Lägg till" (uppe på dator, plus i bottenmenyn på mobil)
+  tabs?: Tab[]                                   // bottenmenyn på mobil, plusknappen hamnar i mitten
   onAvatar?: () => void
   children: ReactNode
 }
 
-export function Shell({ user, nav, navFoot, search, processbar, onAvatar, children }: Props) {
+export function Shell({ user, nav, navFoot, home, onAdd, tabs, onAvatar, children }: Props) {
   const theme = useTheme()
+  const half = tabs ? Math.ceil(tabs.length / 2) : 0
+  const tab = (t: Tab) => (
+    <button key={t.id} className={`tabbar__item ${t.active ? 'is-active' : ''}`} onClick={t.onClick}>
+      <t.icon size={22} />
+      {t.label}
+    </button>
+  )
+
   return (
-    <div className={`app ${processbar ? '' : 'app--no-process'}`}>
+    <div className={`app app--no-process ${tabs ? 'app--tabs' : ''}`}>
       <nav className="sidebar">
         <Wordmark />
         {nav}
@@ -44,14 +57,15 @@ export function Shell({ user, nav, navFoot, search, processbar, onAvatar, childr
 
       <main className="main">
         <div className="topbar">
-          {search ? (
-            <label className="search">
-              <IconSearch size={16} />
-              <input value={search.value} onChange={(e) => search.onChange(e.target.value)} placeholder={search.placeholder} />
-            </label>
+          {home ? (
+            <button className="topbar__home" onClick={home.onClick}>
+              <span>{home.name}</span>
+              <IconChevronDown size={16} />
+            </button>
           ) : (
             <div style={{ marginRight: 'auto' }} />
           )}
+          {onAdd && <span className="topbar__add"><Primary onClick={onAdd}>Lägg till</Primary></span>}
           <button className="btn btn--ghost" onClick={theme.toggle} aria-label="Byt ljust och mörkt läge">
             {theme.dark ? <IconSun size={18} /> : <IconMoon size={18} />}
           </button>
@@ -62,12 +76,22 @@ export function Shell({ user, nav, navFoot, search, processbar, onAvatar, childr
         {children}
       </main>
 
-      {processbar}
+      {tabs && (
+        <nav className="tabbar">
+          {tabs.slice(0, half).map(tab)}
+          {onAdd && (
+            <button className="tabbar__add" onClick={onAdd} aria-label="Lägg till">
+              <IconPlus size={24} />
+            </button>
+          )}
+          {tabs.slice(half).map(tab)}
+        </nav>
+      )}
     </div>
   )
 }
 
-export function NavItem({ icon: Icon, label, active, onClick }: { icon: React.ComponentType<{ size?: number }>; label: string; active?: boolean; onClick: () => void }) {
+export function NavItem({ icon: Icon, label, active, onClick }: { icon: IconType; label: string; active?: boolean; onClick: () => void }) {
   return (
     <a className={`nav-item ${active ? 'is-active' : ''}`} onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onClick()}>
       <Icon size={18} />

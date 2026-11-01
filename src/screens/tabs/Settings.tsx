@@ -51,7 +51,7 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
     <div>
       <div className="section-head"><h1>Inställningar</h1></div>
 
-      <form id="settings-form" className="section form" style={{ maxWidth: 460 }} onSubmit={save}>
+      <form className="section form" style={{ maxWidth: 460 }} onSubmit={save}>
         <Field label="Namn">
           <input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required />
         </Field>
@@ -65,6 +65,7 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
         <Field label="Budget i kr">
           <input className="input" inputMode="numeric" value={f.budget} onChange={(e) => setF({ ...f, budget: e.target.value })} />
         </Field>
+        <div><button className="btn btn--secondary">Spara ändringar</button></div>
       </form>
 
       <div className="section" style={{ maxWidth: 460 }}>

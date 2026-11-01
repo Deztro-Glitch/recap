@@ -1,61 +1,61 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
-import { IconArrowLeft, IconBulb, IconChevronLeft, IconChevronRight, IconHammer, IconLayoutGrid, IconPhoto, IconReceipt, IconSettings, IconShoppingCart } from '@tabler/icons-react'
-import type { User } from '../lib/api'
-import { kr } from '../lib/format'
-import { useBudget, useProject } from '../lib/useProject'
-import { NavItem, Shell } from '../components/Shell'
-import { Chips, Loader, Primary, ease } from '../components/ui'
-import { KIND_LABEL, PHASES, type Room, type Task } from '../types'
-import { Overview } from './tabs/Overview'
-import { Purchases } from './tabs/Purchases'
-import { Timeline } from './tabs/Timeline'
-import { Photos } from './tabs/Photos'
+import { useState } from 'react'
+import {
+  IconArrowLeft, IconBulb, IconCamera, IconChecklist, IconDots, IconFolder, IconFolderPlus, IconHome, IconLayoutGrid,
+  IconPhoto, IconReceipt, IconSettings, IconShoppingCart,
+} from '@tabler/icons-react'
+import { api, type User } from '../lib/api'
+import { useProject } from '../lib/useProject'
+import { NavItem, Shell, type Tab } from '../components/Shell'
+import { Chips, Loader, Sheet, ease } from '../components/ui'
+import type { Folder, Idea, Purchase, Room, Task } from '../types'
+import { AddRoomSheet, Overview, RoomSheet } from './tabs/Overview'
+import { PurchaseSheet, Purchases, type PurchaseDraft } from './tabs/Purchases'
+import { TaskSheet, type TaskDraft } from './tabs/Tasks'
+import { FolderSheet, Folders } from './tabs/Folders'
+import { IdeaSheet, Ideas, type IdeaDraft } from './tabs/Ideas'
+import { Photos, UploadSheet } from './tabs/Photos'
 import { Settings } from './tabs/Settings'
-import { Receipts } from './tabs/Receipts'
-import { Ideas } from './tabs/Ideas'
 
-const VIEWS = [
-  { id: 'overview', label: 'Översikt', icon: IconLayoutGrid, action: 'Lägg till rum' },
-  { id: 'purchases', label: 'Inköp', icon: IconShoppingCart, action: 'Lägg till inköp' },
-  { id: 'receipts', label: 'Kvitton', icon: IconReceipt, action: 'Lägg till kvitto' },
-  { id: 'timeline', label: 'Renovering', icon: IconHammer, action: 'Lägg till jobb' },
-  { id: 'ideas', label: 'Idéer', icon: IconBulb, action: 'Lägg till idé' },
-  { id: 'photos', label: 'Foton', icon: IconPhoto, action: 'Lägg till foto' },
-  { id: 'settings', label: 'Inställningar', icon: IconSettings, action: 'Spara ändringar' },
-] as const
-type ViewId = (typeof VIEWS)[number]['id']
+type ViewId = 'overview' | 'folders' | 'purchases' | 'ideas' | 'photos' | 'settings'
+const VIEWS: { id: ViewId; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
+  { id: 'overview', label: 'Översikt', icon: IconLayoutGrid },
+  { id: 'folders', label: 'Mappar', icon: IconFolder },
+  { id: 'purchases', label: 'Inköp', icon: IconShoppingCart },
+  { id: 'ideas', label: 'Idéer', icon: IconBulb },
+  { id: 'photos', label: 'Foton', icon: IconPhoto },
+  { id: 'settings', label: 'Inställningar', icon: IconSettings },
+]
 
 export type ProjectState = ReturnType<typeof useProject>
 
-// Det som varje vy får: data, filter och om "Lägg till"-panelen är öppen.
+// Alla formulär och paneler öppnas härifrån, så att de kan nås från vilken vy som helst.
+export type SheetState =
+  | { t: 'purchase'; item: Purchase | PurchaseDraft; receipt?: boolean }
+  | { t: 'task'; item: Task | TaskDraft }
+  | { t: 'idea'; item: Idea | IdeaDraft }
+  | { t: 'convert'; idea: Idea }
+  | { t: 'folder'; item?: Folder }
+  | { t: 'photo' }
+  | { t: 'room' }
+  | { t: 'roomInfo'; room: Room }
+  | { t: 'add' }
+  | { t: 'more' }
+
 export interface ViewProps {
   state: ProjectState
   room: string | null
-  q: string
-  adding: boolean
-  setAdding: (v: boolean) => void
-}
-
-// Första fasen som har ogjorda jobb är den man står i.
-export const currentPhase = (tasks: Task[]) => {
-  const i = PHASES.findIndex((_, p) => tasks.some((t) => t.phase === p && t.status !== 'done'))
-  return i === -1 ? (tasks.length ? PHASES.length - 1 : 0) : i
+  open: (s: SheetState) => void
 }
 
 export function ProjectView({ pid, user, onBack }: { pid: string; user: User; onBack: () => void }) {
   const state = useProject(pid)
   const [view, setView] = useState<ViewId>('overview')
   const [room, setRoom] = useState<string | null>(null)
-  const [q, setQ] = useState('')
-  const [adding, setAdding] = useState(false)
-  const [phase, setPhase] = useState<number | null>(null)
-  const b = useBudget(state.project, state.purchases, state.tasks)
-
-  const now = currentPhase(state.tasks)
-  const viewing = phase ?? now
-
-  useEffect(() => setAdding(false), [view])
+  const [folder, setFolder] = useState<string | null>(null)
+  const [sheet, setSheet] = useState<SheetState | null>(null)
+  // Ett rum kan vara öppet under ett formulär (t.ex. ett inköp man trycker på inne i rummet).
+  const [roomInfo, setRoomInfo] = useState<Room | null>(null)
 
   if (!state.loading && !state.project) {
     return (
@@ -68,93 +68,123 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     )
   }
 
-  const go = (to: ViewId, roomId: string | null = room) => {
+  const go = (to: ViewId) => {
     setView(to)
-    setRoom(roomId)
+    setSheet(null)
+    if (to !== 'folders') setFolder(null)
   }
-  const showPhase = (p: number) => {
-    setPhase(Math.max(0, Math.min(PHASES.length - 1, p)))
-    setView('timeline')
+  const open = (s: SheetState) => {
+    if (s.t === 'roomInfo') return setRoomInfo(s.room)
+    setSheet(s)
+  }
+  const close = () => setSheet(null)
+  const openFolder = (id: string) => {
+    setFolder(id)
+    setView('folders')
   }
 
-  const current = VIEWS.find((v) => v.id === view)!
-  const props: ViewProps = { state, room, q, adding, setAdding }
+  // Nya saker hamnar i den mapp eller det rum man står i.
+  const here = { folder_id: view === 'folders' ? folder : null, room_id: view === 'purchases' || view === 'ideas' || view === 'photos' ? room : null }
+  const props: ViewProps = { state, room, open }
+  const filter = <Chips value={room} onChange={setRoom} options={[{ value: null, label: 'Alla rum' }, ...state.rooms.map((r) => ({ value: r.id as string | null, label: r.name }))]} />
 
-  const processbar = state.project && (
-    <footer className="processbar">
-      <div className="processbar__context">
-        <strong>{state.project.name}</strong>
-        <span className="meta">{state.project.address || KIND_LABEL[state.project.kind]}</span>
-      </div>
-      <button className="processbar__nav" data-go="-1" aria-label="Föregående fas" onClick={() => showPhase(viewing - 1)}>
-        <IconChevronLeft size={18} />
-      </button>
-      <div className="steps">
-        {PHASES.map((p, i) => {
-          const pt = state.tasks.filter((t) => t.phase === i)
-          const done = i < now || (pt.length > 0 && pt.every((t) => t.status === 'done'))
-          return (
-            <button
-              key={p.name}
-              className={`step ${done ? 'is-done' : ''} ${i === now && !done ? 'is-current' : ''} ${view === 'timeline' && i === viewing ? 'is-viewing' : ''}`}
-              onClick={() => showPhase(i)}
-              aria-label={p.name}
-            >
-              <span className="step__track" />
-              <span className="step__label">{p.name}</span>
-            </button>
-          )
-        })}
-      </div>
-      <button className="processbar__nav" data-go="1" aria-label="Nästa fas" onClick={() => showPhase(viewing + 1)}>
-        <IconChevronRight size={18} />
-      </button>
-      <div className="processbar__total">
-        <span className="display">{kr(b.spent)}</span>
-        {b.overSpent ? <span className="status status--lost">Över budget</span> : <span className="meta">{b.budget ? `av ${kr(b.budget)}` : 'spenderat'}</span>}
-      </div>
-      {view === 'settings' ? (
-        <Primary type="submit" form="settings-form">{current.action}</Primary>
-      ) : (
-        <Primary onClick={() => setAdding(true)}>{current.action}</Primary>
-      )}
-    </footer>
-  )
+  const tabs: Tab[] = [
+    { id: 'overview', label: 'Översikt', icon: IconLayoutGrid, active: view === 'overview', onClick: () => go('overview') },
+    { id: 'folders', label: 'Mappar', icon: IconFolder, active: view === 'folders', onClick: () => { setFolder(null); go('folders') } },
+    { id: 'purchases', label: 'Inköp', icon: IconShoppingCart, active: view === 'purchases', onClick: () => go('purchases') },
+    { id: 'more', label: 'Mer', icon: IconDots, active: ['ideas', 'photos', 'settings'].includes(view), onClick: () => open({ t: 'more' }) },
+  ]
+
+  const addRows = [
+    { icon: IconReceipt, title: 'Kvitto', meta: 'Fota kvittot från något du köpt', on: () => open({ t: 'purchase', item: { ...here }, receipt: true }) },
+    { icon: IconShoppingCart, title: 'Inköp', meta: 'Något du ska köpa', on: () => open({ t: 'purchase', item: { ...here } }) },
+    { icon: IconChecklist, title: 'Jobb', meta: 'Något som ska göras', on: () => open({ t: 'task', item: { ...here } }) },
+    { icon: IconBulb, title: 'Idé', meta: 'Med bild eller länk', on: () => open({ t: 'idea', item: { ...here } }) },
+    { icon: IconCamera, title: 'Foto', meta: 'Före, efter eller inspiration', on: () => open({ t: 'photo' }) },
+    { icon: IconFolderPlus, title: 'Mapp', meta: 'Samla ett projekt, t.ex. Köksrenovering', on: () => open({ t: 'folder' }) },
+    { icon: IconHome, title: 'Rum', meta: 'Till planritningen och filtren', on: () => open({ t: 'room' }) },
+  ]
 
   return (
     <Shell
       user={user}
+      home={state.project ? { name: state.project.name, onClick: onBack } : undefined}
+      onAdd={() => open({ t: 'add' })}
       onAvatar={() => go('settings')}
-      search={{ value: q, onChange: setQ, placeholder: 'Sök inköp, jobb eller rum' }}
+      tabs={tabs}
       nav={
         <>
           <NavItem icon={IconArrowLeft} label="Mina hem" onClick={onBack} />
           {VIEWS.map((v) => (
-            <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => go(v.id)} />
+            <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => { if (v.id === 'folders') setFolder(null); go(v.id) }} />
           ))}
         </>
       }
-      processbar={processbar}
     >
       {state.loading ? (
         <Loader />
       ) : (
         <AnimatePresence mode="wait">
-          <motion.div key={view} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease }}>
-            {view === 'overview' && <Overview {...props} onGo={(v, id) => go(v, id)} onShowPhase={showPhase} />}
-            {view === 'purchases' && <Purchases {...props} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
-            {view === 'receipts' && <Receipts {...props} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
-            {view === 'ideas' && <Ideas {...props} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
-            {view === 'timeline' && <Timeline {...props} phase={viewing} onPhase={showPhase} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
-            {view === 'photos' && <Photos {...props} filter={<RoomFilter rooms={state.rooms} value={room} onChange={setRoom} />} />}
+          <motion.div key={view + (folder ?? '')} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease }}>
+            {view === 'overview' && <Overview {...props} openFolder={openFolder} />}
+            {view === 'folders' && <Folders {...props} folder={folder} setFolder={setFolder} />}
+            {view === 'purchases' && <Purchases {...props} filter={filter} />}
+            {view === 'ideas' && <Ideas {...props} filter={filter} />}
+            {view === 'photos' && <Photos {...props} filter={filter} />}
             {view === 'settings' && <Settings {...props} user={user} onDeleted={onBack} />}
           </motion.div>
         </AnimatePresence>
       )}
+
+      {state.project && (
+        <>
+          <RoomSheet room={roomInfo} state={state} open={open} onClose={() => setRoomInfo(null)} />
+          <PurchaseSheet item={sheet?.t === 'purchase' ? sheet.item : sheet?.t === 'convert' ? { title: sheet.idea.title, room_id: sheet.idea.room_id, folder_id: sheet.idea.folder_id, link: sheet.idea.link, note: sheet.idea.note } : null}
+            receiptMode={sheet?.t === 'purchase' && sheet.receipt}
+            title={sheet?.t === 'convert' ? 'Gör till inköp' : undefined}
+            state={state}
+            onClose={async (saved) => {
+              // En idé som blivit inköp behövs inte längre bland idéerna.
+              if (saved && sheet?.t === 'convert') {
+                await api.remove('ideas', sheet.idea.id)
+                state.reload()
+              }
+              close()
+            }}
+          />
+          <TaskSheet item={sheet?.t === 'task' ? sheet.item : null} state={state} onClose={close} />
+          <IdeaSheet item={sheet?.t === 'idea' ? sheet.item : null} state={state} onClose={close} onConvert={(idea) => open({ t: 'convert', idea })} />
+          <FolderSheet item={sheet?.t === 'folder' ? sheet.item ?? 'new' : null} state={state} onClose={close} onCreated={(id) => { close(); openFolder(id) }} />
+          <UploadSheet open={sheet?.t === 'photo'} onClose={close} state={state} room={room} />
+          <AddRoomSheet open={sheet?.t === 'room'} onClose={close} state={state} />
+
+          <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">
+            <div className="rows">
+              {addRows.map((r) => (
+                <div key={r.title} className="row" onClick={r.on}>
+                  <div className="row__main">
+                    <span className="menu-row__icon"><r.icon size={18} /></span>
+                    <div className="row__text"><div className="row__title">{r.title}</div><div className="meta">{r.meta}</div></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Sheet>
+
+          <Sheet open={sheet?.t === 'more'} onClose={close} title="Mer">
+            <div className="rows">
+              {VIEWS.filter((v) => ['ideas', 'photos', 'settings'].includes(v.id)).map((v) => (
+                <div key={v.id} className="row" onClick={() => go(v.id)}>
+                  <div className="row__main"><span className="menu-row__icon"><v.icon size={18} /></span><div className="row__title">{v.label}</div></div>
+                </div>
+              ))}
+              <div className="row" onClick={onBack}>
+                <div className="row__main"><span className="menu-row__icon"><IconArrowLeft size={18} /></span><div className="row__title">Mina hem</div></div>
+              </div>
+            </div>
+          </Sheet>
+        </>
+      )}
     </Shell>
   )
-}
-
-function RoomFilter({ rooms, value, onChange }: { rooms: Room[]; value: string | null; onChange: (id: string | null) => void }) {
-  return <Chips value={value} onChange={onChange} options={[{ value: null, label: 'Alla rum' }, ...rooms.map((r) => ({ value: r.id as string | null, label: r.name }))]} />
 }

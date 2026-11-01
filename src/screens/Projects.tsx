@@ -12,18 +12,16 @@ const KIND_ICON = { lagenhet: IconBuilding, hus: IconHome, annat: IconHomeEco }
 export function Projects({ user, onOpen }: { user: User; onOpen: (id: string) => void }) {
   const [projects, setProjects] = useState<Project[] | null>(null)
   const [creating, setCreating] = useState(false)
-  const [q, setQ] = useState('')
 
   useEffect(() => {
     api.listProjects().then(setProjects)
   }, [])
 
-  const shown = projects?.filter((p) => `${p.name} ${p.address ?? ''}`.toLowerCase().includes(q.toLowerCase()))
+  const shown = projects
 
   return (
     <Shell
       user={user}
-      search={{ value: q, onChange: setQ, placeholder: 'Sök hem eller adress' }}
       nav={<NavItem icon={IconHome} label="Mina hem" active onClick={() => {}} />}
       navFoot={<NavItem icon={IconLogout} label="Logga ut" onClick={() => api.signOut()} />}
     >

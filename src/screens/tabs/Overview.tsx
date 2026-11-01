@@ -2,30 +2,30 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { api } from '../../lib/api'
 import { kr } from '../../lib/format'
-import { paid, useBudget } from '../../lib/useProject'
+import { totals, useBudget } from '../../lib/useProject'
 import { BudgetMeter } from '../../components/BudgetMeter'
 import { FloorPlan } from '../../components/FloorPlan'
-import { ROOM_ICONS, roomIcon } from '../../components/icons'
+import { ICONS, iconFor } from '../../components/icons'
 import { Chips, Field, Primary, Sheet, ease } from '../../components/ui'
-import { PALETTE, PHASES, ROOM_PRESETS, tileStyle, type Palette, type Room, type RoomIcon } from '../../types'
-import type { ViewProps } from '../ProjectView'
-import { PriorityTag, PurchaseRow, today } from './Purchases'
-import { TaskStatusLabel } from './Timeline'
+import { PALETTE, ROOM_PRESETS, tileStyle, type IconKey, type Palette, type Room } from '../../types'
+import type { ProjectState, ViewProps } from '../ProjectView'
+import { PriorityTag, PurchaseRow } from './Purchases'
+import { TaskRow, TaskStatusLabel } from './Tasks'
+import { COLOR_LABEL, FolderTiles } from './Folders'
 
-type Go = (view: 'purchases' | 'timeline' | 'receipts' | 'ideas' | 'photos', room: string | null) => void
-
-export function Overview({ state, q, adding, setAdding, onGo, onShowPhase }: ViewProps & { onGo: Go; onShowPhase: (p: number) => void }) {
-  const { project, rooms, purchases, tasks } = state
+export function Overview({ state, open, openFolder }: ViewProps & { openFolder: (id: string) => void }) {
+  const { project, rooms, purchases, tasks, folders } = state
   const b = useBudget(project, purchases, tasks)
-  const [openRoom, setOpenRoom] = useState<Room | null>(null)
-  const match = (s: string) => s.toLowerCase().includes(q.toLowerCase())
+  const folderName = (id: string | null) => folders.find((f) => f.id === id)?.name
   const roomName = (id: string | null) => rooms.find((r) => r.id === id)?.name
 
-  // Det viktigaste som är kvar: hög prio först, sedan jobb i fasordning.
+  // Det viktigaste som är kvar: hög prio först, sådant som pågår före det som inte börjat.
   const todo = [
-    ...purchases.filter((p) => !p.bought && match(p.title)).map((p) => ({ id: p.id, title: p.title, priority: p.priority ?? 2, order: 99, meta: ['Inköp', roomName(p.room_id)], right: kr(p.est_price), onClick: () => onGo('purchases', p.room_id) })),
-    ...tasks.filter((t) => t.status !== 'done' && match(t.title)).map((t) => ({ id: t.id, title: t.title, priority: t.priority ?? 2, order: t.phase, meta: [PHASES[t.phase]?.name, roomName(t.room_id)], right: <TaskStatusLabel status={t.status} />, onClick: () => onShowPhase(t.phase) })),
+    ...purchases.filter((p) => !p.bought).map((p) => ({ id: p.id, title: p.title, priority: p.priority ?? 2, order: 1, meta: ['Inköp', folderName(p.folder_id), roomName(p.room_id)], right: kr(p.est_price), onClick: () => open({ t: 'purchase', item: p }) })),
+    ...tasks.filter((t) => t.status !== 'done').map((t) => ({ id: t.id, title: t.title, priority: t.priority ?? 2, order: t.status === 'doing' ? 0 : 1, meta: [folderName(t.folder_id), roomName(t.room_id)], right: <TaskStatusLabel status={t.status} />, onClick: () => open({ t: 'task', item: t }) })),
   ].sort((a, b) => a.priority - b.priority || a.order - b.order).slice(0, 5)
+
+  const isEmpty = !purchases.length && !tasks.length && !folders.length
 
   return (
     <div>
@@ -35,38 +35,19 @@ export function Overview({ state, q, adding, setAdding, onGo, onShowPhase }: Vie
       </div>
 
       <div className="section">
-        <FloorPlan state={state} onRoom={setOpenRoom} />
+        <FloorPlan state={state} onRoom={(room) => open({ t: 'roomInfo', room })} onAddRoom={() => open({ t: 'room' })} />
       </div>
 
-      <div className="section">
-        <div className="section-head"><h2>Rum</h2></div>
-        <div className="tiles">
-          {rooms.filter((r) => match(r.name)).map((r, i) => {
-            const rp = purchases.filter((p) => p.room_id === r.id)
-            const rt = tasks.filter((t) => t.room_id === r.id)
-            const total = rp.length + rt.length
-            const done = rp.filter((p) => p.bought).length + rt.filter((t) => t.status === 'done').length
-            const spent = rp.filter((p) => p.bought).reduce((s, p) => s + paid(p), 0) + rt.filter((t) => t.status === 'done').reduce((s, t) => s + t.cost, 0)
-            const Icon = roomIcon(r.icon)
-            return (
-              <motion.button
-                key={r.id}
-                className="tile"
-                style={tileStyle(r.color ?? PALETTE[i % PALETTE.length])}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: i * 0.03, ease }}
-                onClick={() => setOpenRoom(r)}
-              >
-                <div className="tile__name">{r.name}</div>
-                <div className="tile__meta">{total ? `${done} av ${total} klart` : 'Inget planerat'}</div>
-                {spent > 0 && <div className="tile__meta">{kr(spent)}</div>}
-                <Icon className="tile__icon" />
-              </motion.button>
-            )
-          })}
+      {isEmpty && (
+        <div className="section">
+          <div className="section-head"><h2>Kom igång</h2></div>
+          <div className="rows">
+            <div className="row" onClick={() => open({ t: 'purchase', item: {}, receipt: true })}><div className="row__text"><div className="row__title">Spara ett kvitto</div><div className="meta">Fota kvittot från något du köpt</div></div></div>
+            <div className="row" onClick={() => open({ t: 'folder' })}><div className="row__text"><div className="row__title">Skapa en mapp</div><div className="meta">Till exempel Köksrenovering eller Möbler</div></div></div>
+            <div className="row" onClick={() => open({ t: 'purchase', item: {} })}><div className="row__text"><div className="row__title">Lägg till något att köpa</div><div className="meta">Med pris, butik och prio</div></div></div>
+          </div>
         </div>
-      </div>
+      )}
 
       {todo.length > 0 && (
         <div className="section">
@@ -76,7 +57,7 @@ export function Overview({ state, q, adding, setAdding, onGo, onShowPhase }: Vie
               <div key={t.id} className="row" onClick={t.onClick}>
                 <div className="row__text">
                   <div className="row__title">{t.title}</div>
-                  <div className="meta">{t.meta.filter(Boolean).join(' · ')}</div>
+                  <div className="meta">{t.meta.filter(Boolean).join(' · ') || 'Hela hemmet'}</div>
                   <PriorityTag priority={t.priority} />
                 </div>
                 <span className="row__amount">{t.right}</span>
@@ -86,103 +67,101 @@ export function Overview({ state, q, adding, setAdding, onGo, onShowPhase }: Vie
         </div>
       )}
 
-      <RoomSheet room={openRoom} state={state} onClose={() => setOpenRoom(null)} onGo={(v, id) => { setOpenRoom(null); onGo(v, id) }} />
-      <AddRoomSheet open={adding} onClose={() => setAdding(false)} state={state} />
+      {folders.length > 0 && (
+        <div className="section">
+          <div className="section-head"><h2>Mappar</h2></div>
+          <FolderTiles state={state} onOpen={openFolder} />
+        </div>
+      )}
+
+      <div className="section">
+        <div className="section-head">
+          <h2>Rum</h2>
+          <button className="btn btn--ghost" onClick={() => open({ t: 'room' })}>Lägg till rum</button>
+        </div>
+        <div className="tiles">
+          {rooms.map((r, i) => {
+            const s = totals(purchases.filter((p) => p.room_id === r.id), tasks.filter((t) => t.room_id === r.id))
+            const Icon = iconFor(r.icon)
+            return (
+              <motion.button key={r.id} className="tile" style={tileStyle(r.color ?? PALETTE[i % PALETTE.length])} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: i * 0.03, ease }} onClick={() => open({ t: 'roomInfo', room: r })}>
+                <div className="tile__name">{r.name}</div>
+                <div className="tile__meta">{s.items ? `${s.done} av ${s.items} klart` : 'Inget planerat'}</div>
+                {s.spent > 0 && <div className="tile__meta">{kr(s.spent)}</div>}
+                <Icon className="tile__icon" />
+              </motion.button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
 
 // Allt som hör till ett rum, när man trycker på det i planritningen eller bland rutorna.
-function RoomSheet({ room, state, onClose, onGo }: { room: Room | null; state: ViewProps['state']; onClose: () => void; onGo: Go }) {
+export function RoomSheet({ room, state, open, onClose }: { room: Room | null; state: ProjectState; open: ViewProps['open']; onClose: () => void }) {
   const rp = room ? state.purchases.filter((p) => p.room_id === room.id) : []
   const rt = room ? state.tasks.filter((t) => t.room_id === room.id) : []
   const ri = room ? state.ideas.filter((i) => i.room_id === room.id) : []
-  const spent = rp.filter((p) => p.bought).reduce((s, p) => s + paid(p), 0) + rt.filter((t) => t.status === 'done').reduce((s, t) => s + t.cost, 0)
-  const planned = rp.reduce((s, p) => s + (p.bought ? paid(p) : p.est_price), 0) + rt.reduce((s, t) => s + t.cost, 0)
+  const s = totals(rp, rt)
 
   return (
     <Sheet open={!!room} onClose={onClose} title={room?.name ?? ''}>
       {room && (
         <div>
           <div className="kpis section">
-            <div className="kpi"><div className="meta">Spenderat</div><div className="kpi__value">{kr(spent)}</div></div>
-            <div className="kpi"><div className="meta">Planerat</div><div className="kpi__value">{kr(planned)}</div></div>
+            <div className="kpi"><div className="meta">Spenderat</div><div className="kpi__value">{kr(s.spent)}</div></div>
+            <div className="kpi"><div className="meta">Planerat</div><div className="kpi__value">{kr(s.planned)}</div></div>
           </div>
 
           <div className="section">
             <div className="section-head">
               <h2>Inköp</h2>
-              <button className="btn btn--ghost" onClick={() => onGo('purchases', room.id)}>Visa alla</button>
+              <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { room_id: room.id } })}>Lägg till</button>
             </div>
-            {rp.length ? (
-              <div className="rows">
-                {rp.map((p) => (
-                  <PurchaseRow
-                    key={p.id}
-                    p={p}
-                    room={room}
-                    onToggle={(on) => state.patch('purchases', p.id, { bought: on, price: on ? p.price ?? p.est_price : p.price, bought_on: on ? p.bought_on ?? today() : p.bought_on })}
-                    onEdit={() => onGo('purchases', room.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="meta">Inga inköp</p>
-            )}
+            {rp.length ? <div className="rows">{rp.map((p) => <PurchaseRow key={p.id} p={p} state={state} showFolder onEdit={() => open({ t: 'purchase', item: p })} />)}</div> : <p className="meta">Inga inköp</p>}
           </div>
 
           <div className="section">
             <div className="section-head">
               <h2>Jobb</h2>
-              <button className="btn btn--ghost" onClick={() => onGo('timeline', room.id)}>Visa alla</button>
+              <button className="btn btn--ghost" onClick={() => open({ t: 'task', item: { room_id: room.id } })}>Lägg till</button>
             </div>
-            {rt.length ? (
-              <div className="rows">
-                {rt.map((t) => (
-                  <div key={t.id} className={`row ${t.status === 'done' ? 'is-done' : ''}`} onClick={() => onGo('timeline', room.id)}>
-                    <div className="row__text">
-                      <div className="row__title">{t.title}</div>
-                      <div className="meta">{[PHASES[t.phase]?.name, t.cost ? kr(t.cost) : null].filter(Boolean).join(' · ')}</div>
-                    </div>
-                    <TaskStatusLabel status={t.status} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="meta">Inga jobb</p>
-            )}
+            {rt.length ? <div className="rows">{rt.map((t) => <TaskRow key={t.id} t={t} state={state} showFolder onEdit={() => open({ t: 'task', item: t })} />)}</div> : <p className="meta">Inga jobb</p>}
           </div>
 
           {ri.length > 0 && (
             <div className="section">
-              <div className="section-head">
-                <h2>Idéer</h2>
-                <button className="btn btn--ghost" onClick={() => onGo('ideas', room.id)}>Visa alla</button>
-              </div>
+              <div className="section-head"><h2>Idéer</h2></div>
               <div className="rows">
                 {ri.map((i) => (
-                  <div key={i.id} className="row" onClick={() => onGo('ideas', room.id)}>
-                    <div className="row__title">{i.title}</div>
-                  </div>
+                  <div key={i.id} className="row" onClick={() => open({ t: 'idea', item: i })}><div className="row__title">{i.title}</div></div>
                 ))}
               </div>
             </div>
           )}
+
+          <button className="btn btn--danger" onClick={async () => {
+            if (!confirm(`Ta bort rummet ${room.name}? Inköp och jobb finns kvar, utan rum.`)) return
+            await api.remove('rooms', room.id)
+            await state.reload()
+            onClose()
+          }}>Ta bort rum</button>
         </div>
       )}
     </Sheet>
   )
 }
 
-const ICON_CHOICES = Object.keys(ROOM_ICONS) as RoomIcon[]
+const ICON_CHOICES = Object.keys(ICONS) as IconKey[]
 
-function AddRoomSheet({ open, onClose, state }: { open: boolean; onClose: () => void; state: ViewProps['state'] }) {
+export function AddRoomSheet({ open, onClose, state }: { open: boolean; onClose: () => void; state: ProjectState }) {
   const [name, setName] = useState('')
-  const [icon, setIcon] = useState<RoomIcon>('home')
+  const [icon, setIcon] = useState<IconKey>('home')
   const [color, setColor] = useState<Palette>('lilac')
   const existing = new Set(state.rooms.map((r) => r.name))
 
-  const add = async (n: string, i: RoomIcon, c: Palette) => {
+  const add = async (n: string, i: IconKey, c: Palette) => {
     await api.insert('rooms', { project_id: state.project!.id, name: n, icon: i, color: c, sort: state.rooms.length })
     await state.reload()
     setName('')
@@ -217,7 +196,7 @@ function AddRoomSheet({ open, onClose, state }: { open: boolean; onClose: () => 
           <span className="field__label">Ikon</span>
           <div className="chips">
             {ICON_CHOICES.map((k) => {
-              const Icon = ROOM_ICONS[k]
+              const Icon = ICONS[k]
               return (
                 <button type="button" key={k} className={`chip ${icon === k ? 'is-active' : ''}`} onClick={() => setIcon(k)} aria-label={k}>
                   <Icon size={16} />
@@ -237,5 +216,3 @@ function AddRoomSheet({ open, onClose, state }: { open: boolean; onClose: () => 
     </Sheet>
   )
 }
-
-const COLOR_LABEL: Record<Palette, string> = { sand: 'Sand', coral: 'Korall', steel: 'Stål', sun: 'Sol', mint: 'Mint', sky: 'Himmel', lilac: 'Syren', rose: 'Ros' }

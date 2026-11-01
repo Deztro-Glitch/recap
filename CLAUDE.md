@@ -1,11 +1,18 @@
 # Recap
 
-Webbapp (PWA) för att planera renoveringar och inköp. React + Vite, data i Supabase, publiceras på GitHub Pages. All text i gränssnittet är på svenska.
+Webbapp (PWA) för att planera renoveringar, inköp och kvitton. React + Vite, data i Supabase, publiceras på GitHub Pages. All text i gränssnittet är på svenska.
 
 ## Design
 
-Följ designsystemet i [docs/designsystem/CLAUDE.md](docs/designsystem/CLAUDE.md) och se [docs/designsystem/exempel.html](docs/designsystem/exempel.html).
+Färger, typsnitt och komponenter följer designsystemet i [docs/designsystem/CLAUDE.md](docs/designsystem/CLAUDE.md) (se även [exempel.html](docs/designsystem/exempel.html)).
 
 - [src/design.css](src/design.css) är designsystemet och ändras inte per vy. Recap-specifika tillägg ligger i [src/app.css](src/app.css), och de använder bara tokens därifrån.
-- Ikoner: `@tabler/icons-react` (outline). Rum får ikon och färg från innehållspaletten, aldrig emojis.
-- En primärknapp per vy. I ett hem ligger den i processlisten längst ner.
+- Undantag från designsystemets layout, beslutat med användaren: ingen processlist. På mobil används en meny längst ner med en plusknapp i mitten; på dator sidomeny och "Lägg till" uppe till höger. Plusknappen/"Lägg till" är vyns enda färgstarka knapp.
+- Ikoner: `@tabler/icons-react` (outline). Rum och mappar får ikon och färg från innehållspaletten, aldrig emojis.
+
+## Data
+
+- Hem → rum, mappar, inköp, jobb, idéer, foton. Inköp och jobb kan ligga i en mapp och/eller ett rum.
+- Databasändringar läggs som nya filer i `supabase/migrations/` som användaren kör i Supabase SQL Editor. Publicera inte kod som kräver en migration förrän användaren har kört den.
+- Planritningen är ett rutnät (se [src/lib/plangrid.ts](src/lib/plangrid.ts)): väggar läses ur bilden, rummen fylls eller målas.
+- `npm run dev:demo` kör demoläge (data i webbläsaren) även när `.env.local` pekar på Supabase.
