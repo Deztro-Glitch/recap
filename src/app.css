@@ -55,7 +55,8 @@ a { color: inherit; }
 
 .swipe { position: relative; border-radius: var(--r-sm); overflow: hidden; }
 .swipe__delete {
-  position: absolute; inset: 0 0 0 auto; width: 100%;
+  /* 1px in från kanterna, annars syns det röda i de rundade hörnen bakom raden */
+  position: absolute; inset: 1px 1px 1px auto; width: calc(100% - 2px);
   border: 0; border-radius: var(--r-sm); cursor: pointer;
   display: flex; align-items: center; justify-content: flex-end; padding-right: var(--s-4);
   background: var(--danger); color: #fff; font-weight: 600;
@@ -230,3 +231,12 @@ a { color: inherit; }
 
 .mode-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .mode-picker .tile { min-height: 96px; }
+
+/* ---------- Logg ---------- */
+
+.log-head { display: flex; align-items: center; gap: var(--s-3); }
+.log-head > .meta { white-space: nowrap; }
+@media (max-width: 760px) {
+  .log-head { flex-direction: column; align-items: stretch; gap: var(--s-2); }
+}
+.picked { width: 100%; max-height: 160px; object-fit: contain; border-radius: var(--r-sm); background: var(--hover); }

@@ -33,11 +33,12 @@ interface Props {
   home?: { name: string; onClick: () => void }  // hemmets namn uppe till vänster
   onAdd?: () => void                             // "Lägg till" (uppe på dator, plus i bottenmenyn på mobil)
   tabs?: Tab[]                                   // bottenmenyn på mobil, plusknappen hamnar i mitten
+  onTabAdd?: () => void                          // plusknappen i bottenmenyn, om den ska göra något annat än "Lägg till"
   onAvatar?: () => void
   children: ReactNode
 }
 
-export function Shell({ user, nav, navFoot, home, onAdd, tabs, onAvatar, children }: Props) {
+export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvatar, children }: Props) {
   const theme = useTheme()
   const half = tabs ? Math.ceil(tabs.length / 2) : 0
   const tab = (t: Tab) => (
@@ -80,7 +81,7 @@ export function Shell({ user, nav, navFoot, home, onAdd, tabs, onAvatar, childre
         <nav className="tabbar">
           {tabs.slice(0, half).map(tab)}
           {onAdd && (
-            <button className="tabbar__add" onClick={onAdd} aria-label="Lägg till">
+            <button className="tabbar__add" onClick={onTabAdd ?? onAdd} aria-label="Lägg till">
               <IconPlus size={24} />
             </button>
           )}
