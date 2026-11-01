@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   IconArrowLeft, IconBulb, IconCamera, IconChecklist, IconDots, IconFolder, IconFolderPlus, IconHome, IconLayoutGrid,
   IconPhoto, IconReceipt, IconSettings, IconShoppingCart,
@@ -7,10 +7,10 @@ import {
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
 import { NavItem, Shell, type Tab } from '../components/Shell'
-import { Chips, Loader, Sheet, ease } from '../components/ui'
+import { Chips, Loader, Sheet, ease, useToast } from '../components/ui'
 import type { Folder, Idea, Purchase, Room, Task } from '../types'
 import { AddRoomSheet, Overview, RoomSheet } from './tabs/Overview'
-import { PurchaseSheet, Purchases, type PurchaseDraft } from './tabs/Purchases'
+import { PurchaseSheet, Purchases, fmtDate, today, type PurchaseDraft } from './tabs/Purchases'
 import { TaskSheet, type TaskDraft } from './tabs/Tasks'
 import { FolderSheet, Folders } from './tabs/Folders'
 import { IdeaSheet, Ideas, type IdeaDraft } from './tabs/Ideas'
@@ -32,6 +32,7 @@ export type ProjectState = ReturnType<typeof useProject>
 // Alla formulär och paneler öppnas härifrån, så att de kan nås från vilken vy som helst.
 export type SheetState =
   | { t: 'purchase'; item: Purchase | PurchaseDraft; receipt?: boolean }
+  | { t: 'receipt'; item?: PurchaseDraft }
   | { t: 'task'; item: Task | TaskDraft }
   | { t: 'idea'; item: Idea | IdeaDraft }
   | { t: 'convert'; idea: Idea }
@@ -56,6 +57,40 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const [sheet, setSheet] = useState<SheetState | null>(null)
   // Ett rum kan vara öppet under ett formulär (t.ex. ett inköp man trycker på inne i rummet).
   const [roomInfo, setRoomInfo] = useState<Room | null>(null)
+  const toast = useToast()
+  const receiptInput = useRef<HTMLInputElement>(null)
+  const receiptDefaults = useRef<PurchaseDraft>({})
+  const [saving, setSaving] = useState(0)
+
+  // Kvitton: fota först, fyll i sen. Bilden sparas direkt som ett köp, och formuläret öppnas
+  // för den som vill fylla i belopp och butik på en gång.
+  const onReceipts = async (files: FileList | null) => {
+    if (!files?.length || !state.project) return
+    const list = Array.from(files)
+    setSaving(list.length)
+    try {
+      const created: Purchase[] = []
+      for (const file of list) {
+        const path = await api.uploadFile(state.project.id, file)
+        created.push(
+          await api.insert<Purchase>('purchases', {
+            project_id: state.project.id, room_id: null, folder_id: null, ...receiptDefaults.current,
+            title: `Kvitto ${fmtDate(today())}`, est_price: 0, price: null, bought: true, bought_on: today(),
+            receipt_path: path, priority: 2, stays: false, store: null, link: null, note: null, details: null,
+          }),
+        )
+        setSaving((n) => n - 1)
+      }
+      await state.reload()
+      if (created.length === 1) setSheet({ t: 'purchase', item: { ...created[0] } })
+      else toast({ title: `${created.length} kvitton är sparade`, body: 'Fyll i beloppen när du hinner.' })
+    } catch (err: any) {
+      toast({ title: 'Kvittot kunde inte sparas', body: err.message })
+    } finally {
+      setSaving(0)
+      if (receiptInput.current) receiptInput.current.value = ''
+    }
+  }
 
   if (!state.loading && !state.project) {
     return (
@@ -75,6 +110,12 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   }
   const open = (s: SheetState) => {
     if (s.t === 'roomInfo') return setRoomInfo(s.room)
+    if (s.t === 'receipt') {
+      // Kameran/bildväljaren måste öppnas direkt i trycket.
+      receiptDefaults.current = s.item ?? {}
+      setSheet(null)
+      return receiptInput.current?.click()
+    }
     setSheet(s)
   }
   const close = () => setSheet(null)
@@ -96,7 +137,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   ]
 
   const addRows = [
-    { icon: IconReceipt, title: 'Kvitto', meta: 'Fota kvittot från något du köpt', on: () => open({ t: 'purchase', item: { ...here }, receipt: true }) },
+    { icon: IconReceipt, title: 'Kvitto', meta: 'Fota kvittot, fyll i resten sen', on: () => open({ t: 'receipt', item: { ...here } }) },
     { icon: IconShoppingCart, title: 'Inköp', meta: 'Något du ska köpa', on: () => open({ t: 'purchase', item: { ...here } }) },
     { icon: IconChecklist, title: 'Jobb', meta: 'Något som ska göras', on: () => open({ t: 'task', item: { ...here } }) },
     { icon: IconBulb, title: 'Idé', meta: 'Med bild eller länk', on: () => open({ t: 'idea', item: { ...here } }) },
@@ -121,6 +162,13 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
         </>
       }
     >
+      <input ref={receiptInput} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => onReceipts(e.target.files)} />
+      {saving > 0 && (
+        <div className="saving">
+          <Loader />
+          <span className="status status--sent">Sparar {saving === 1 ? 'kvittot' : `${saving} kvitton`}</span>
+        </div>
+      )}
       {state.loading ? (
         <Loader />
       ) : (

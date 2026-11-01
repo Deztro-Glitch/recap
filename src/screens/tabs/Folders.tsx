@@ -117,7 +117,7 @@ function FolderDetail({ f, state, open, onBack }: { f: Folder; state: ProjectSta
       <div className="section">
         <div className="section-head">
           <h2>Kvitton</h2>
-          <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { folder_id: f.id }, receipt: true })}>Lägg till</button>
+          <button className="btn btn--ghost" onClick={() => open({ t: 'receipt', item: { folder_id: f.id } })}>Lägg till</button>
         </div>
         {receipts.length ? (
           <div className="chips">

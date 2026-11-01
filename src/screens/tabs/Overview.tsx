@@ -2,8 +2,9 @@ import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 import { kr } from '../../lib/format'
-import { totals, useBudget } from '../../lib/useProject'
+import { needsInfo, totals, useBudget } from '../../lib/useProject'
 import { BudgetMeter } from '../../components/BudgetMeter'
+import { FileThumb } from '../../components/FileField'
 import { FloorPlan } from '../../components/FloorPlan'
 import { ICONS, iconFor } from '../../components/icons'
 import { Chips, Field, Primary, Sheet, ease } from '../../components/ui'
@@ -26,6 +27,7 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
   ].sort((a, b) => a.priority - b.priority || a.order - b.order).slice(0, 5)
 
   const isEmpty = !purchases.length && !tasks.length && !folders.length
+  const unfinished = purchases.filter(needsInfo)
 
   return (
     <div>
@@ -33,6 +35,29 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
         <div className="section-head"><h1>Översikt</h1></div>
         <BudgetMeter budget={b.budget} spent={b.spent} planned={b.planned} />
       </div>
+
+      {unfinished.length > 0 && (
+        <div className="section">
+          <div className="section-head">
+            <h2>Kvitton att fylla i</h2>
+            <span className="meta">{unfinished.length} st</span>
+          </div>
+          <div className="rows">
+            {unfinished.slice(0, 4).map((p) => (
+              <div key={p.id} className="row" onClick={() => open({ t: 'purchase', item: p })}>
+                <div className="row__main">
+                  {p.receipt_path && <FileThumb path={p.receipt_path} url={state.urls[p.receipt_path]} />}
+                  <div className="row__text">
+                    <div className="row__title">{p.title}</div>
+                    <span className="status status--warning">Belopp saknas</span>
+                  </div>
+                </div>
+                <span className="btn btn--ghost">Fyll i</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="section">
         <FloorPlan state={state} onRoom={(room) => open({ t: 'roomInfo', room })} onAddRoom={() => open({ t: 'room' })} />
@@ -42,7 +67,7 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
         <div className="section">
           <div className="section-head"><h2>Kom igång</h2></div>
           <div className="rows">
-            <div className="row" onClick={() => open({ t: 'purchase', item: {}, receipt: true })}><div className="row__text"><div className="row__title">Spara ett kvitto</div><div className="meta">Fota kvittot från något du köpt</div></div></div>
+            <div className="row" onClick={() => open({ t: 'receipt' })}><div className="row__text"><div className="row__title">Spara ett kvitto</div><div className="meta">Fota kvittot från något du köpt</div></div></div>
             <div className="row" onClick={() => open({ t: 'folder' })}><div className="row__text"><div className="row__title">Skapa en mapp</div><div className="meta">Till exempel Köksrenovering eller Möbler</div></div></div>
             <div className="row" onClick={() => open({ t: 'purchase', item: {} })}><div className="row__text"><div className="row__title">Lägg till något att köpa</div><div className="meta">Med pris, butik och prio</div></div></div>
           </div>

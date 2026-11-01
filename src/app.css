@@ -216,3 +216,14 @@ a { color: inherit; }
 @media (max-width: 760px) { .auth .main { padding: var(--s-5) var(--s-4); } }
 
 .loading { display: flex; padding: var(--s-6) 0; }
+
+/* Sparar kvitton i bakgrunden */
+.saving {
+  position: fixed; z-index: 70; left: 50%; transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top, 0px) + var(--s-3));
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 0 var(--s-4) 0 var(--s-2); border-radius: var(--r-sm);
+  background: var(--raised); box-shadow: 0 8px 28px rgba(23, 20, 31, .14);
+}
+.saving .loading { padding: 0; }
+.saving .loader { width: 40px; height: 30px; }

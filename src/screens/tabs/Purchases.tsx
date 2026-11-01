@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { IconExternalLink, IconReceiptOff, IconSearch } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
-import { paid } from '../../lib/useProject'
+import { needsInfo, paid } from '../../lib/useProject'
 import { Checkbox, Chips, Field, More, Primary, Sheet, useToast } from '../../components/ui'
 import { FileField, FileThumb } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
@@ -75,7 +75,7 @@ export function Purchases({ state, room, open, filter }: ViewProps & { filter: R
           {tab === 'todo' ? (
             <button className="btn btn--secondary" onClick={() => open({ t: 'purchase', item: { room_id: room } })}>Lägg till inköp</button>
           ) : (
-            <button className="btn btn--secondary" onClick={() => open({ t: 'purchase', item: { room_id: room }, receipt: true })}>Lägg till kvitto</button>
+            <button className="btn btn--secondary" onClick={() => open({ t: 'receipt', item: { room_id: room } })}>Lägg till kvitto</button>
           )}
         </div>
       ) : (
@@ -116,6 +116,7 @@ export function PurchaseRow({ p, state, onEdit, showReceipt, showFolder }: { p: 
           <DetailsList details={p.details} />
           {!p.bought && <PriorityTag priority={p.priority} />}
           {showReceipt && !p.receipt_path && <span className="status status--warning">Kvitto saknas</span>}
+          {needsInfo(p) && <span className="status status--warning">Belopp saknas</span>}
         </div>
       </div>
       {p.link && (

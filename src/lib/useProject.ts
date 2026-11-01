@@ -112,3 +112,6 @@ export function totals(purchases: Purchase[], tasks: Task[]) {
   const done = purchases.filter((p) => p.bought).length + tasks.filter((t) => t.status === 'done').length
   return { spent, planned, items, done }
 }
+
+// Ett kvitto som fotats men inte fyllts i än.
+export const needsInfo = (p: Purchase) => p.bought && p.price == null && !(Number(p.est_price) > 0)
