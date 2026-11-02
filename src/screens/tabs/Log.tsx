@@ -107,6 +107,7 @@ export function Log({ state, open, onPhotos, onAdd }: ViewProps & { onPhotos: (r
     groups[groups.length - 1].entries.push(e)
   }
   const total = entries.reduce((s, e) => s + e.amount, 0)
+  const missing = shown.filter((e) => e.warning)
 
   return (
     <div>
@@ -132,7 +133,12 @@ export function Log({ state, open, onPhotos, onAdd }: ViewProps & { onPhotos: (r
             <span className="meta">{entries.length} saker · {kr(total)}</span>
           </div>
 
-          {groups.length === 0 && <div className="empty"><h2>Inget hittades</h2></div>}
+          {missing.length > 0 && !q && (
+            <button className="btn btn--secondary" style={{ marginTop: 'var(--s-3)' }} onClick={missing[0].onClick}>
+              {missing.length === 1 ? 'Ett kvitto saknar belopp, fyll i' : `${missing.length} kvitton saknar belopp, fyll i det första`}
+            </button>
+          )}
+                    {groups.length === 0 && <div className="empty"><h2>Inget hittades</h2></div>}
           {groups.map((g) => (
             <div key={g.month} className="section" style={{ marginTop: 'var(--s-4)' }}>
               <div className="section-head">

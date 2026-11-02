@@ -13,6 +13,8 @@ Färger, typsnitt och komponenter följer designsystemet i [docs/designsystem/CL
 ## Data
 
 - Hem → rum, mappar, inköp, jobb, idéer, foton. Inköp och jobb kan ligga i en mapp och/eller ett rum.
+- Appen är till för att dokumentera hemmet. Navigering: Logg (startsida), Rum, +, Att göra, Mer. Plusknappen öppnar kameran och frågar sen vad bilden är.
+- Inköp och jobb visas som en och samma sak ("Att göra"/"Gjort") via [src/screens/tabs/Items.tsx](src/screens/tabs/Items.tsx). Nya saker sparas i `purchases`; `tasks` finns kvar för gamla jobb.
 - Databasändringar läggs som nya filer i `supabase/migrations/` som användaren kör i Supabase SQL Editor. Publicera inte kod som kräver en migration förrän användaren har kört den.
 - Planritningen: rumsnamn läses med textigenkänning ([src/lib/readplan.ts](src/lib/readplan.ts)), rummen fylls ut i ett rutnät och görs om till former med hörn ([src/lib/plangrid.ts](src/lib/plangrid.ts)). Sparas som `{ v: 2, rooms: { rumId: [hörn] } }` i `projects.floorplan_map`. Användaren justerar genom att dra i hörnen.
 - `npm run dev:demo` kör demoläge (data i webbläsaren) även när `.env.local` pekar på Supabase.

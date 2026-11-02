@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'framer-motion'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { IconBulb, IconExternalLink } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { Field, Primary, Sheet, useToast } from '../../components/ui'
@@ -17,44 +17,27 @@ const host = (link: string) => {
   }
 }
 
-export function Ideas({ state, room, open, filter }: ViewProps & { filter: ReactNode }) {
-  const list = state.ideas.filter((i) => room === null || i.room_id === room).reverse()
-  const roomName = (id: string | null) => state.rooms.find((r) => r.id === id)?.name
-
+export function IdeaRows({ state, ideas, open }: { state: ProjectState; ideas: Idea[]; open: ViewProps['open'] }) {
   return (
-    <div>
-      <div className="section-head">
-        <h1>Idéer</h1>
-        {filter}
-      </div>
-
-      {list.length === 0 ? (
-        <div className="empty">
-          <h2>{room ? 'Inga idéer här' : 'Inga idéer än'}</h2>
-          <button className="btn btn--secondary" onClick={() => open({ t: 'idea', item: { room_id: room } })}>Lägg till idé</button>
-        </div>
-      ) : (
-        <div className="rows">
-          <AnimatePresence initial={false}>
-            {list.map((i) => (
-              <SwipeRow key={i.id} onClick={() => open({ t: 'idea', item: i })} onDelete={() => removeRow(state, 'ideas', i.id, i.title)}>
-                <div className="row__main">
-                  {i.image_path ? <FileThumb path={i.image_path} url={state.urls[i.image_path]} size={48} /> : <span className="thumb" style={{ width: 48, height: 48 }}><IconBulb size={20} /></span>}
-                  <div className="row__text">
-                    <div className="row__title">{i.title}</div>
-                    <div className="meta">{[roomName(i.room_id), i.link && host(i.link)].filter(Boolean).join(' · ') || i.note || 'Hela hemmet'}</div>
-                  </div>
-                </div>
-                {i.link && (
-                  <a href={i.link} target="_blank" rel="noreferrer" className="row__link" aria-label="Öppna länk" onClick={(e) => e.stopPropagation()}>
-                    <IconExternalLink size={16} />
-                  </a>
-                )}
-              </SwipeRow>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+    <div className="rows">
+      <AnimatePresence initial={false}>
+        {ideas.map((i) => (
+          <SwipeRow key={i.id} onClick={() => open({ t: 'idea', item: i })} onDelete={() => removeRow(state, 'ideas', i.id, i.title)}>
+            <div className="row__main">
+              {i.image_path ? <FileThumb path={i.image_path} url={state.urls[i.image_path]} size={48} /> : <span className="thumb" style={{ width: 48, height: 48 }}><IconBulb size={20} /></span>}
+              <div className="row__text">
+                <div className="row__title">{i.title}</div>
+                <div className="meta">{[i.link && host(i.link), i.note].filter(Boolean).join(' · ')}</div>
+              </div>
+            </div>
+            {i.link && (
+              <a href={i.link} target="_blank" rel="noreferrer" className="row__link" aria-label="Öppna länk" onClick={(e) => e.stopPropagation()}>
+                <IconExternalLink size={16} />
+              </a>
+            )}
+          </SwipeRow>
+        ))}
+      </AnimatePresence>
     </div>
   )
 }

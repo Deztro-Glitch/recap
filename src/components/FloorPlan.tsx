@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { IconArrowBackUp } from '@tabler/icons-react'
+import { IconArrowBackUp, IconDots } from '@tabler/icons-react'
 import { api } from '../lib/api'
 import { growRooms, fromV1, inside, labelPoint, loadBarriers, polygonize, type Barriers } from '../lib/plangrid'
 import { presetFor, readRoomNames } from '../lib/readplan'
@@ -23,6 +23,7 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
   const [aspect, setAspect] = useState(0.75)
   const [polys, setPolys] = useState<Polys>(() => toPolys(project.floorplan_map))
   const [editing, setEditing] = useState(false)
+  const [tools, setTools] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [vertex, setVertex] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -259,6 +260,11 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
     <div>
       <div className="section-head">
         <h2>Planritning</h2>
+        {!editing && detecting === null && (
+          <button className="btn btn--ghost" aria-label="Verktyg för planritningen" aria-expanded={tools} onClick={() => setTools(!tools)}>
+            <IconDots size={18} />
+          </button>
+        )}
         {editing && (
           <>
             <button
@@ -277,11 +283,12 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
         )}
       </div>
 
-      {!editing && detecting === null && (
+      {/* Verktygen behövs sällan, så de ligger bakom knappen med tre prickar. */}
+      {tools && !editing && detecting === null && (
         <div className="plan-tools" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 'var(--s-2)' }}>
-          <button className="btn btn--secondary" onClick={() => detect()}>Hitta rum</button>
-          <button className="btn btn--ghost" onClick={() => setEditing(true)}>Justera</button>
-          <button className="btn btn--ghost" onClick={() => input.current?.click()}>Byt bild</button>
+          <button className="btn btn--secondary" onClick={() => { setTools(false); detect() }}>Hitta rum</button>
+          <button className="btn btn--ghost" onClick={() => { setTools(false); setEditing(true) }}>Justera rummen</button>
+          <button className="btn btn--ghost" onClick={() => { setTools(false); input.current?.click() }}>Byt bild</button>
         </div>
       )}
 

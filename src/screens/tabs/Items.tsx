@@ -107,8 +107,12 @@ export function useMarkDone(state: ProjectState) {
 // Att göra: det som ska köpas eller göras. När det bockas av flyttar det till loggen.
 export function Todo({ state, open }: ViewProps) {
   const { markDone, field } = useMarkDone(state)
-  const list = allItems(state).filter((i) => !i.done).sort(byImportance)
+  const items = allItems(state)
+  const list = items.filter((i) => !i.done).sort(byImportance)
   const total = list.reduce((s, i) => s + i.amount, 0)
+  const spent = items.filter((i) => i.done).reduce((s, i) => s + i.amount, 0)
+  const budget = Number(state.project?.budget) || 0
+  const left = budget - spent - total
 
   return (
     <div>
@@ -126,7 +130,17 @@ export function Todo({ state, open }: ViewProps) {
         </div>
       ) : (
         <>
-          {total > 0 && <p className="meta">{list.length} saker · ungefär {kr(total)} kvar</p>}
+          {budget > 0 ? (
+            <div className="kpis">
+              <div className="kpi"><div className="meta">Kvar att köpa, ungefär</div><div className="kpi__value">{kr(total)}</div></div>
+              <div className="kpi">
+                <div className="meta">{left < 0 ? 'Över budgeten' : 'Kvar av budgeten sen'}</div>
+                <div className="kpi__value" style={left < 0 ? { color: 'var(--danger)' } : undefined}>{kr(Math.abs(left))}</div>
+              </div>
+            </div>
+          ) : (
+            total > 0 && <p className="meta">{list.length} saker · ungefär {kr(total)} kvar</p>
+          )}
           <div className="rows" style={{ marginTop: 'var(--s-4)' }}>
             <AnimatePresence initial={false}>
               {list.map((it) => <ItemRow key={it.id} it={it} state={state} showFolder onCheck={markDone} onEdit={() => open(sheetFor(it))} />)}
@@ -138,8 +152,8 @@ export function Todo({ state, open }: ViewProps) {
   )
 }
 
-export function ItemRow({ it, state, onEdit, onCheck, showFolder }: { it: Item; state: ProjectState; onEdit: () => void; onCheck?: (it: Item) => void; showFolder?: boolean }) {
-  const room = state.rooms.find((r) => r.id === it.room_id)
+export function ItemRow({ it, state, onEdit, onCheck, showFolder, hideRoom }: { it: Item; state: ProjectState; onEdit: () => void; onCheck?: (it: Item) => void; showFolder?: boolean; hideRoom?: boolean }) {
+  const room = hideRoom ? undefined : state.rooms.find((r) => r.id === it.room_id)
   const folder = showFolder ? state.folders.find((f) => f.id === it.folder_id) : undefined
   return (
     <SwipeRow onClick={onEdit} onDelete={() => removeRow(state, it.table, it.id, it.title)}>
@@ -158,7 +172,7 @@ export function ItemRow({ it, state, onEdit, onCheck, showFolder }: { it: Item; 
             {!it.done && it.important && <IconStarFilled size={13} className="star" aria-label="Viktigt" />}
             {it.title}
           </div>
-          <div className="meta">{[it.date ? fmtDate(it.date) : null, folder?.name, room?.name, it.store].filter(Boolean).join(' · ') || 'Hela hemmet'}</div>
+          <div className="meta">{[it.date ? fmtDate(it.date) : null, folder?.name, room?.name, it.store].filter(Boolean).join(' · ') || (hideRoom ? '' : 'Hela hemmet')}</div>
           <DetailsList details={it.details} />
           {it.missing && <span className="status status--warning">Belopp saknas</span>}
         </div>
@@ -173,9 +187,9 @@ export function ItemRow({ it, state, onEdit, onCheck, showFolder }: { it: Item; 
   )
 }
 
-export function ItemList({ items, state, open, onCheck, empty }: { items: Item[]; state: ProjectState; open: ViewProps['open']; onCheck?: (it: Item) => void; empty: string }) {
+export function ItemList({ items, state, open, onCheck, empty, hideRoom }: { items: Item[]; state: ProjectState; open: ViewProps['open']; onCheck?: (it: Item) => void; empty: string; hideRoom?: boolean }) {
   if (!items.length) return <p className="meta">{empty}</p>
-  return <div className="rows">{items.map((it) => <ItemRow key={it.id} it={it} state={state} showFolder onCheck={onCheck} onEdit={() => open(sheetFor(it))} />)}</div>
+  return <div className="rows">{items.map((it) => <ItemRow key={it.id} it={it} state={state} showFolder hideRoom={hideRoom} onCheck={onCheck} onEdit={() => open(sheetFor(it))} />)}</div>
 }
 
 // Ett och samma formulär för köp och jobb, nya och gamla.

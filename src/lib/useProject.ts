@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type Table } from './api'
 import type { Folder, Idea, Photo, Project, Purchase, Room, Task } from '../types'
 
@@ -87,22 +87,6 @@ export function useProject(pid: string) {
 export const paid = (p: Purchase) => Number(p.price ?? p.est_price) || 0
 const cost = (t: Task) => Number(t.cost) || 0
 const est = (p: Purchase) => Number(p.est_price) || 0
-
-export function useBudget(project: Project | null, purchases: Purchase[], tasks: Task[]) {
-  return useMemo(() => {
-    const budget = project?.budget ?? 0
-    const bought = purchases.filter((p) => p.bought)
-    const doneTasks = tasks.filter((t) => t.status === 'done')
-    const spent = bought.reduce((s, p) => s + paid(p), 0) + doneTasks.reduce((s, t) => s + cost(t), 0)
-    const planned =
-      purchases.reduce((s, p) => s + (p.bought ? paid(p) : est(p)), 0) +
-      tasks.reduce((s, t) => s + cost(t), 0)
-    // Det som stannar i lägenheten: fasta inköp och allt renoveringsarbete.
-    const stays = bought.filter((p) => p.stays).reduce((s, p) => s + paid(p), 0) + doneTasks.reduce((s, t) => s + cost(t), 0)
-    const mine = bought.filter((p) => !p.stays).reduce((s, p) => s + paid(p), 0)
-    return { budget, spent, planned, stays, mine, left: budget - spent, overSpent: budget > 0 && spent > budget, overPlanned: budget > 0 && planned > budget }
-  }, [project, purchases, tasks])
-}
 
 // Summor för en delmängd (ett rum eller en mapp).
 export function totals(purchases: Purchase[], tasks: Task[]) {
