@@ -12,6 +12,7 @@ import { ContractStatus } from './Contracts'
 import { ItemList, allItems, byDate, byImportance, modeItems, roomFacts, sheetFor, sum, useMarkDone, type Item } from './Items'
 import { RoomPhotos } from './Photos'
 import { RoomEditSheet } from './Rooms'
+import { EconomyDashboard } from './Economy'
 
 // Översikt: nyckeltal, planritningen och en panel som visar hemmet eller det rum man tryckt på.
 export function Overview({ state, open, place, setPlace }: ViewProps & { place: string | null; setPlace: (id: string | null) => void }) {
@@ -32,16 +33,11 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
     await state.reload()
   }
 
-  const kpis =
-    mode === 'full'
-      ? [
-          { label: 'Spenderat', value: sum(items.filter((i) => i.done)) },
-          { label: 'Planerat', value: sum(items.filter((i) => !i.done)) },
-        ]
-      : [
-          { label: 'Fast månadskostnad', value: state.contracts.reduce((s, c) => s + (Number(c.monthly) || 0), 0) },
-          { label: 'Investerat i hemmet', value: sum(allItems(state).filter((i) => i.done && (i.k6 || i.stays))) },
-        ]
+  // I Boende visas ekonomin i stället, se EconomyDashboard.
+  const kpis = [
+    { label: 'Spenderat', value: sum(items.filter((i) => i.done)) },
+    { label: 'Planerat', value: sum(items.filter((i) => !i.done)) },
+  ]
 
   return (
     <div>
@@ -50,11 +46,15 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
         <Chips value={mode} onChange={setMode} options={(['full', 'simple'] as Mode[]).map((m) => ({ value: m, label: MODE_LABEL[m] }))} />
       </div>
 
-      <div className="kpis">
-        {kpis.map((k) => (
-          <div key={k.label} className="kpi"><div className="meta">{k.label}</div><div className="kpi__value">{kr(k.value)}</div></div>
-        ))}
-      </div>
+      {mode === 'simple' ? (
+        <EconomyDashboard state={state} open={open} />
+      ) : (
+        <div className="kpis">
+          {kpis.map((k) => (
+            <div key={k.label} className="kpi"><div className="meta">{k.label}</div><div className="kpi__value">{kr(k.value)}</div></div>
+          ))}
+        </div>
+      )}
 
       <div className="overview section">
         <div>

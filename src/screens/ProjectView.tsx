@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import {
   IconArrowLeft, IconCamera, IconChecklist, IconCircleCheck, IconDots, IconFileText, IconHome, IconHomeCheck, IconLayoutGrid,
-  IconList, IconPhoto, IconReceipt, IconSettings, IconShoppingCart,
+  IconList, IconPhoto, IconReceipt, IconSettings, IconShoppingCart, IconWallet,
 } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
@@ -14,6 +14,7 @@ import { AddRoomSheet } from './tabs/Rooms'
 import { ItemSheet, Purchases, fmtDate, today } from './tabs/Items'
 import { ContractSheet, Contracts, type ContractTab } from './tabs/Contracts'
 import { Overview } from './tabs/Overview'
+import { EconomySheet } from './tabs/Economy'
 import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
 
@@ -36,6 +37,7 @@ export type SheetState =
   | { t: 'contract'; item: Contract | Partial<Contract> }
   | { t: 'pick'; room_id?: string | null }   // kameran, med ett rum förvalt
   | { t: 'room' }
+  | { t: 'economy' }
   | { t: 'roomInfo'; room: Room }
   | { t: 'add' }
   | { t: 'picked' }
@@ -204,6 +206,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const moreRows = [
     { id: 'contracts', icon: IconFileText, label: 'Avtal', on: () => showContracts('contracts') },
     { id: 'cv', icon: IconHomeCheck, label: 'Bostads-CV', on: () => showContracts('cv') },
+    { id: 'economy', icon: IconWallet, label: 'Ekonomi', on: () => open({ t: 'economy' }) },
     { id: 'settings', icon: IconSettings, label: 'Inställningar', on: () => go('settings') },
   ]
 
@@ -236,7 +239,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           {VIEWS.filter((v) => !moreViews.includes(v.id)).map((v) => <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => go(v.id)} />)}
           <div className="nav-label meta">Mer</div>
           {moreRows.map((r) => (
-            <NavItem key={r.id} icon={r.icon} label={r.label} active={r.id === 'settings' ? view === 'settings' : view === 'contracts' && contractTab === r.id} onClick={r.on} />
+            <NavItem key={r.id} icon={r.icon} label={r.label} active={r.id === 'settings' ? view === 'settings' : r.id !== 'economy' && view === 'contracts' && contractTab === r.id} onClick={r.on} />
           ))}
         </>
       }
@@ -273,6 +276,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           />
           <ContractSheet item={sheet?.t === 'contract' ? sheet.item : null} state={state} onClose={close} />
           <AddRoomSheet open={sheet?.t === 'room'} onClose={close} state={state} />
+          <EconomySheet open={sheet?.t === 'economy'} onClose={close} state={state} />
 
           <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">
             <div className="rows">

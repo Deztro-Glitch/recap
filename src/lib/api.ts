@@ -221,7 +221,7 @@ function demoApi(): Api {
     },
     async createProject(p) {
       const s = load()
-      const project: Project = { ...p, floorplan_path: null, floorplan_map: null, id: crypto.randomUUID(), created_by: me.id, created_at: now() }
+      const project: Project = { ...p, floorplan_path: null, floorplan_map: null, economy: null, id: crypto.randomUUID(), created_by: me.id, created_at: now() }
       s.projects.push(project)
       s.members.push({ project_id: project.id, user_id: me.id, email: me.email, role: 'owner' })
       save(s)

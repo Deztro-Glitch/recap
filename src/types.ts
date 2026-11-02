@@ -19,9 +19,21 @@ export interface Project {
   budget: number
   floorplan_path: string | null
   floorplan_map: PlanMap | null
+  economy: Economy | null
   mode: Mode
   created_by: string
   created_at: string
+}
+
+// Hemmets ekonomi för Boendeläget. Belopp i kronor, räntan i procent.
+export interface Economy {
+  loan: number            // ursprungligt lån
+  rate: number            // aktuell ränta, t.ex. 3.9
+  amortization: number    // per månad
+  loanStart: string | null
+  fee: number             // månadsavgift till föreningen
+  electricity: number     // el per månad, ungefär
+  insurance: number       // hemförsäkring per månad
 }
 
 // Rummen på planritningen som former: hörn som andelar (0–1) av bildens bredd och höjd.

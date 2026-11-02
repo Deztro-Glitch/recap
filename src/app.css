@@ -342,3 +342,19 @@ a { color: inherit; }
   .overview .plan { max-width: 100%; }
   .kpi__value { font-size: 17px; }
 }
+
+/* ---------- Ekonomi i Boendeläget ---------- */
+
+.kpi--button { border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: background var(--t-fast); }
+.kpi--button:hover { background: var(--hover); }
+.kpi--button .kpi__value { margin: 2px 0; }
+
+/* Bolånet: stapeln krymper i takt med skulden. */
+.loan { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-4); margin-top: var(--s-2); cursor: pointer; }
+.loan .budget-track { height: 10px; margin-top: 0; }
+.loan__ends { display: flex; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-3); }
+.loan__ends > div:last-child { text-align: right; }
+
+@media (max-width: 760px) {
+  .kpis--three .kpi:nth-child(3) { grid-column: 1 / -1; }
+}
