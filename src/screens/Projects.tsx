@@ -4,9 +4,8 @@ import { IconBuilding, IconChevronRight, IconHome, IconHomeEco, IconLogout } fro
 import { api, type User } from '../lib/api'
 import { kr, parseNum } from '../lib/format'
 import { Chips, Field, Loader, More, Primary, Sheet, rowAnim, useToast } from '../components/ui'
-import { ModePicker } from '../components/ModePicker'
 import { NavItem, Shell } from '../components/Shell'
-import { KIND_LABEL, ROOM_PRESETS, type Kind, type Mode, type Project } from '../types'
+import { KIND_LABEL, ROOM_PRESETS, type Kind, type Project } from '../types'
 
 const KIND_ICON = { lagenhet: IconBuilding, hus: IconHome, annat: IconHomeEco }
 
@@ -80,7 +79,6 @@ function NewProjectSheet({ open, onClose, onCreated }: { open: boolean; onClose:
   const [address, setAddress] = useState('')
   const [budget, setBudget] = useState('')
   const [rooms, setRooms] = useState<string[]>(['Kök', 'Vardagsrum', 'Sovrum', 'Badrum', 'Hall'])
-  const [mode, setMode] = useState<Mode>('simple')
   const [busy, setBusy] = useState(false)
 
   const toggle = (r: string) => setRooms((rs) => (rs.includes(r) ? rs.filter((x) => x !== r) : [...rs, r]))
@@ -89,7 +87,7 @@ function NewProjectSheet({ open, onClose, onCreated }: { open: boolean; onClose:
     e.preventDefault()
     setBusy(true)
     try {
-      const p = await api.createProject({ name: name.trim(), kind, address: address.trim() || null, budget: parseNum(budget), mode })
+      const p = await api.createProject({ name: name.trim(), kind, address: address.trim() || null, budget: parseNum(budget), mode: 'full' })
       await Promise.all(
         ROOM_PRESETS.filter((r) => rooms.includes(r.name)).map((r, i) =>
           api.insert('rooms', { project_id: p.id, name: r.name, icon: r.icon, color: r.color, sort: i }),
@@ -106,10 +104,6 @@ function NewProjectSheet({ open, onClose, onCreated }: { open: boolean; onClose:
   return (
     <Sheet open={open} onClose={onClose} title="Nytt hem">
       <form className="form" onSubmit={submit}>
-        <div className="field">
-          <span className="field__label">Vad ska du göra</span>
-          <ModePicker value={mode} onChange={setMode} />
-        </div>
         <Field label="Namn">
           <input className="input" placeholder="Tvåan på Södermannagatan" value={name} onChange={(e) => setName(e.target.value)} required />
         </Field>

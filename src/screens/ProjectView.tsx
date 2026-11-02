@@ -1,27 +1,27 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import {
-  IconArrowLeft, IconBulb, IconCamera, IconChecklist, IconDots, IconFolder, IconFolderPlus, IconHome,
-  IconList, IconPhoto, IconReceipt, IconSettings,
+  IconArrowLeft, IconCamera, IconChecklist, IconCircleCheck, IconDots, IconFileText, IconHome, IconLayoutGrid,
+  IconList, IconPhoto, IconReceipt, IconSettings, IconShoppingCart,
 } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
 import { NavItem, Shell, type Tab } from '../components/Shell'
 import { Field, Loader, Sheet, ease, useToast } from '../components/ui'
-import type { Folder, Idea, PhotoKind, Purchase, Room, Task } from '../types'
-import { AddRoomSheet, HOME, Rooms } from './tabs/Rooms'
-import { ItemSheet, Todo, fmtDate, today } from './tabs/Items'
-import { FolderSheet, Folders } from './tabs/Folders'
-import { IdeaSheet, type IdeaDraft } from './tabs/Ideas'
+import type { Contract, PhotoKind, Purchase, Room, Task } from '../types'
+import { AddRoomSheet } from './tabs/Rooms'
+import { ItemSheet, Purchases, fmtDate, today } from './tabs/Items'
+import { ContractSheet, Contracts } from './tabs/Contracts'
+import { Overview } from './tabs/Overview'
 import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
 
-type ViewId = 'log' | 'rooms' | 'todo' | 'folders' | 'settings'
+type ViewId = 'overview' | 'log' | 'purchases' | 'contracts' | 'settings'
 const VIEWS: { id: ViewId; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
+  { id: 'overview', label: 'Översikt', icon: IconLayoutGrid },
   { id: 'log', label: 'Logg', icon: IconList },
-  { id: 'rooms', label: 'Rum', icon: IconHome },
-  { id: 'todo', label: 'Att göra', icon: IconChecklist },
-  { id: 'folders', label: 'Mappar', icon: IconFolder },
+  { id: 'purchases', label: 'Inköp', icon: IconShoppingCart },
+  { id: 'contracts', label: 'Avtal och dokument', icon: IconFileText },
   { id: 'settings', label: 'Inställningar', icon: IconSettings },
 ]
 
@@ -32,9 +32,7 @@ export type SheetState =
   | { t: 'purchase'; item: Partial<Purchase> }
   | { t: 'receipt'; item?: Partial<Purchase> }
   | { t: 'task'; item: Task }
-  | { t: 'idea'; item: Idea | IdeaDraft }
-  | { t: 'convert'; idea: Idea }
-  | { t: 'folder'; item?: Folder }
+  | { t: 'contract'; item: Contract | Partial<Contract> }
   | { t: 'pick'; room_id?: string | null }   // kameran, med ett rum förvalt
   | { t: 'room' }
   | { t: 'roomInfo'; room: Room }
@@ -49,10 +47,9 @@ export interface ViewProps {
 
 export function ProjectView({ pid, user, onBack }: { pid: string; user: User; onBack: () => void }) {
   const state = useProject(pid)
-  const [view, setView] = useState<ViewId>('log')
-  // Rummet som är öppet under Rum (eller HOME för Hela hemmet).
+  const [view, setView] = useState<ViewId>('overview')
+  // Rummet som är valt i översikten.
   const [place, setPlace] = useState<string | null>(null)
-  const [folder, setFolder] = useState<string | null>(null)
   const [sheet, setSheet] = useState<SheetState | null>(null)
   const toast = useToast()
   const receiptInput = useRef<HTMLInputElement>(null)
@@ -84,9 +81,9 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
         const path = await api.uploadFile(state.project.id, file)
         created.push(
           await api.insert<Purchase>('purchases', {
-            project_id: state.project.id, room_id: null, folder_id: null, ...receiptDefaults.current,
+            project_id: state.project.id, room_id: null, ...receiptDefaults.current,
             title: `Kvitto ${fmtDate(today())}`, est_price: 0, price: null, bought: true, bought_on: today(),
-            receipt_path: path, priority: 2, stays: false, store: null, link: null, note: null, details: null,
+            receipt_path: path, priority: 2, stays: false, k6: false, store: null, link: null, note: null, details: null,
           }),
         )
         setSaving((n) => n - 1)
@@ -111,28 +108,31 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     if (photoInput.current) photoInput.current.value = ''
   }
 
-  // Vad bilderna var: kvitton blir köp i loggen, före/efter hamnar på rummet, idéer bland idéerna.
-  const savePicked = async (as: 'receipt' | PhotoKind | 'idea') => {
+  // Vad bilderna var: kvitton blir köp, före/efter hamnar på rummet, något man vill ha blir planerat.
+  const savePicked = async (as: 'receipt' | PhotoKind | 'planned') => {
     const files = picked
     const room_id = pickedRoom || null
     setSheet(null)
     setPicked([])
     if (as === 'receipt') {
-      receiptDefaults.current = { ...here, room_id }
+      receiptDefaults.current = { room_id }
       return onReceipts(files)
     }
     setSaving(files.length)
     try {
-      if (as === 'idea') {
-        let last: Idea | null = null
+      if (as === 'planned') {
+        let last: Purchase | null = null
         for (const file of files) {
           const image_path = await api.uploadFile(state.project!.id, file)
-          last = await api.insert<Idea>('ideas', { project_id: state.project!.id, room_id, folder_id: here.folder_id, title: 'Ny idé', note: null, link: null, image_path })
+          last = await api.insert<Purchase>('purchases', {
+            project_id: state.project!.id, room_id, title: 'Nytt köp', image_path, est_price: 0, price: null, bought: false,
+            bought_on: null, receipt_path: null, priority: 2, stays: false, k6: false, store: null, link: null, note: null, details: null,
+          })
           setSaving((n) => n - 1)
         }
         await state.reload()
-        if (files.length === 1 && last) setSheet({ t: 'idea', item: last })
-        else toast(`${files.length} idéer är sparade`)
+        if (files.length === 1 && last) setSheet({ t: 'purchase', item: last })
+        else toast(`${files.length} köp är planerade`)
       } else {
         for (const file of files) {
           await api.uploadPhoto(state.project!.id, file, room_id, as)
@@ -162,11 +162,10 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const go = (to: ViewId) => {
     setView(to)
     setSheet(null)
-    if (to !== 'folders') setFolder(null)
   }
   const open = (s: SheetState) => {
     if (s.t === 'roomInfo') {
-      go('rooms')
+      go('overview')
       return setPlace(s.room.id)
     }
     if (s.t === 'pick') {
@@ -183,38 +182,25 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     setSheet(s)
   }
   const close = () => setSheet(null)
-  const openFolder = (id: string) => {
-    setFolder(id)
-    setView('folders')
-  }
 
-  // Nya saker hamnar i den mapp eller det rum man står i.
-  const here = { folder_id: view === 'folders' ? folder : null, room_id: view === 'rooms' && place && place !== HOME ? place : null }
+  // Nya saker hamnar i rummet som är valt i översikten.
+  const here = { room_id: view === 'overview' ? place : null }
   const props: ViewProps = { state, open }
-
-  // I läget "Inköp och kvitton" döljs mapparna.
-  const simple = state.project?.mode === 'simple'
-  const views = VIEWS.filter((v) => !(simple && v.id === 'folders'))
-  const moreViews: ViewId[] = simple ? ['settings'] : ['folders', 'settings']
-  const showRooms = () => {
-    setPlace(null)
-    go('rooms')
-  }
+  const moreViews: ViewId[] = ['contracts', 'settings']
 
   const tabs: Tab[] = [
+    { id: 'overview', label: 'Översikt', icon: IconLayoutGrid, active: view === 'overview', onClick: () => go('overview') },
     { id: 'log', label: 'Logg', icon: IconList, active: view === 'log', onClick: () => go('log') },
-    { id: 'rooms', label: 'Rum', icon: IconHome, active: view === 'rooms', onClick: showRooms },
-    { id: 'todo', label: 'Att göra', icon: IconChecklist, active: view === 'todo', onClick: () => go('todo') },
+    { id: 'purchases', label: 'Inköp', icon: IconShoppingCart, active: view === 'purchases', onClick: () => go('purchases') },
     { id: 'more', label: 'Mer', icon: IconDots, active: moreViews.includes(view), onClick: () => open({ t: 'more' }) },
   ]
 
   const addRows = [
-    { icon: IconCamera, title: 'Bild eller kvitto', meta: 'Fota, välj sen vad det är', on: () => photoInput.current?.click() },
-    { icon: IconChecklist, title: 'Något att göra', meta: 'Att köpa eller göra, bocka av när det är klart', on: () => open({ t: 'purchase', item: { ...here } }) },
-    { icon: IconList, title: 'Något som är gjort', meta: 'Hamnar direkt i loggen', on: () => open({ t: 'purchase', item: { ...here, bought: true } }) },
-    { icon: IconBulb, title: 'Idé', meta: 'Med bild eller länk', on: () => open({ t: 'idea', item: { ...here } }) },
-    ...(simple ? [] : [{ icon: IconFolderPlus, title: 'Mapp', meta: 'Samla ett projekt, t.ex. Köksrenovering', on: () => open({ t: 'folder' }) }]),
-    { icon: IconHome, title: 'Rum', meta: 'Till planritningen', on: () => open({ t: 'room' }) },
+    { icon: IconCamera, title: 'Kvitto eller bild', on: () => photoInput.current?.click() },
+    { icon: IconChecklist, title: 'Planerat köp eller jobb', on: () => open({ t: 'purchase', item: { ...here } }) },
+    { icon: IconCircleCheck, title: 'Klart köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, bought: true } }) },
+    { icon: IconFileText, title: 'Avtal', on: () => open({ t: 'contract', item: {} }) },
+    { icon: IconHome, title: 'Rum', on: () => open({ t: 'room' }) },
   ]
 
   return (
@@ -228,9 +214,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       nav={
         <>
           <NavItem icon={IconArrowLeft} label="Mina hem" onClick={onBack} />
-          {views.map((v) => (
-            <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => { if (v.id === 'folders') setFolder(null); if (v.id === 'rooms') return showRooms(); go(v.id) }} />
-          ))}
+          {VIEWS.map((v) => <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => go(v.id)} />)}
         </>
       }
     >
@@ -246,11 +230,11 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
         <Loader />
       ) : (
         <AnimatePresence mode="wait">
-          <motion.div key={view + (folder ?? '') + (place ?? '')} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease }}>
-            {view === 'log' && <Log {...props} onAdd={() => open({ t: 'add' })} onPhotos={(r) => { go('rooms'); setPlace(r ?? HOME) }} />}
-            {view === 'rooms' && <Rooms {...props} place={place} setPlace={setPlace} />}
-            {view === 'todo' && <Todo {...props} />}
-            {view === 'folders' && <Folders {...props} folder={folder} setFolder={setFolder} />}
+          <motion.div key={view} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease }}>
+            {view === 'overview' && <Overview {...props} place={place} setPlace={setPlace} />}
+            {view === 'log' && <Log {...props} />}
+            {view === 'purchases' && <Purchases {...props} />}
+            {view === 'contracts' && <Contracts {...props} />}
             {view === 'settings' && <Settings {...props} user={user} onDeleted={onBack} />}
           </motion.div>
         </AnimatePresence>
@@ -260,20 +244,11 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
         <>
           <ItemSheet
             table={sheet?.t === 'task' ? 'tasks' : 'purchases'}
-            item={sheet?.t === 'purchase' || sheet?.t === 'task' ? sheet.item : sheet?.t === 'convert' ? { title: sheet.idea.title, room_id: sheet.idea.room_id, folder_id: sheet.idea.folder_id, link: sheet.idea.link, note: sheet.idea.note } : null}
-            title={sheet?.t === 'convert' ? 'Gör till något att göra' : undefined}
+            item={sheet?.t === 'purchase' || sheet?.t === 'task' ? sheet.item : null}
             state={state}
-            onClose={async (saved) => {
-              // En idé som blivit något att göra behövs inte längre bland idéerna.
-              if (saved && sheet?.t === 'convert') {
-                await api.remove('ideas', sheet.idea.id)
-                state.reload()
-              }
-              close()
-            }}
+            onClose={close}
           />
-          <IdeaSheet item={sheet?.t === 'idea' ? sheet.item : null} state={state} onClose={close} onConvert={(idea) => open({ t: 'convert', idea })} />
-          <FolderSheet item={sheet?.t === 'folder' ? sheet.item ?? 'new' : null} state={state} onClose={close} onCreated={(id) => { close(); openFolder(id) }} />
+          <ContractSheet item={sheet?.t === 'contract' ? sheet.item : null} state={state} onClose={close} />
           <AddRoomSheet open={sheet?.t === 'room'} onClose={close} state={state} />
 
           <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">
@@ -282,7 +257,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
                 <div key={r.title} className="row" onClick={r.on}>
                   <div className="row__main">
                     <span className="menu-row__icon"><r.icon size={18} /></span>
-                    <div className="row__text"><div className="row__title">{r.title}</div><div className="meta">{r.meta}</div></div>
+                    <div className="row__title">{r.title}</div>
                   </div>
                 </div>
               ))}
@@ -305,7 +280,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
                   <div key={r.as} className="row" onClick={() => savePicked(r.as)}>
                     <div className="row__main">
                       <span className="menu-row__icon"><r.icon size={18} /></span>
-                      <div className="row__text"><div className="row__title">{r.title}</div><div className="meta">{r.meta}</div></div>
+                      <div className="row__title">{r.title}</div>
                     </div>
                   </div>
                 ))}
@@ -331,11 +306,11 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   )
 }
 
-const pickedRows: { as: 'receipt' | PhotoKind | 'idea'; icon: React.ComponentType<{ size?: number }>; title: string; meta: string }[] = [
-  { as: 'receipt', icon: IconReceipt, title: 'Kvitto', meta: 'Hamnar i loggen, fyll i belopp och butik' },
-  { as: 'before', icon: IconPhoto, title: 'Före', meta: 'Hur rummet såg ut innan' },
-  { as: 'after', icon: IconPhoto, title: 'Efter', meta: 'Hur det blev' },
-  { as: 'idea', icon: IconBulb, title: 'Idé', meta: 'Inspiration till senare' },
+const pickedRows: { as: 'receipt' | PhotoKind | 'planned'; icon: React.ComponentType<{ size?: number }>; title: string }[] = [
+  { as: 'receipt', icon: IconReceipt, title: 'Kvitto' },
+  { as: 'before', icon: IconPhoto, title: 'Förebild' },
+  { as: 'after', icon: IconPhoto, title: 'Efterbild' },
+  { as: 'planned', icon: IconChecklist, title: 'Planerat köp' },
 ]
 
 function PickedPreview({ file }: { file: File }) {

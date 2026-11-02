@@ -1,12 +1,9 @@
 import type { CSSProperties } from 'react'
 
 export type Kind = 'lagenhet' | 'hus' | 'annat'
-// Hur mycket man ska göra: bara inköp och kvitton, eller renovering med mappar och jobb.
+// Översiktens läge: renovering (Projekt) eller vanligt boende (Boende). Sparas i projects.mode.
 export type Mode = 'simple' | 'full'
-export const MODE_LABEL: Record<Mode, { name: string; meta: string }> = {
-  simple: { name: 'Inköp och kvitton', meta: 'Möbler, inredning och kvitton' },
-  full: { name: 'Renovering', meta: 'Även mappar för större projekt' },
-}
+export const MODE_LABEL: Record<Mode, string> = { full: 'Projekt', simple: 'Boende' }
 export type TaskStatus = 'todo' | 'doing' | 'done'
 export type PhotoKind = 'before' | 'after' | 'inspo'
 
@@ -40,6 +37,7 @@ export interface Member {
 // Innehållspaletten i design.css (--c-<namn>-bg / -fg).
 export type Palette = 'sand' | 'coral' | 'steel' | 'sun' | 'mint' | 'sky' | 'lilac' | 'rose'
 export const PALETTE: Palette[] = ['sand', 'coral', 'steel', 'sun', 'mint', 'sky', 'lilac', 'rose']
+export const COLOR_LABEL: Record<Palette, string> = { sand: 'Sand', coral: 'Korall', steel: 'Stål', sun: 'Sol', mint: 'Mint', sky: 'Himmel', lilac: 'Syren', rose: 'Ros' }
 export type IconKey =
   | 'kitchen' | 'sofa' | 'bed' | 'bath' | 'door' | 'plant' | 'laptop' | 'toy' | 'home' | 'laundry' | 'stairs' | 'box'
   | 'folder' | 'paint' | 'hammer' | 'bolt' | 'droplet' | 'armchair' | 'lamp' | 'tool'
@@ -86,7 +84,9 @@ export interface Purchase {
   note: string | null
   priority: Priority
   stays: boolean          // följer med lägenheten (kök, golv) i stället för att vara mitt (möbler)
+  k6: boolean             // värdehöjande förbättring, dras av vid försäljning
   receipt_path: string | null
+  image_path: string | null
   bought_on: string | null
   details: Detail[] | null
   created_at: string
@@ -114,9 +114,25 @@ export interface Task {
   cost: number
   note: string | null
   priority: Priority
+  k6: boolean
   receipt_path: string | null
   done_on: string | null
   details: Detail[] | null
+  created_at: string
+}
+
+export type ContractKind = 'el' | 'bredband' | 'forsakring' | 'bolan' | 'avgift' | 'annat'
+export const CONTRACT_KIND_LABEL: Record<ContractKind, string> = { el: 'El', bredband: 'Bredband', forsakring: 'Försäkring', bolan: 'Bolån', avgift: 'Avgift', annat: 'Annat' }
+
+export interface Contract {
+  id: string
+  project_id: string
+  kind: ContractKind
+  provider: string
+  monthly: number
+  ends_on: string | null   // bindningstid eller rabatt slutar
+  file_path: string | null
+  note: string | null
   created_at: string
 }
 
@@ -145,16 +161,6 @@ export const ROOM_PRESETS: { name: string; icon: IconKey; color: Palette }[] = [
   { name: 'Barnrum', icon: 'toy', color: 'rose' },
   { name: 'Tvättstuga', icon: 'laundry', color: 'steel' },
   { name: 'Förråd', icon: 'box', color: 'sand' },
-]
-
-// Mallar när man skapar en mapp. Jobben läggs in i den ordning man brukar göra dem.
-export const FOLDER_TEMPLATES: { name: string; icon: IconKey; color: Palette; tasks: string[] }[] = [
-  { name: 'Tom mapp', icon: 'folder', color: 'lilac', tasks: [] },
-  { name: 'Köksrenovering', icon: 'kitchen', color: 'sand', tasks: ['Riva gamla köket', 'Dra om el', 'Flytta vatten och avlopp', 'Spackla och måla', 'Lägga golv', 'Montera stommar och luckor', 'Montera bänkskiva', 'Sätta kakel', 'Installera vitvaror'] },
-  { name: 'Badrumsrenovering', icon: 'bath', color: 'sky', tasks: ['Riva gammalt', 'Byta golvbrunn', 'Dra el', 'Lägga tätskikt', 'Sätta kakel och klinker', 'Montera porslin och dusch'] },
-  { name: 'Målning', icon: 'paint', color: 'coral', tasks: ['Spackla och slipa', 'Grundmåla', 'Måla två strykningar'] },
-  { name: 'Möbler och inredning', icon: 'armchair', color: 'rose', tasks: [] },
-  { name: 'Golv', icon: 'hammer', color: 'steel', tasks: ['Riva gammalt golv', 'Lägga underlag', 'Lägga golv', 'Sätta golvlister'] },
 ]
 
 export const tileStyle = (c: Palette) => ({ '--tile-bg': `var(--c-${c}-bg)`, '--tile-fg': `var(--c-${c}-fg)` }) as CSSProperties

@@ -10,3 +10,6 @@ export const parseNum = (s: string) => {
   const n = parseFloat(s.replace(/\s/g, '').replace(',', '.'))
   return Number.isFinite(n) ? n : 0
 }
+
+// Dagar kvar till ett datum (negativt om det har passerat).
+export const daysLeft = (d: string) => Math.round((new Date(`${d}T00:00`).getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000)

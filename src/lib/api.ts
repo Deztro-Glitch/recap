@@ -4,11 +4,11 @@ import type { Member, Photo, PhotoKind, Project } from '../types'
 // Appen pratar med Supabase om nycklar finns, annars körs ett demoläge
 // där allt sparas i webbläsaren (bra för att testa utan konto).
 
-export type Table = 'rooms' | 'purchases' | 'tasks' | 'photos' | 'ideas' | 'folders'
-export const TABLES: Table[] = ['rooms', 'purchases', 'tasks', 'photos', 'ideas', 'folders']
+export type Table = 'rooms' | 'purchases' | 'tasks' | 'photos' | 'ideas' | 'folders' | 'contracts'
+export const TABLES: Table[] = ['rooms', 'purchases', 'tasks', 'photos', 'ideas', 'folders', 'contracts']
 
 // Kolumner som pekar på en fil i lagringen och ska tas bort tillsammans med raden.
-const FILE_COL: Partial<Record<Table, string>> = { photos: 'path', purchases: 'receipt_path', tasks: 'receipt_path', ideas: 'image_path' }
+const FILE_COL: Partial<Record<Table, string[]>> = { photos: ['path'], purchases: ['receipt_path', 'image_path'], tasks: ['receipt_path'], ideas: ['image_path'], contracts: ['file_path'] }
 export interface User { id: string; email: string }
 type Row = Record<string, any>
 
@@ -116,11 +116,11 @@ function supabaseApi(sb: SupabaseClient): Api {
       check(await sb.from(table).update(patch).eq('id', id))
     },
     async remove(table, id) {
-      const col = FILE_COL[table]
-      if (col) {
-        const { data } = await sb.from(table).select(col).eq('id', id).single()
-        const path = (data as Row | null)?.[col]
-        if (path) await sb.storage.from('photos').remove([path])
+      const cols = FILE_COL[table]
+      if (cols) {
+        const { data } = await sb.from(table).select('*').eq('id', id).single()
+        const paths = cols.map((c) => (data as Row | null)?.[c]).filter(Boolean)
+        if (paths.length) await sb.storage.from('photos').remove(paths)
       }
       check(await sb.from(table).delete().eq('id', id))
     },
@@ -173,7 +173,7 @@ function demoApi(): Api {
   const KEY = 'recap-demo'
   const me: User = { id: 'demo-user', email: 'demo@recap.se' }
   type Store = { signedIn: boolean; projects: Project[]; members: Member[] } & Record<Table, Row[]>
-  const empty: Store = { signedIn: false, projects: [], members: [], rooms: [], purchases: [], tasks: [], photos: [], ideas: [], folders: [] }
+  const empty: Store = { signedIn: false, projects: [], members: [], rooms: [], purchases: [], tasks: [], photos: [], ideas: [], folders: [], contracts: [] }
 
   const load = (): Store => {
     try {
