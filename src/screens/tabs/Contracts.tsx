@@ -6,7 +6,7 @@ import { daysLeft, kr, parseNum } from '../../lib/format'
 import { FileField } from '../../components/FileField'
 import { SwipeRow } from '../../components/SwipeRow'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
-import { CONTRACT_KIND_LABEL, type Contract, type ContractKind } from '../../types'
+import { COMMON_CONTRACTS, CONTRACT_KIND_LABEL, HOME_CONTRACTS, PROVIDERS, type Contract, type ContractKind } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { allItems, byDate, fmtDate, removeRow, roomFacts, sheetFor, sum, type Item } from './Items'
 
@@ -43,14 +43,44 @@ function ContractList({ state, open }: ViewProps) {
     const db = b.ends_on ? daysLeft(b.ends_on) : Infinity
     return (da <= SOON ? da : Infinity) - (db <= SOON ? db : Infinity) || a.provider.localeCompare(b.provider, 'sv')
   })
-  const monthly = list.reduce((s, c) => s + (Number(c.monthly) || 0), 0)
+  const monthly = (cs: Contract[]) => cs.reduce((s, c) => s + (Number(c.monthly) || 0), 0)
+  const home = list.filter((c) => HOME_CONTRACTS.includes(c.kind))
+  const subs = list.filter((c) => !HOME_CONTRACTS.includes(c.kind))
+  // Streaming kan man ha flera av, så det föreslås alltid.
+  const missing = COMMON_CONTRACTS.filter((k) => k === 'streaming' || !list.some((c) => c.kind === k))
 
-  if (!list.length) return <div className="empty"><h2>Inga avtal än</h2></div>
+  return (
+    <>
+      {list.length > 0 && (
+        <div className="kpis section">
+          <div className="kpi"><div className="meta">Fasta kostnader</div><div className="kpi__value">{kr(monthly(list))}/mån</div></div>
+          <div className="kpi"><div className="meta">Per år</div><div className="kpi__value">{kr(monthly(list) * 12)}</div></div>
+        </div>
+      )}
+      <ContractGroup title="Boende" list={home} state={state} open={open} sum={monthly(home)} />
+      <ContractGroup title="Abonnemang" list={subs} state={state} open={open} sum={monthly(subs)} />
+      {missing.length > 0 && (
+        <div className="section">
+          <div className="section-head"><h2>Vanliga avtal</h2></div>
+          <div className="chips">
+            {missing.map((k) => (
+              <button key={k} className="chip" onClick={() => open({ t: 'contract', item: { kind: k } })}>+ {CONTRACT_KIND_LABEL[k]}</button>
+            ))}
+            <button className="chip" onClick={() => open({ t: 'contract', item: { kind: 'annat' } })}>+ Eget</button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function ContractGroup({ title, list, state, open, sum }: ViewProps & { title: string; list: Contract[]; sum: number }) {
+  if (!list.length) return null
   return (
     <div className="section">
       <div className="section-head">
-        <h2>Fasta kostnader</h2>
-        <span className="row__amount">{kr(monthly)}/mån</span>
+        <h2>{title}</h2>
+        <span className="row__amount">{kr(sum)}/mån</span>
       </div>
       <div className="rows">
         <AnimatePresence initial={false}>
@@ -175,12 +205,19 @@ export function ContractSheet({ item, state, onClose }: { item: Contract | Parti
   }
 
   return (
-    <Sheet open={!!item} onClose={onClose} title={c ? c.provider : 'Nytt avtal'}>
+    <Sheet open={!!item} onClose={onClose} title={c ? c.provider : item?.kind ? CONTRACT_KIND_LABEL[item.kind] : 'Nytt avtal'}>
       <form className="form" onSubmit={save}>
         <Chips value={f.kind} onChange={(k) => setF({ ...f, kind: k })} options={KINDS.map((k) => ({ value: k, label: CONTRACT_KIND_LABEL[k] }))} />
         <Field label="Leverantör">
-          <input className="input" placeholder="Tibber" value={f.provider} onChange={(e) => setF({ ...f, provider: e.target.value })} required />
+          <input className="input" placeholder={PROVIDERS[f.kind]?.[0] ?? 'Skriv namnet'} value={f.provider} onChange={(e) => setF({ ...f, provider: e.target.value })} required />
         </Field>
+        {PROVIDERS[f.kind] && (
+          <div className="chips">
+            {PROVIDERS[f.kind]!.map((p) => (
+              <button type="button" key={p} className={`chip ${f.provider === p ? 'is-active' : ''}`} onClick={() => setF({ ...f, provider: p })}>{p}</button>
+            ))}
+          </div>
+        )}
         <div className="form__row">
           <Field label="Kostnad per månad">
             <input className="input" inputMode="decimal" placeholder="450" value={f.monthly} onChange={(e) => setF({ ...f, monthly: e.target.value })} />

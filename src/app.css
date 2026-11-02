@@ -358,3 +358,11 @@ a { color: inherit; }
 @media (max-width: 760px) {
   .kpis--three .kpi:nth-child(3) { grid-column: 1 / -1; }
 }
+
+.kpi__label { font-size: var(--fs-meta); font-weight: 600; }
+.el-price { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-2) var(--s-4); margin-top: var(--s-2); padding: var(--s-3) var(--s-4); border-radius: var(--r-sm); background: var(--hover); cursor: pointer; }
+.el-price > .meta { text-align: right; }
+@media (max-width: 760px) { .el-price > .meta { text-align: left; } }
+/* Beloppen hamnar i samma höjd även när förklaringen bryts på två rader. */
+.kpi--button { display: flex; flex-direction: column; }
+.kpi--button .kpi__value { margin-top: auto; padding-top: var(--s-1); }

@@ -34,7 +34,11 @@ export interface Economy {
   fee: number             // månadsavgift till föreningen
   electricity: number     // el per månad, ungefär
   insurance: number       // hemförsäkring per månad
+  zone?: ElZone | null    // elområde för dagens spotpris
 }
+
+export type ElZone = 'SE1' | 'SE2' | 'SE3' | 'SE4'
+export const EL_ZONE_LABEL: Record<ElZone, string> = { SE1: 'SE1 Luleå', SE2: 'SE2 Sundsvall', SE3: 'SE3 Stockholm', SE4: 'SE4 Malmö' }
 
 // Rummen på planritningen som former: hörn som andelar (0–1) av bildens bredd och höjd.
 export interface Pt { x: number; y: number }
@@ -138,8 +142,26 @@ export interface Task {
   created_at: string
 }
 
-export type ContractKind = 'el' | 'bredband' | 'forsakring' | 'bolan' | 'avgift' | 'annat'
-export const CONTRACT_KIND_LABEL: Record<ContractKind, string> = { el: 'El', bredband: 'Bredband', forsakring: 'Försäkring', bolan: 'Bolån', avgift: 'Avgift', annat: 'Annat' }
+export type ContractKind = 'el' | 'elnat' | 'forsakring' | 'bredband' | 'mobil' | 'streaming' | 'larm' | 'bolan' | 'avgift' | 'annat'
+export const CONTRACT_KIND_LABEL: Record<ContractKind, string> = {
+  el: 'Elavtal', elnat: 'Elnät', forsakring: 'Hemförsäkring', bredband: 'Bredband', mobil: 'Mobil', streaming: 'Streaming',
+  larm: 'Larm', bolan: 'Bolån', avgift: 'Avgift', annat: 'Annat',
+}
+// Avtal som hör till bostaden, och abonnemang som man har oavsett var man bor.
+export const HOME_CONTRACTS: ContractKind[] = ['el', 'elnat', 'forsakring', 'bredband', 'larm', 'bolan', 'avgift']
+// Det de flesta har. Saknas något av dem föreslås det på avtalssidan.
+export const COMMON_CONTRACTS: ContractKind[] = ['el', 'elnat', 'forsakring', 'bredband', 'mobil', 'streaming']
+// Vanliga leverantörer att välja bland. Man kan alltid skriva en egen.
+export const PROVIDERS: Partial<Record<ContractKind, string[]>> = {
+  el: ['Tibber', 'Vattenfall', 'Fortum', 'E.ON', 'Göteborg Energi', 'Skellefteå Kraft', 'Greenely'],
+  elnat: ['Ellevio', 'Vattenfall Eldistribution', 'E.ON Energidistribution', 'Göteborg Energi Nät'],
+  forsakring: ['Folksam', 'If', 'Länsförsäkringar', 'Trygg-Hansa', 'Hedvig', 'Moderna'],
+  bredband: ['Telia', 'Bahnhof', 'Telenor', 'Tele2', 'Bredband2', 'Ownit'],
+  mobil: ['Telia', 'Tele2', 'Telenor', 'Tre', 'Hallon', 'Comviq', 'Vimla'],
+  streaming: ['Netflix', 'Spotify', 'Max', 'Disney+', 'Viaplay', 'Apple TV+', 'YouTube Premium', 'Prime Video'],
+  larm: ['Verisure', 'Sector Alarm'],
+  bolan: ['SBAB', 'Swedbank', 'Handelsbanken', 'SEB', 'Nordea', 'Länsförsäkringar', 'Danske Bank'],
+}
 
 export interface Contract {
   id: string
