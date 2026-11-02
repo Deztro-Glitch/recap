@@ -1,13 +1,13 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { useEffect, useState, type ReactNode } from 'react'
 import { IconBulb, IconExternalLink } from '@tabler/icons-react'
 import { api } from '../../lib/api'
-import { Field, Primary, Sheet, rowAnim, useToast } from '../../components/ui'
+import { Field, Primary, Sheet, useToast } from '../../components/ui'
 import { FileField, FileThumb } from '../../components/FileField'
 import type { Idea } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { SwipeRow } from '../../components/SwipeRow'
-import { removeRow } from './Purchases'
+import { removeRow } from './Items'
 
 const host = (link: string) => {
   try {
@@ -135,7 +135,7 @@ export function IdeaSheet({ item, state, onClose, onConvert }: { item: Idea | Id
         </Field>
         <div className="form__actions">
           <Primary>{idea ? 'Spara idé' : 'Lägg till idé'}</Primary>
-          {idea && <button type="button" className="btn btn--secondary" onClick={() => onConvert(idea)}>Gör till inköp</button>}
+          {idea && <button type="button" className="btn btn--secondary" onClick={() => onConvert(idea)}>Gör till något att göra</button>}
           {idea && <button type="button" className="btn btn--danger" onClick={del}>Ta bort idé</button>}
         </div>
       </form>

@@ -59,7 +59,7 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
           onChange={async (mode) => {
             await api.updateProject(p.id, { mode })
             await state.reload()
-            toast(mode === 'simple' ? 'Mappar och jobb är dolda' : 'Mappar och jobb visas')
+            toast(mode === 'simple' ? 'Mapparna är dolda' : 'Mapparna visas')
           }}
         />
       </div>

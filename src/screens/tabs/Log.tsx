@@ -9,7 +9,7 @@ import { SwipeRow } from '../../components/SwipeRow'
 import { rowAnim } from '../../components/ui'
 import type { Detail, Photo } from '../../types'
 import type { ViewProps } from '../ProjectView'
-import { removeRow } from './Purchases'
+import { removeRow } from './Items'
 
 interface Entry {
   key: string

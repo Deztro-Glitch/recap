@@ -6,11 +6,9 @@ import { kr, parseNum } from '../../lib/format'
 import { totals } from '../../lib/useProject'
 import { ICONS, iconFor } from '../../components/icons'
 import { Checkbox, Chips, Field, Primary, Sheet, ease, useToast } from '../../components/ui'
-import { FileThumb } from '../../components/FileField'
 import { FOLDER_TEMPLATES, PALETTE, tileStyle, type Folder, type IconKey, type Palette } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
-import { PurchaseRow } from './Purchases'
-import { TaskRow } from './Tasks'
+import { ItemList, allItems, byImportance, useMarkDone } from './Items'
 
 export const COLOR_LABEL: Record<Palette, string> = { sand: 'Sand', coral: 'Korall', steel: 'Stål', sun: 'Sol', mint: 'Mint', sky: 'Himmel', lilac: 'Syren', rose: 'Ros' }
 
@@ -37,7 +35,6 @@ export function Folders({ state, open, folder, setFolder }: ViewProps & { folder
   const f = state.folders.find((x) => x.id === folder)
   if (f) return <FolderDetail f={f} state={state} open={open} onBack={() => setFolder(null)} />
 
-  const loose = state.tasks.filter((t) => !t.folder_id)
   return (
     <div>
       <div className="section">
@@ -54,14 +51,6 @@ export function Folders({ state, open, folder, setFolder }: ViewProps & { folder
         )}
       </div>
 
-      {loose.length > 0 && (
-        <div className="section">
-          <div className="section-head"><h2>Jobb utan mapp</h2></div>
-          <div className="rows">
-            {loose.map((t) => <TaskRow key={t.id} t={t} state={state} onEdit={() => open({ t: 'task', item: t })} />)}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -71,7 +60,8 @@ function FolderDetail({ f, state, open, onBack }: { f: Folder; state: ProjectSta
   const tasks = state.tasks.filter((t) => t.folder_id === f.id)
   const ideas = state.ideas.filter((i) => i.folder_id === f.id)
   const s = totals(purchases, tasks)
-  const receipts = [...purchases.filter((p) => p.receipt_path).map((p) => ({ id: p.id, path: p.receipt_path! })), ...tasks.filter((t) => t.receipt_path).map((t) => ({ id: t.id, path: t.receipt_path! }))]
+  const items = allItems({ purchases, tasks })
+  const { markDone, field } = useMarkDone(state)
   const over = f.budget && s.planned > f.budget
 
   return (
@@ -90,44 +80,21 @@ function FolderDetail({ f, state, open, onBack }: { f: Folder; state: ProjectSta
         {f.note && <p style={{ marginTop: 12, whiteSpace: 'pre-wrap' }}>{f.note}</p>}
       </div>
 
+      {field}
       <div className="section">
         <div className="section-head">
-          <h2>Jobb</h2>
-          <button className="btn btn--ghost" onClick={() => open({ t: 'task', item: { folder_id: f.id } })}>Lägg till</button>
-        </div>
-        {tasks.length ? (
-          <div className="rows">{tasks.map((t) => <TaskRow key={t.id} t={t} state={state} onEdit={() => open({ t: 'task', item: t })} />)}</div>
-        ) : (
-          <p className="meta">Inga jobb</p>
-        )}
-      </div>
-
-      <div className="section">
-        <div className="section-head">
-          <h2>Inköp</h2>
+          <h2>Att göra</h2>
           <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { folder_id: f.id } })}>Lägg till</button>
         </div>
-        {purchases.length ? (
-          <div className="rows">{purchases.map((p) => <PurchaseRow key={p.id} p={p} state={state} onEdit={() => open({ t: 'purchase', item: p })} />)}</div>
-        ) : (
-          <p className="meta">Inga inköp</p>
-        )}
+        <ItemList items={items.filter((i) => !i.done).sort(byImportance)} state={state} open={open} onCheck={markDone} empty="Inget att göra" />
       </div>
 
       <div className="section">
         <div className="section-head">
-          <h2>Kvitton</h2>
-          <button className="btn btn--ghost" onClick={() => open({ t: 'receipt', item: { folder_id: f.id } })}>Lägg till</button>
+          <h2>Gjort</h2>
+          <button className="btn btn--ghost" onClick={() => open({ t: 'receipt', item: { folder_id: f.id } })}>Fota kvitto</button>
         </div>
-        {receipts.length ? (
-          <div className="chips">
-            {receipts.map((r) => (
-              <a key={r.id} href={state.urls[r.path]} target="_blank" rel="noreferrer"><FileThumb path={r.path} url={state.urls[r.path]} size={64} /></a>
-            ))}
-          </div>
-        ) : (
-          <p className="meta">Inga kvitton</p>
-        )}
+        <ItemList items={items.filter((i) => i.done).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))} state={state} open={open} empty="Inget gjort än" />
       </div>
 
       <div className="section">
@@ -186,7 +153,8 @@ export function FolderSheet({ item, state, onClose, onCreated }: { item: Folder 
       } else {
         const created = await api.insert<Folder>('folders', { ...row, project_id: state.project!.id, sort: state.folders.length })
         // Bara de förslag man kryssat i läggs in.
-        for (const title of FOLDER_TEMPLATES[template].tasks.filter((t) => picked.includes(t))) await api.insert('tasks', { project_id: state.project!.id, folder_id: created.id, title, status: 'todo', cost: 0, priority: 2 })
+        for (const title of FOLDER_TEMPLATES[template].tasks.filter((t) => picked.includes(t)))
+          await api.insert('purchases', { project_id: state.project!.id, folder_id: created.id, room_id: null, title, est_price: 0, price: null, bought: false, bought_on: null, priority: 2, stays: true, store: null, link: null, note: null, receipt_path: null, details: null })
         await state.reload()
         toast(`${row.name} är skapad`)
         onCreated(created.id)
@@ -197,7 +165,7 @@ export function FolderSheet({ item, state, onClose, onCreated }: { item: Folder 
   }
 
   const del = async () => {
-    if (!confirm(`Ta bort mappen ${f!.name}? Jobb och inköp i den finns kvar, utan mapp.`)) return
+    if (!confirm(`Ta bort mappen ${f!.name}? Det som ligger i den finns kvar, utan mapp.`)) return
     await api.remove('folders', f!.id)
     await state.reload()
     toast(`${f!.name} är borttagen`)
@@ -215,7 +183,7 @@ export function FolderSheet({ item, state, onClose, onCreated }: { item: Folder 
         )}
         {!f && FOLDER_TEMPLATES[template].tasks.length > 0 && (
           <div className="field">
-            <span className="field__label">Förslag på jobb</span>
+            <span className="field__label">Förslag att göra</span>
             <div className="rows">
               {FOLDER_TEMPLATES[template].tasks.map((t) => (
                 <div key={t} className="row" style={{ justifyContent: 'flex-start' }} onClick={() => setPicked((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))}>

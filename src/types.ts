@@ -5,7 +5,7 @@ export type Kind = 'lagenhet' | 'hus' | 'annat'
 export type Mode = 'simple' | 'full'
 export const MODE_LABEL: Record<Mode, { name: string; meta: string }> = {
   simple: { name: 'Inköp och kvitton', meta: 'Möbler, inredning och kvitton' },
-  full: { name: 'Renovering', meta: 'Även jobb, mappar och budget' },
+  full: { name: 'Renovering', meta: 'Även mappar för större projekt' },
 }
 export type TaskStatus = 'todo' | 'doing' | 'done'
 export type PhotoKind = 'before' | 'after' | 'inspo'

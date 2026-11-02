@@ -105,7 +105,7 @@ export function Loader() {
 
 // ---------- Notis ----------
 
-type Toast = { title: string; body?: string }
+type Toast = { title: string; body?: string; action?: { label: string; on: () => void } }
 const ToastCtx = createContext<(t: Toast | string) => void>(() => {})
 export const useToast = () => useContext(ToastCtx)
 
@@ -114,7 +114,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const show = useCallback((t: Toast | string) => {
     const key = Date.now()
     setToast({ ...(typeof t === 'string' ? { title: t } : t), key })
-    setTimeout(() => setToast((c) => (c?.key === key ? null : c)), 3200)
+    // En notis med knapp står kvar längre, så att man hinner trycka.
+    setTimeout(() => setToast((c) => (c?.key === key ? null : c)), typeof t !== 'string' && t.action ? 6000 : 3200)
   }, [])
   return (
     <ToastCtx.Provider value={show}>
@@ -127,6 +128,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <div>
                 <div className="toast__title">{toast.title}</div>
                 {toast.body && <p className="toast__body" style={{ marginBottom: 0 }}>{toast.body}</p>}
+                {toast.action && (
+                  <div className="toast__actions" style={{ marginTop: 'var(--s-2)' }}>
+                    <button className="btn btn--secondary" onClick={() => { toast.action!.on(); setToast(null) }}>{toast.action.label}</button>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

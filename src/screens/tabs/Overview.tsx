@@ -10,28 +10,24 @@ import { ICONS, iconFor } from '../../components/icons'
 import { Chips, Field, Primary, Sheet, ease } from '../../components/ui'
 import { PALETTE, ROOM_PRESETS, tileStyle, type IconKey, type Palette, type Room } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
-import { PriorityTag, PurchaseRow } from './Purchases'
-import { TaskRow, TaskStatusLabel } from './Tasks'
+import { ItemList, ItemRow, allItems, byImportance, sheetFor, useMarkDone } from './Items'
 import { COLOR_LABEL, FolderTiles } from './Folders'
 
 export function Overview({ state, open, openFolder }: ViewProps & { openFolder: (id: string) => void }) {
   const { project, rooms, purchases, tasks, folders } = state
   const b = useBudget(project, purchases, tasks)
   const simple = project?.mode === 'simple'
-  const folderName = (id: string | null) => folders.find((f) => f.id === id)?.name
-  const roomName = (id: string | null) => rooms.find((r) => r.id === id)?.name
+  const { markDone, field } = useMarkDone(state)
 
-  // Det viktigaste som är kvar: hög prio först, sådant som pågår före det som inte börjat.
-  const todo = [
-    ...purchases.filter((p) => !p.bought).map((p) => ({ id: p.id, title: p.title, priority: p.priority ?? 2, order: 1, meta: ['Inköp', folderName(p.folder_id), roomName(p.room_id)], right: kr(p.est_price), onClick: () => open({ t: 'purchase', item: p }) })),
-    ...tasks.filter((t) => !simple && t.status !== 'done').map((t) => ({ id: t.id, title: t.title, priority: t.priority ?? 2, order: t.status === 'doing' ? 0 : 1, meta: [folderName(t.folder_id), roomName(t.room_id)], right: <TaskStatusLabel status={t.status} />, onClick: () => open({ t: 'task', item: t }) })),
-  ].sort((a, b) => a.priority - b.priority || a.order - b.order).slice(0, 5)
+  // Det viktigaste som är kvar att göra.
+  const todo = allItems(state).filter((i) => !i.done).sort(byImportance).slice(0, 5)
 
   const isEmpty = !purchases.length && !tasks.length && !folders.length
   const unfinished = purchases.filter(needsInfo)
 
   return (
     <div>
+      {field}
       <div className="section">
         <div className="section-head"><h1>Översikt</h1></div>
         <BudgetMeter budget={b.budget} spent={b.spent} planned={b.planned} />
@@ -70,7 +66,7 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
           <div className="rows">
             <div className="row" onClick={() => open({ t: 'receipt' })}><div className="row__text"><div className="row__title">Spara ett kvitto</div><div className="meta">Fota kvittot från något du köpt</div></div></div>
             {!simple && <div className="row" onClick={() => open({ t: 'folder' })}><div className="row__text"><div className="row__title">Skapa en mapp</div><div className="meta">Till exempel Köksrenovering eller Möbler</div></div></div>}
-            <div className="row" onClick={() => open({ t: 'purchase', item: {} })}><div className="row__text"><div className="row__title">Lägg till något att köpa</div><div className="meta">Med pris, butik och prio</div></div></div>
+            <div className="row" onClick={() => open({ t: 'purchase', item: {} })}><div className="row__text"><div className="row__title">Skriv upp något att göra</div><div className="meta">Något du ska köpa eller fixa</div></div></div>
           </div>
         </div>
       )}
@@ -79,16 +75,7 @@ export function Overview({ state, open, openFolder }: ViewProps & { openFolder: 
         <div className="section">
           <div className="section-head"><h2>Att göra först</h2></div>
           <div className="rows">
-            {todo.map((t) => (
-              <div key={t.id} className="row" onClick={t.onClick}>
-                <div className="row__text">
-                  <div className="row__title">{t.title}</div>
-                  <div className="meta">{t.meta.filter(Boolean).join(' · ') || 'Hela hemmet'}</div>
-                  <PriorityTag priority={t.priority} />
-                </div>
-                <span className="row__amount">{t.right}</span>
-              </div>
-            ))}
+            {todo.map((it) => <ItemRow key={it.id} it={it} state={state} showFolder onCheck={markDone} onEdit={() => open(sheetFor(it))} />)}
           </div>
         </div>
       )}
@@ -132,6 +119,8 @@ export function RoomSheet({ room, state, open, onClose }: { room: Room | null; s
   const rp = room ? state.purchases.filter((p) => p.room_id === room.id) : []
   const rt = room ? state.tasks.filter((t) => t.room_id === room.id) : []
   const ri = room ? state.ideas.filter((i) => i.room_id === room.id) : []
+  const items = allItems({ purchases: rp, tasks: rt })
+  const { markDone, field } = useMarkDone(state)
   const s = totals(rp, rt)
   const [rename, setRename] = useState<{ name: string; color: Palette } | null>(null)
   useEffect(() => setRename(null), [room?.id])
@@ -170,21 +159,22 @@ export function RoomSheet({ room, state, open, onClose }: { room: Room | null; s
             <div className="kpi"><div className="meta">Planerat</div><div className="kpi__value">{kr(s.planned)}</div></div>
           </div>
 
+          {field}
           <div className="section">
             <div className="section-head">
-              <h2>Inköp</h2>
+              <h2>Att göra</h2>
               <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { room_id: room.id } })}>Lägg till</button>
             </div>
-            {rp.length ? <div className="rows">{rp.map((p) => <PurchaseRow key={p.id} p={p} state={state} showFolder onEdit={() => open({ t: 'purchase', item: p })} />)}</div> : <p className="meta">Inga inköp</p>}
+            <ItemList items={items.filter((i) => !i.done).sort(byImportance)} state={state} open={open} onCheck={markDone} empty="Inget att göra" />
           </div>
 
-          {state.project?.mode !== 'simple' && (<div className="section">
+          <div className="section">
             <div className="section-head">
-              <h2>Jobb</h2>
-              <button className="btn btn--ghost" onClick={() => open({ t: 'task', item: { room_id: room.id } })}>Lägg till</button>
+              <h2>Gjort</h2>
+              <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { room_id: room.id, bought: true } })}>Lägg till</button>
             </div>
-            {rt.length ? <div className="rows">{rt.map((t) => <TaskRow key={t.id} t={t} state={state} showFolder onEdit={() => open({ t: 'task', item: t })} />)}</div> : <p className="meta">Inga jobb</p>}
-          </div>)}
+            <ItemList items={items.filter((i) => i.done).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))} state={state} open={open} empty="Inget gjort än" />
+          </div>
 
           {ri.length > 0 && (
             <div className="section">
@@ -198,7 +188,7 @@ export function RoomSheet({ room, state, open, onClose }: { room: Room | null; s
           )}
 
           <button className="btn btn--danger" onClick={async () => {
-            if (!confirm(`Ta bort rummet ${room.name}? Inköp och jobb finns kvar, utan rum.`)) return
+            if (!confirm(`Ta bort rummet ${room.name}? Det som ligger i rummet finns kvar, utan rum.`)) return
             await api.remove('rooms', room.id)
             await state.reload()
             onClose()
