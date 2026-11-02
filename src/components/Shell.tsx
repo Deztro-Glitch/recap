@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { IconChevronDown, IconMoon, IconPlus, IconSun } from '@tabler/icons-react'
 import type { User } from '../lib/api'
 import { Primary } from './ui'
+import { syncThemeColor } from '../lib/mode'
 
 export function useTheme() {
   const [dark, setDark] = useState(() => document.documentElement.dataset.theme === 'dark')
@@ -9,7 +10,7 @@ export function useTheme() {
     const next = !dark
     setDark(next)
     document.documentElement.dataset.theme = next ? 'dark' : ''
-    document.querySelector('meta[name=theme-color]')?.setAttribute('content', next ? '#0E0C15' : '#E7E4F0')
+    syncThemeColor()
     try {
       localStorage.setItem('recap-theme', next ? 'dark' : 'light')
     } catch {}

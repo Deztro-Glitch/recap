@@ -6,7 +6,8 @@ Webbapp (PWA) för att planera renoveringar, inköp och kvitton. React + Vite, d
 
 Färger, typsnitt och komponenter följer designsystemet i [docs/designsystem/CLAUDE.md](docs/designsystem/CLAUDE.md) (se även [exempel.html](docs/designsystem/exempel.html)).
 
-- [src/design.css](src/design.css) är designsystemet och ändras inte per vy. Recap-specifika tillägg ligger i [src/app.css](src/app.css), och de använder bara tokens därifrån.
+- [src/design.css](src/design.css) är grunden. Recap-specifika tillägg och avsteg ligger i [src/app.css](src/app.css) och använder tokens.
+- Läget färgar hela appen (beslutat med användaren): Projekt (bygga) har designsystemets lila färger, Boende (inreda och bo) har varma espresso/dimgröna färger. Tokens skrivs över under `:root[data-mode="home"]` i app.css och sätts av [src/lib/mode.ts](src/lib/mode.ts), med en 400 ms övergång bara när man byter.
 - Undantag från designsystemets layout, beslutat med användaren: ingen processlist. På mobil används en meny längst ner med en plusknapp i mitten; på dator sidomeny och "Lägg till" uppe till höger. Plusknappen/"Lägg till" är vyns enda färgstarka knapp.
 - Ikoner: `@tabler/icons-react` (outline). Rum får ikon och färg från innehållspaletten, aldrig emojis.
 - Gränssnittet ska förklara sig självt: inga hjälptexter, inga extra lägg till-knappar i vyerna. All inmatning går via "Lägg till"/plusknappen.
@@ -14,7 +15,7 @@ Färger, typsnitt och komponenter följer designsystemet i [docs/designsystem/CL
 ## Data
 
 - Hem → rum, inköp, jobb, foton, avtal. Navigering: Översikt (startsida), Logg, Inköp, Avtal och dokument, Inställningar. På mobil: Översikt, Logg, +, Inköp, Mer. Plusknappen öppnar kameran och frågar sen vad bilden är.
-- Översikten har två lägen i `projects.mode`: `full` = Projektläge (Spenderat/Planerat), `simple` = Boendeläge (fast månadskostnad/investerat).
+- Läget sparas i `projects.mode`: `full` = Projekt, `simple` = Boende. Inköp och Översikt visar bara det som hör till läget: `purchases.scope` är `build` eller `home` (tomt = gissas från namnet, jobb är alltid bygge). Avtal och Bostads-CV ligger under Mer.
 - Inköp och jobb visas som en och samma sak ("Planerat"/"Klart") via [src/screens/tabs/Items.tsx](src/screens/tabs/Items.tsx). Nya saker sparas i `purchases`; `tasks` finns kvar för gamla jobb. Märkning: `stays` (följer med lägenheten) och `k6` (värdehöjande förbättring).
 - Mappar och idéer finns inte längre i gränssnittet. Idéer flyttades till planerade inköp med `image_path` (migration 005); `folders` och `folder_id` ligger kvar i databasen.
 - Databasändringar läggs som nya filer i `supabase/migrations/` som användaren kör i Supabase SQL Editor. Publicera inte kod som kräver en migration förrän användaren har kört den.

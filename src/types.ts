@@ -4,6 +4,10 @@ export type Kind = 'lagenhet' | 'hus' | 'annat'
 // Översiktens läge: renovering (Projekt) eller vanligt boende (Boende). Sparas i projects.mode.
 export type Mode = 'simple' | 'full'
 export const MODE_LABEL: Record<Mode, string> = { full: 'Projekt', simple: 'Boende' }
+// Vad ett inköp hör till: bygget (syns i Projekt) eller inredningen (syns i Boende).
+export type Scope = 'build' | 'home'
+export const SCOPE_LABEL: Record<Scope, string> = { build: 'Bygg', home: 'Inredning' }
+export const modeScope = (m: Mode | undefined): Scope => (m === 'simple' ? 'home' : 'build')
 export type TaskStatus = 'todo' | 'doing' | 'done'
 export type PhotoKind = 'before' | 'after' | 'inspo'
 
@@ -85,6 +89,7 @@ export interface Purchase {
   priority: Priority
   stays: boolean          // följer med lägenheten (kök, golv) i stället för att vara mitt (möbler)
   k6: boolean             // värdehöjande förbättring, dras av vid försäljning
+  scope: Scope | null     // tomt = gissas utifrån namnet
   receipt_path: string | null
   image_path: string | null
   bought_on: string | null

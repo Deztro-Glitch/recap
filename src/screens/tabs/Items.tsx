@@ -4,12 +4,12 @@ import { IconExternalLink, IconStarFilled } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
 import { needsInfo, paid } from '../../lib/useProject'
-import { Checkbox, Chips, Field, More, Primary, Sheet, useToast } from '../../components/ui'
+import { Checkbox, Chips, Collapsible, Field, More, Primary, Sheet, isMobile, useToast } from '../../components/ui'
 import { FileField, FileThumb } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
-import { FilterBar, matches, noFilter, type FilterState } from '../../components/Filters'
+import { FilterBar, FilterToggle, isFiltered, matches, noFilter, type FilterState } from '../../components/Filters'
 import { SwipeRow } from '../../components/SwipeRow'
-import type { Detail, Purchase, Task } from '../../types'
+import { SCOPE_LABEL, modeScope, type Detail, type Purchase, type Scope, type Task } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 
 export const today = () => new Date().toISOString().slice(0, 10)
@@ -40,6 +40,7 @@ export interface Item {
   link: string | null
   stays: boolean          // följer med lägenheten
   k6: boolean             // värdehöjande förbättring
+  scope: Scope            // bygget eller inredningen
   details: Detail[] | null
   missing: boolean        // fotat kvitto utan belopp
   created_at: string
@@ -49,17 +50,27 @@ export interface Item {
 export const fromPurchase = (p: Purchase): Item => ({
   table: 'purchases', id: p.id, title: p.title, room_id: p.room_id, done: p.bought,
   amount: p.bought ? paid(p) : Number(p.est_price) || 0, date: p.bought ? p.bought_on : null, important: p.priority === 1,
-  file: p.receipt_path, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, details: p.details,
+  file: p.receipt_path, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, scope: p.scope ?? guessScope(p.title), details: p.details,
   missing: needsInfo(p), created_at: p.created_at, raw: p,
 })
 
 export const fromTask = (t: Task): Item => ({
   table: 'tasks', id: t.id, title: t.title, room_id: t.room_id, done: t.status === 'done',
   amount: Number(t.cost) || 0, date: t.status === 'done' ? t.done_on : null, important: t.priority === 1,
-  file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, details: t.details, missing: false, created_at: t.created_at, raw: t,
+  file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, scope: 'build', details: t.details, missing: false, created_at: t.created_at, raw: t,
 })
 
 export const allItems = (state: Pick<ProjectState, 'purchases' | 'tasks'>) => [...state.purchases.map(fromPurchase), ...state.tasks.map(fromTask)]
+
+// Det som hör till läget man är i: bygget i Projekt, inredningen i Boende.
+export const modeItems = (state: ProjectState) => {
+  const scope = modeScope(state.project?.mode)
+  return allItems(state).filter((i) => i.scope === scope)
+}
+
+// Gissar om något är bygge eller inredning när man inte har valt själv.
+const BUILD = /(riv|spackl|slip|grundm|måla|målning|stryk|kakel|klinker|fog|golvlist|golvläggning|lägga golv|parkett|laminat|tätskikt|golvbrunn|gips|regel|reglar|elarbete|elektriker|dra el|vvs|rör|avlopp|ventilation|tapet|puts|isoler|snick|stomm|bänkskiva|köksrenov|bygg|färg|spik|skruv|cement|fästmassa)/i
+export const guessScope = (title: string): Scope => (BUILD.test(title) ? 'build' : 'home')
 
 // Allt man kan söka på för en sak.
 export const itemText = (it: Item, roomName?: string) =>
@@ -118,15 +129,19 @@ export function Purchases({ state, open }: ViewProps) {
   const { markDone, field } = useMarkDone(state)
   const [filter, setFilter] = useState<FilterState>(noFilter)
   const roomName = (id: string | null) => state.rooms.find((r) => r.id === id)?.name
-  const items = allItems(state).filter((it) => matches(filter, { ...it, text: itemText(it, roomName(it.room_id)) }))
+  const items = modeItems(state).filter((it) => matches(filter, { ...it, text: itemText(it, roomName(it.room_id)) }))
   const planned = items.filter((i) => !i.done).sort(byImportance)
   const done = items.filter((i) => i.done).sort(byDate)
+  const [showFilter, setShowFilter] = useState(false)
 
   return (
     <div>
       {field}
-      <div className="section-head"><h1>Inköp</h1></div>
-      <FilterBar state={state} value={filter} onChange={setFilter} placeholder="Sök inköp, butik eller färgkod" />
+      <div className="section-head">
+        <h1>Inköp</h1>
+        <FilterToggle open={showFilter} active={isFiltered(filter)} onClick={() => setShowFilter(!showFilter)} />
+      </div>
+      <FilterBar state={state} value={filter} onChange={setFilter} open={showFilter} placeholder="Sök inköp, butik eller färgkod" />
 
       <div className="columns section">
         <div>
@@ -136,13 +151,9 @@ export function Purchases({ state, open }: ViewProps) {
           </div>
           <ItemList items={planned} state={state} open={open} onCheck={markDone} empty="Inget planerat" />
         </div>
-        <div>
-          <div className="section-head">
-            <h2>Klart</h2>
-            <span className="row__amount">{kr(sum(done))}</span>
-          </div>
+        <Collapsible title="Klart" meta={`${done.length} st · ${kr(sum(done))}`} startOpen={!isMobile()}>
           <ItemList items={done} state={state} open={open} empty="Inget klart än" />
-        </div>
+        </Collapsible>
       </div>
     </div>
   )
@@ -213,7 +224,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
   const toast = useToast()
   const existing = item?.id ? (table === 'tasks' ? fromTask(item as Task) : fromPurchase(item as Purchase)) : null
   const isTask = table === 'tasks'
-  const blank = { title: '', room_id: '', done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
+  const blank = { title: '', room_id: '', scope: 'build' as Scope, done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
   const [f, setF] = useState(blank)
   const [urls, setUrls] = useState<{ receipt?: string; image?: string }>({})
 
@@ -228,6 +239,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
     setF({
       title: item.title ?? '',
       room_id: item.room_id ?? '',
+      scope: p.scope ?? (item.id ? guessScope(item.title ?? '') : modeScope(state.project?.mode)),
       done,
       amount: amount ? String(amount) : '',
       date: (isTask ? t.done_on : p.bought_on) ?? '',
@@ -271,6 +283,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
           store: f.store.trim() || null,
           link: f.link.trim() || null,
           stays: f.stays,
+          scope: f.scope,
           image_path: f.image,
         }
     try {
@@ -299,7 +312,10 @@ export function ItemSheet({ table, item, state, onClose, title }: {
         <Field label="Vad">
           <input className="input" placeholder="Diskmaskin, måla hallen" value={f.title} onChange={set('title')} required />
         </Field>
-        <Chips value={f.done} onChange={setDoneField} options={[{ value: false, label: 'Planerat' }, { value: true, label: 'Klart' }]} />
+        <div className="form__row">
+          <Chips value={f.done} onChange={setDoneField} options={[{ value: false, label: 'Planerat' }, { value: true, label: 'Klart' }]} />
+          {!isTask && <Chips value={f.scope} onChange={(v) => setF({ ...f, scope: v })} options={(['build', 'home'] as Scope[]).map((v) => ({ value: v, label: SCOPE_LABEL[v] }))} />}
+        </div>
         <div className="form__row">
           <Field label={f.done ? 'Kostade' : 'Kostar ungefär'}>
             <input className="input" inputMode="decimal" placeholder="1 295" value={f.amount} onChange={set('amount')} />

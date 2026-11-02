@@ -1,0 +1,22 @@
+import type { Mode } from '../types'
+
+// Läget (Projekt eller Boende) färgar hela appen. Färgerna finns i app.css under [data-mode].
+export function applyMode(mode: Mode | null) {
+  const root = document.documentElement
+  const next = mode === 'simple' ? 'home' : mode ? 'project' : ''
+  if ((root.dataset.mode ?? '') === next) return
+  // Mjuk övergång bara när man byter, så att vanliga hover-effekter inte blir tröga.
+  if (root.dataset.mode !== undefined) {
+    root.classList.add('is-switching')
+    setTimeout(() => root.classList.remove('is-switching'), 450)
+  }
+  if (next) root.dataset.mode = next
+  else delete root.dataset.mode
+  syncThemeColor()
+}
+
+// Statusfältet på iPhone följer appens yttersta färg.
+export function syncThemeColor() {
+  const shell = getComputedStyle(document.documentElement).getPropertyValue('--shell').trim()
+  if (shell) document.querySelector('meta[name=theme-color]')?.setAttribute('content', shell)
+}

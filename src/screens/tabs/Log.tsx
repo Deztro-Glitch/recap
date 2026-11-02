@@ -4,7 +4,7 @@ import { IconPhoto, IconShoppingBag, IconTool } from '@tabler/icons-react'
 import { kr } from '../../lib/format'
 import { FileThumb } from '../../components/FileField'
 import { DetailsList } from '../../components/Details'
-import { FilterBar, matches, noFilter, type FilterState } from '../../components/Filters'
+import { FilterBar, FilterToggle, isFiltered, matches, noFilter, type FilterState } from '../../components/Filters'
 import { SwipeRow } from '../../components/SwipeRow'
 import { Chips, rowAnim } from '../../components/ui'
 import type { Photo } from '../../types'
@@ -34,6 +34,7 @@ const month = (d: string) => {
 export function Log({ state, open }: ViewProps) {
   const [filter, setFilter] = useState<FilterState>(noFilter)
   const [view, setView] = useState<'list' | 'gallery'>('list')
+  const [showFilter, setShowFilter] = useState(false)
   const roomName = (id: string | null) => state.rooms.find((r) => r.id === id)?.name
 
   const items = allItems(state).filter((it) => it.done && matches(filter, { ...it, text: itemText(it, roomName(it.room_id)) }))
@@ -86,8 +87,9 @@ export function Log({ state, open }: ViewProps) {
       <div className="section-head">
         <h1>Logg</h1>
         <Chips value={view} onChange={setView} options={[{ value: 'list', label: 'Lista' }, { value: 'gallery', label: 'Bilder' }]} />
+        <FilterToggle open={showFilter} active={isFiltered(filter)} onClick={() => setShowFilter(!showFilter)} />
       </div>
-      <FilterBar state={state} value={filter} onChange={setFilter} placeholder="Sök, t.ex. färgkod eller butik" />
+      <FilterBar state={state} value={filter} onChange={setFilter} open={showFilter} placeholder="Sök, t.ex. färgkod eller butik" />
 
       {view === 'gallery' ? (
         <div className="section">

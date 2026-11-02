@@ -1,14 +1,24 @@
-import { IconSearch } from '@tabler/icons-react'
+import { IconAdjustmentsHorizontal, IconSearch } from '@tabler/icons-react'
 import type { ProjectState } from '../screens/ProjectView'
 
 export type Flag = 'all' | 'stays' | 'k6'
 export interface FilterState { q: string; room: string; flag: Flag }
 export const noFilter: FilterState = { q: '', room: '', flag: 'all' }
+export const isFiltered = (f: FilterState) => !!(f.q || f.room || f.flag !== 'all')
+
+// På mobilen ligger sök och filter bakom en knapp vid rubriken, så att listan kommer direkt.
+export function FilterToggle({ open, active, onClick }: { open: boolean; active: boolean; onClick: () => void }) {
+  return (
+    <button className={`btn btn--ghost filter-toggle ${active ? 'is-active' : ''}`} aria-label="Sök och filtrera" aria-expanded={open} onClick={onClick}>
+      <IconAdjustmentsHorizontal size={20} />
+    </button>
+  )
+}
 
 // Sökfält, rum och märkning på en rad. Rummen är desamma som på planritningen.
-export function FilterBar({ state, value, onChange, placeholder }: { state: ProjectState; value: FilterState; onChange: (f: FilterState) => void; placeholder: string }) {
+export function FilterBar({ state, value, onChange, placeholder, open }: { state: ProjectState; value: FilterState; onChange: (f: FilterState) => void; placeholder: string; open: boolean }) {
   return (
-    <div className="filter-bar">
+    <div className={`filter-bar ${open ? 'is-open' : ''}`}>
       <label className="search" style={{ maxWidth: 'none' }}>
         <IconSearch size={16} />
         <input value={value.q} onChange={(e) => onChange({ ...value, q: e.target.value })} placeholder={placeholder} aria-label="Sök" />

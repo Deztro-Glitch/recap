@@ -1,17 +1,18 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import {
-  IconArrowLeft, IconCamera, IconChecklist, IconCircleCheck, IconDots, IconFileText, IconHome, IconLayoutGrid,
+  IconArrowLeft, IconCamera, IconChecklist, IconCircleCheck, IconDots, IconFileText, IconHome, IconHomeCheck, IconLayoutGrid,
   IconList, IconPhoto, IconReceipt, IconSettings, IconShoppingCart,
 } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
+import { applyMode } from '../lib/mode'
 import { NavItem, Shell, type Tab } from '../components/Shell'
 import { Field, Loader, Sheet, ease, useToast } from '../components/ui'
-import type { Contract, PhotoKind, Purchase, Room, Task } from '../types'
+import { modeScope, type Contract, type PhotoKind, type Purchase, type Room, type Task } from '../types'
 import { AddRoomSheet } from './tabs/Rooms'
 import { ItemSheet, Purchases, fmtDate, today } from './tabs/Items'
-import { ContractSheet, Contracts } from './tabs/Contracts'
+import { ContractSheet, Contracts, type ContractTab } from './tabs/Contracts'
 import { Overview } from './tabs/Overview'
 import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
@@ -51,6 +52,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   // Rummet som är valt i översikten.
   const [place, setPlace] = useState<string | null>(null)
   const [sheet, setSheet] = useState<SheetState | null>(null)
+  const [contractTab, setContractTab] = useState<ContractTab>('contracts')
   const toast = useToast()
   const receiptInput = useRef<HTMLInputElement>(null)
   const receiptDefaults = useRef<Partial<Purchase>>({})
@@ -60,6 +62,14 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const [picked, setPicked] = useState<File[]>([])
   const [pickedRoom, setPickedRoom] = useState('')
   const pickRoom = useRef<string | null | undefined>(undefined)
+
+  // Läget färgar hela appen så länge hemmet är öppet.
+  const mode = state.project?.mode
+  useEffect(() => {
+    if (mode) applyMode(mode)
+  }, [mode])
+  useEffect(() => () => applyMode(null), [])
+  const scope = modeScope(mode)
 
   // Stänger man kameran utan bild vill man troligen skriva in något i stället.
   useEffect(() => {
@@ -83,7 +93,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           await api.insert<Purchase>('purchases', {
             project_id: state.project.id, room_id: null, ...receiptDefaults.current,
             title: `Kvitto ${fmtDate(today())}`, est_price: 0, price: null, bought: true, bought_on: today(),
-            receipt_path: path, priority: 2, stays: false, k6: false, store: null, link: null, note: null, details: null,
+            receipt_path: path, priority: 2, stays: false, k6: false, scope, store: null, link: null, note: null, details: null,
           }),
         )
         setSaving((n) => n - 1)
@@ -126,7 +136,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           const image_path = await api.uploadFile(state.project!.id, file)
           last = await api.insert<Purchase>('purchases', {
             project_id: state.project!.id, room_id, title: 'Nytt köp', image_path, est_price: 0, price: null, bought: false,
-            bought_on: null, receipt_path: null, priority: 2, stays: false, k6: false, store: null, link: null, note: null, details: null,
+            bought_on: null, receipt_path: null, priority: 2, stays: false, k6: false, scope, store: null, link: null, note: null, details: null,
           })
           setSaving((n) => n - 1)
         }
@@ -187,6 +197,15 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const here = { room_id: view === 'overview' ? place : null }
   const props: ViewProps = { state, open }
   const moreViews: ViewId[] = ['contracts', 'settings']
+  const showContracts = (tab: ContractTab) => {
+    setContractTab(tab)
+    go('contracts')
+  }
+  const moreRows = [
+    { id: 'contracts', icon: IconFileText, label: 'Avtal', on: () => showContracts('contracts') },
+    { id: 'cv', icon: IconHomeCheck, label: 'Bostads-CV', on: () => showContracts('cv') },
+    { id: 'settings', icon: IconSettings, label: 'Inställningar', on: () => go('settings') },
+  ]
 
   const tabs: Tab[] = [
     { id: 'overview', label: 'Översikt', icon: IconLayoutGrid, active: view === 'overview', onClick: () => go('overview') },
@@ -197,8 +216,8 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
 
   const addRows = [
     { icon: IconCamera, title: 'Kvitto eller bild', on: () => photoInput.current?.click() },
-    { icon: IconChecklist, title: 'Planerat köp eller jobb', on: () => open({ t: 'purchase', item: { ...here } }) },
-    { icon: IconCircleCheck, title: 'Klart köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, bought: true } }) },
+    { icon: IconChecklist, title: 'Planerat köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, scope } }) },
+    { icon: IconCircleCheck, title: 'Klart köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, scope, bought: true } }) },
     { icon: IconFileText, title: 'Avtal', on: () => open({ t: 'contract', item: {} }) },
     { icon: IconHome, title: 'Rum', on: () => open({ t: 'room' }) },
   ]
@@ -214,7 +233,11 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       nav={
         <>
           <NavItem icon={IconArrowLeft} label="Mina hem" onClick={onBack} />
-          {VIEWS.map((v) => <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => go(v.id)} />)}
+          {VIEWS.filter((v) => !moreViews.includes(v.id)).map((v) => <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => go(v.id)} />)}
+          <div className="nav-label meta">Mer</div>
+          {moreRows.map((r) => (
+            <NavItem key={r.id} icon={r.icon} label={r.label} active={r.id === 'settings' ? view === 'settings' : view === 'contracts' && contractTab === r.id} onClick={r.on} />
+          ))}
         </>
       }
     >
@@ -234,7 +257,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
             {view === 'overview' && <Overview {...props} place={place} setPlace={setPlace} />}
             {view === 'log' && <Log {...props} />}
             {view === 'purchases' && <Purchases {...props} />}
-            {view === 'contracts' && <Contracts {...props} />}
+            {view === 'contracts' && <Contracts {...props} tab={contractTab} setTab={setContractTab} />}
             {view === 'settings' && <Settings {...props} user={user} onDeleted={onBack} />}
           </motion.div>
         </AnimatePresence>
@@ -290,9 +313,9 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
 
           <Sheet open={sheet?.t === 'more'} onClose={close} title="Mer">
             <div className="rows">
-              {VIEWS.filter((v) => moreViews.includes(v.id)).map((v) => (
-                <div key={v.id} className="row" onClick={() => go(v.id)}>
-                  <div className="row__main"><span className="menu-row__icon"><v.icon size={18} /></span><div className="row__title">{v.label}</div></div>
+              {moreRows.map((r) => (
+                <div key={r.id} className="row" onClick={r.on}>
+                  <div className="row__main"><span className="menu-row__icon"><r.icon size={18} /></span><div className="row__title">{r.label}</div></div>
                 </div>
               ))}
               <div className="row" onClick={onBack}>

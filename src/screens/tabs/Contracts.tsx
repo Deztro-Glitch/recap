@@ -22,12 +22,13 @@ export function ContractStatus({ c }: { c: Contract }) {
   return <div className="meta">Till {fmtDate(c.ends_on)}</div>
 }
 
-export function Contracts({ state, open }: ViewProps) {
-  const [tab, setTab] = useState<'contracts' | 'cv'>('contracts')
+export type ContractTab = 'contracts' | 'cv'
+
+export function Contracts({ state, open, tab, setTab }: ViewProps & { tab: ContractTab; setTab: (t: ContractTab) => void }) {
   return (
     <div>
       <div className="section-head">
-        <h1>Avtal och dokument</h1>
+        <h1>{tab === 'contracts' ? 'Avtal och abonnemang' : 'Bostads-CV'}</h1>
         <Chips value={tab} onChange={setTab} options={[{ value: 'contracts', label: 'Avtal' }, { value: 'cv', label: 'Bostads-CV' }]} />
       </div>
       {tab === 'contracts' ? <ContractList state={state} open={open} /> : <HomeCv state={state} open={open} />}

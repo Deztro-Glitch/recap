@@ -61,7 +61,7 @@ a { color: inherit; }
   display: flex; align-items: center; justify-content: flex-end; padding-right: var(--s-4);
   background: var(--danger); color: #fff; font-weight: 600;
 }
-.swipe__front { position: relative; background: var(--surface); touch-action: pan-y; }
+.swipe__front { position: relative; background: var(--raised); touch-action: pan-y; }
 .swipe__front:hover { background: var(--hover); }
 
 .row__main { display: flex; align-items: center; gap: var(--s-3); min-width: 0; flex: 1; }
@@ -237,7 +237,7 @@ a { color: inherit; }
 
 /* ---------- Filter, märkning och kolumner ---------- */
 
-.filter-bar { display: flex; gap: var(--s-2); align-items: center; margin-top: var(--s-3); }
+.filter-bar { display: flex; gap: var(--s-2); align-items: center; margin: var(--s-3) 0 var(--s-2); }
 .filter-bar .select { width: auto; flex: none; }
 .tags { display: flex; gap: var(--s-1); flex-wrap: wrap; margin-top: 2px; }
 .tag { font-size: var(--fs-meta); color: var(--text-2); background: var(--hover); border-radius: var(--r-xs); padding: 0 6px; line-height: 20px; }
@@ -247,7 +247,7 @@ a { color: inherit; }
 
 /* Översikt: planritningen till vänster, panelen för hemmet eller rummet till höger. */
 .overview { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--s-5); align-items: start; }
-.panel { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-4); scroll-margin-top: var(--s-4); }
+.panel { border-radius: var(--r-sm); padding: var(--s-4); box-shadow: inset 0 0 0 1px var(--hover); scroll-margin-top: var(--s-4); }
 .panel .section { margin-top: var(--s-4); }
 .tile.is-selected { box-shadow: inset 0 0 0 2px var(--tile-fg); }
 
@@ -272,4 +272,73 @@ a { color: inherit; }
   .sidebar, .topbar, .tabbar, .no-print, .section-head .chips { display: none !important; }
   .app, .main { display: block; background: #fff; padding: 0; }
   .row { break-inside: avoid; }
+}
+
+/* ---------- Läge: Projekt (bygga) och Boende (inreda och bo) ---------- */
+
+/* Projekt använder designsystemets lila färger. Boende är varmare: espresso och dimgrönt. */
+:root[data-mode="home"] {
+  --accent: #4F7A5A;
+  --on-accent: #FFFFFF;
+  --shell: #EAE3D8;
+  --surface: #F7F3EC;
+  --raised: #FFFDF9;
+  --hover: #EEE6DA;
+  --track: #D6CBBB;
+  --text: #1F1A15;
+  --text-2: #6A6055;
+}
+:root[data-theme="dark"][data-mode="home"] {
+  --accent: #9CC3A0;
+  --on-accent: #12170F;
+  --shell: #12100D;
+  --surface: #1C1915;
+  --raised: #262119;
+  --hover: #2D2720;
+  --track: #433A30;
+  --text: #F3EEE7;
+  --text-2: #B4A999;
+}
+
+/* Bara när man byter läge glider färgerna över, så att vanlig hover inte blir trög. */
+:root.is-switching *, :root.is-switching *::before, :root.is-switching *::after {
+  transition: background-color 400ms ease, color 400ms ease, border-color 400ms ease, box-shadow 400ms ease, fill 400ms ease, stroke 400ms ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.is-switching *, :root.is-switching *::before, :root.is-switching *::after { transition: none !important; }
+}
+
+/* ---------- Listor som kort ---------- */
+
+/* Varje rad är ett eget kort med rundade hörn, så att listan inte flyter i tomma intet. */
+.rows { gap: var(--s-1); }
+.rows > .row { background: var(--raised); }
+.rows > .row:hover { background: var(--hover); }
+
+.collapsible__head {
+  display: flex; align-items: center; gap: var(--s-3); width: 100%;
+  padding: 0; margin-bottom: var(--s-3); border: 0; background: none; color: inherit; font: inherit; cursor: pointer; text-align: left;
+}
+.collapsible__head h2 { margin: 0 auto 0 0; }
+.collapsible__chevron { flex: none; color: var(--text-2); transition: transform var(--t-base) var(--ease); }
+.collapsible__head[aria-expanded="false"] .collapsible__chevron { transform: rotate(-90deg); }
+
+/* Sök och filter: alltid synligt på dator, bakom en knapp på mobilen. */
+.filter-toggle { display: none; position: relative; }
+.filter-toggle.is-active::after { content: ""; position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+@media (max-width: 760px) {
+  .filter-toggle { display: inline-flex; }
+  .filter-bar:not(.is-open) { display: none; }
+}
+
+.nav-label { padding: var(--s-4) var(--s-3) var(--s-1); }
+
+/* Planritningen smälter in i temat i stället för att lysa kritvit. */
+.plan { background: var(--hover); }
+.plan img { mix-blend-mode: multiply; }
+:root[data-theme="dark"] .plan img { mix-blend-mode: normal; opacity: .78; }
+@media (max-width: 760px) {
+  .overview .section-head h2 { font-size: 17px; }
+  .overview .plan { max-width: 100%; }
+  .kpi__value { font-size: 17px; }
 }

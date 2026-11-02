@@ -5,7 +5,7 @@ import { IconCheck, IconChevronDown, IconX } from '@tabler/icons-react'
 
 // Samma kurva som --ease i design.css.
 export const ease = [0.65, 0, 0.35, 1] as const
-const isMobile = () => matchMedia('(max-width: 760px)').matches
+export const isMobile = () => matchMedia('(max-width: 760px)').matches
 
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const from = isMobile() ? { y: '100%' } : { x: '105%' }
@@ -55,6 +55,21 @@ export function More({ open: initial, children }: { open?: boolean; children: Re
       <button type="button" className="btn btn--ghost" style={{ marginLeft: -16 }} onClick={() => setOpen(true)}>
         <IconChevronDown size={16} /> Fler detaljer
       </button>
+    </div>
+  )
+}
+
+// En sektion som går att fälla ihop, t.ex. det som redan är klart.
+export function Collapsible({ title, meta, startOpen = true, children }: { title: string; meta?: string; startOpen?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(startOpen)
+  return (
+    <div className="collapsible">
+      <button type="button" className="collapsible__head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <h2>{title}</h2>
+        {meta && <span className="meta">{meta}</span>}
+        <IconChevronDown size={18} className="collapsible__chevron" />
+      </button>
+      {open && children}
     </div>
   )
 }

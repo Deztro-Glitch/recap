@@ -5,20 +5,20 @@ import { api } from '../../lib/api'
 import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan } from '../../components/FloorPlan'
 import { iconFor } from '../../components/icons'
-import { Chips, ease, useToast } from '../../components/ui'
+import { Chips, ease } from '../../components/ui'
 import { CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, tileStyle, type Mode, type Room } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { ContractStatus } from './Contracts'
-import { ItemList, allItems, byDate, byImportance, roomFacts, sheetFor, sum, useMarkDone, type Item } from './Items'
+import { ItemList, allItems, byDate, byImportance, modeItems, roomFacts, sheetFor, sum, useMarkDone, type Item } from './Items'
 import { RoomPhotos } from './Photos'
 import { RoomEditSheet } from './Rooms'
 
 // Översikt: nyckeltal, planritningen och en panel som visar hemmet eller det rum man tryckt på.
 export function Overview({ state, open, place, setPlace }: ViewProps & { place: string | null; setPlace: (id: string | null) => void }) {
-  const toast = useToast()
   const project = state.project!
   const mode: Mode = project.mode ?? 'full'
-  const items = allItems(state)
+  // Nyckeltalen i Projekt och listorna i panelen gäller bara det som hör till läget.
+  const items = modeItems(state)
   const room = state.rooms.find((r) => r.id === place) ?? null
   const panel = useRef<HTMLDivElement>(null)
 
@@ -30,7 +30,6 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
   const setMode = async (m: Mode) => {
     await api.updateProject(project.id, { mode: m })
     await state.reload()
-    toast(`${MODE_LABEL[m]}läge`)
   }
 
   const kpis =
@@ -41,7 +40,7 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
         ]
       : [
           { label: 'Fast månadskostnad', value: state.contracts.reduce((s, c) => s + (Number(c.monthly) || 0), 0) },
-          { label: 'Investerat i hemmet', value: sum(items.filter((i) => i.done && (i.k6 || i.stays))) },
+          { label: 'Investerat i hemmet', value: sum(allItems(state).filter((i) => i.done && (i.k6 || i.stays))) },
         ]
 
   return (
@@ -84,16 +83,17 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
 }
 
 function HomePanel({ state, open, items }: { state: ProjectState; open: ViewProps['open']; items: Item[] }) {
-  const coming = state.contracts.filter((c) => c.ends_on && daysLeft(c.ends_on) >= -30).sort((a, b) => a.ends_on!.localeCompare(b.ends_on!)).slice(0, 4)
+  // Avtal syns här bara när något snart går ut. Resten finns under Mer.
+  const coming = state.contracts.filter((c) => c.ends_on && daysLeft(c.ends_on) <= 30 && daysLeft(c.ends_on) >= -30).sort((a, b) => a.ends_on!.localeCompare(b.ends_on!))
   const latest = items.filter((i) => i.done).sort(byDate).slice(0, 5)
   const roomName = (id: string | null) => state.rooms.find((r) => r.id === id)?.name
 
   return (
     <>
       <div className="section-head"><h2>{state.project!.name}</h2></div>
-      <div className="section">
-        <div className="section-head"><h3>Kommande</h3></div>
-        {coming.length ? (
+      {coming.length > 0 && (
+        <div className="section">
+          <div className="section-head"><h3>Går snart ut</h3></div>
           <div className="rows">
             {coming.map((c) => (
               <div key={c.id} className="row" onClick={() => open({ t: 'contract', item: c })}>
@@ -107,10 +107,8 @@ function HomePanel({ state, open, items }: { state: ProjectState; open: ViewProp
               </div>
             ))}
           </div>
-        ) : (
-          <p className="meta">Inga avtal som går ut</p>
-        )}
-      </div>
+        </div>
+      )}
       <div className="section">
         <div className="section-head"><h3>Senast</h3></div>
         {latest.length ? (
@@ -136,9 +134,9 @@ function HomePanel({ state, open, items }: { state: ProjectState; open: ViewProp
 // Allt som hör till ett rum: färgkoder och mått, planerat och klart, foton.
 function RoomPanel({ state, open, room, onClose }: { state: ProjectState; open: ViewProps['open']; room: Room; onClose: () => void }) {
   const [editing, setEditing] = useState(false)
-  const items = allItems(state).filter((i) => i.room_id === room.id)
+  const items = modeItems(state).filter((i) => i.room_id === room.id)
   const { markDone, field } = useMarkDone(state)
-  const facts = roomFacts(items)
+  const facts = roomFacts(allItems(state).filter((i) => i.room_id === room.id))
 
   return (
     <>
