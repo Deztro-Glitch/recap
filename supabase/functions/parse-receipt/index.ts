@@ -1,7 +1,8 @@
 // Recap – läser ett fotat kvitto med OpenAI (gpt-4o-mini) och lämnar tillbaka raderna som JSON.
 // Nyckeln ligger som hemlighet OPENAI_API_KEY i Supabase, aldrig i appen.
-// Anropas från appen med supabase.functions.invoke('parse-receipt', { body: { image, rooms } }),
-// där image är en data-URL (jpeg) och rooms är hemmets rumsnamn. Kräver inloggad användare.
+// Anropas från appen med supabase.functions.invoke('parse-receipt', { body: { image, rooms, planned } }),
+// där image är en data-URL (jpeg), rooms är hemmets rumsnamn och planned är planerade köp
+// ({ id, title, price, room }) som en rad på kvittot kan höra ihop med. Kräver inloggad användare.
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -26,12 +27,13 @@ const SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['title', 'price', 'room', 'scope'],
+        required: ['title', 'price', 'room', 'scope', 'match'],
         properties: {
           title: { type: 'string', description: 'Varans namn, läsbart på svenska' },
           price: { type: 'number', description: 'Radens pris i kronor efter rabatt, för hela antalet' },
           room: { type: ['string', 'null'], description: 'Ett av rummen i listan, eller null' },
           scope: { type: 'string', enum: ['build', 'home'] },
+          match: { type: ['string', 'null'], description: 'id på det planerade köp raden är, eller null' },
         },
       },
     },
@@ -47,7 +49,9 @@ const SCHEMA = {
   },
 }
 
-const instructions = (rooms: string[]) => `Du läser kvitton åt en svensk app där man dokumenterar sitt hem: renoveringar och inredning.
+interface Planned { id: string; title: string; price: number; room: string | null }
+
+const instructions = (rooms: string[], planned: Planned[]) => `Du läser kvitton åt en svensk app där man dokumenterar sitt hem: renoveringar och inredning.
 Läs kvittot på bilden och fyll i JSON enligt schemat.
 
 - store: butikens namn. date: köpdatum som YYYY-MM-DD. total: summan att betala.
@@ -58,6 +62,10 @@ Läs kvittot på bilden och fyll i JSON enligt schemat.
 - room: välj det rum raden troligast hör till bland dessa: ${rooms.length ? rooms.join(', ') : '(inga rum)'}. Annars null.
   Byggmaterial som inte tydligt hör till ett rum får null.
 - ignored: varor som inte hör till hemmet, t.ex. godis, snacks, dricka, mat, tidningar, kassar och påsar.
+- match: om raden är samma sak som ett av de planerade köpen nedan, skriv dess id. Produktnamn räknas, t.ex. är
+  "ÄPPLARYD 3-sits" en soffa och passar "Soffa". Priset och rummet ger stöd men behöver inte stämma exakt.
+  Varje planerat köp får matchas mot högst en rad. Är du inte säker, skriv null.
+Planerade köp: ${planned.length ? planned.map((p) => `${p.id}: ${p.title}${p.price ? `, ca ${p.price} kr` : ''}${p.room ? `, ${p.room}` : ''}`).join('; ') : '(inga)'}
 Hittar du ingenting, lämna listorna tomma. Gissa aldrig fram varor som inte står på kvittot.`
 
 Deno.serve(async (req) => {
@@ -73,11 +81,14 @@ Deno.serve(async (req) => {
   const key = Deno.env.get('OPENAI_API_KEY')
   if (!key) return json({ error: 'OPENAI_API_KEY saknas i Supabase' }, 500)
 
-  let image: string, rooms: string[]
+  let image: string, rooms: string[], planned: Planned[]
   try {
     const body = await req.json()
     image = String(body.image ?? '')
     rooms = Array.isArray(body.rooms) ? body.rooms.map(String).slice(0, 50) : []
+    planned = Array.isArray(body.planned)
+      ? body.planned.slice(0, 100).map((p: any) => ({ id: String(p.id), title: String(p.title).slice(0, 120), price: Number(p.price) || 0, room: p.room ? String(p.room) : null }))
+      : []
   } catch {
     return json({ error: 'Ogiltig förfrågan' }, 400)
   }
@@ -92,7 +103,7 @@ Deno.serve(async (req) => {
       temperature: 0,
       response_format: { type: 'json_schema', json_schema: { name: 'receipt', strict: true, schema: SCHEMA } },
       messages: [
-        { role: 'system', content: instructions(rooms) },
+        { role: 'system', content: instructions(rooms, planned) },
         { role: 'user', content: [{ type: 'image_url', image_url: { url: image, detail: 'high' } }] },
       ],
     }),

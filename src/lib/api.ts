@@ -44,7 +44,7 @@ export interface Api {
   subscribe(pid: string, onChange: () => void): () => void
 
   // Läser ett kvittofoto med AI (Edge Function parse-receipt). null när det inte går, t.ex. i demoläget.
-  parseReceipt(image: string, rooms: string[]): Promise<Record<string, any> | null>
+  parseReceipt(image: string, rooms: string[], planned: { id: string; title: string; price: number; room: string | null }[]): Promise<Record<string, any> | null>
 }
 
 // ---------- Bildkomprimering (mindre filer = snabbare app) ----------
@@ -158,8 +158,8 @@ function supabaseApi(sb: SupabaseClient): Api {
       await sb.storage.from('photos').remove([path])
     },
 
-    async parseReceipt(image, rooms) {
-      const { data, error } = await sb.functions.invoke('parse-receipt', { body: { image, rooms } })
+    async parseReceipt(image, rooms, planned) {
+      const { data, error } = await sb.functions.invoke('parse-receipt', { body: { image, rooms, planned } })
       if (error) throw new Error(error.message)
       return data
     },

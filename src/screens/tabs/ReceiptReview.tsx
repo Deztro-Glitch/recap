@@ -6,11 +6,12 @@ import { readReceipt, guessRoom, type ReceiptScan, type ScanLine } from '../../l
 import { Chips, Field, Loader, Primary, Sheet, useToast } from '../../components/ui'
 import { SCOPE_LABEL, modeScope, type Purchase, type Receipt, type Scope } from '../../types'
 import type { ProjectState } from '../ProjectView'
-import { guessScope, today } from './Items'
+import { fmtDate, guessScope, today } from './Items'
 
-interface Row extends Omit<ScanLine, 'price'> { key: number; price: string }
+// linked är true när man har bekräftat att raden är det planerade köpet match_id.
+interface Row extends Omit<ScanLine, 'price'> { key: number; price: string; linked: boolean; choosing?: boolean }
 let seq = 0
-const toRow = (l: ScanLine): Row => ({ ...l, price: String(l.price).replace('.', ','), key: ++seq })
+const toRow = (l: ScanLine): Row => ({ ...l, price: String(l.price).replace('.', ','), key: ++seq, linked: false })
 
 // Granskning av ett fotat kvitto: raderna som lästes ut, med rum och läge att justera innan man sparar.
 // Varje rad blir ett eget inköp, kopplat till kvittot.
@@ -26,6 +27,9 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
   const [saving, setSaving] = useState(false)
   const upload = useRef<Promise<string> | null>(null)
   const saved = useRef(false)
+  // Planerade köp som en rad kan stänga, t.ex. "Soffa, ca 7 000 kr".
+  const planned = state.purchases.filter((p) => !p.bought)
+  const plannedById = (id?: string | null) => planned.find((p) => p.id === id)
 
   useEffect(() => {
     if (!file) return
@@ -36,7 +40,8 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
     setPreview(url)
     // Bilden laddas upp medan kvittot läses, så att det går fort att spara.
     upload.current = api.uploadFile(state.project!.id, file)
-    readReceipt(file, state.rooms, setProgress).then((s) => {
+    const refs = planned.map((p) => ({ id: p.id, title: p.title, price: Number(p.est_price) || 0, room_id: p.room_id }))
+    readReceipt(file, { rooms: state.rooms, planned: refs }, setProgress).then((s) => {
       setScan(s)
       // Valde man ett rum innan kvittot fotades gäller det för raderna som inte fick ett eget.
       const lines = s.lines.length ? s.lines : [{ title: '', price: s.total ?? 0, room_id: null, scope: 'home' as Scope }]
@@ -65,7 +70,20 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
       const pid = state.project!.id
       const file_path = await upload.current!
       const receipt = await api.insert<Receipt>('receipts', { project_id: pid, file_path, store: store.trim() || null, bought_on: date || today(), total })
+      const diffs: string[] = []
       for (const r of valid) {
+        const plan = r.linked ? plannedById(r.match_id) : undefined
+        if (plan) {
+          // Raden stänger det planerade köpet i stället för att bli ett nytt.
+          await api.update('purchases', plan.id, {
+            title: r.title.trim(), price: parseNum(r.price), bought: true, bought_on: date || today(),
+            store: store.trim() || null, receipt_id: receipt.id, room_id: r.room_id ?? plan.room_id,
+          })
+          const est = Number(plan.est_price) || 0
+          const d = est - parseNum(r.price)
+          if (est) diffs.push(`${plan.title}: ${Math.abs(d) < 1 ? 'precis som planerat' : `${kr(Math.abs(d))} ${d > 0 ? 'under' : 'över'} det planerade`}`)
+          continue
+        }
         await api.insert<Purchase>('purchases', {
           project_id: pid, receipt_id: receipt.id, title: r.title.trim(), price: parseNum(r.price), est_price: 0, bought: true, bought_on: date || today(),
           store: store.trim() || null, room_id: r.room_id, scope: r.scope, receipt_path: null, image_path: null, priority: 2, stays: false, k6: false,
@@ -80,7 +98,7 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
       const noRoom = valid.filter((r) => !r.room_id).length
       toast({
         title: `${valid.length} ${valid.length === 1 ? 'sak' : 'saker'} sparade i Inköp under Klart`,
-        body: [away && `${away} syns i ${here === 'home' ? 'Projekt' : 'Boende'}läget.`, noRoom && `${noRoom} saknar rum.`].filter(Boolean).join(' ') || undefined,
+        body: [diffs.length && `${diffs.join('. ')}.`, away && `${away} syns i ${here === 'home' ? 'Projekt' : 'Boende'}läget.`, noRoom && `${noRoom} saknar rum.`].filter(Boolean).join(' ') || undefined,
       })
       onClose()
     } catch (err: any) {
@@ -129,6 +147,8 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
                   </select>
                   <Chips value={r.scope} onChange={(v) => set(r.key, { scope: v })} options={(['build', 'home'] as Scope[]).map((v) => ({ value: v, label: v === 'build' ? 'Projekt' : SCOPE_LABEL[v] }))} />
                 </div>
+                <MatchPrompt row={r} plan={plannedById(r.match_id)} free={planned.filter((p) => !rows.some((x) => x.key !== r.key && x.linked && x.match_id === p.id))}
+                  onChange={(patch) => set(r.key, patch)} />
               </div>
             ))}
           </div>
@@ -159,5 +179,40 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
         </div>
       )}
     </Sheet>
+  )
+}
+
+// Frågar om en kvittorad är något man har planerat, eller låter en koppla den själv.
+function MatchPrompt({ row, plan, free, onChange }: { row: Row; plan?: Purchase; free: Purchase[]; onChange: (patch: Partial<Row>) => void }) {
+  const est = (p: Purchase) => (Number(p.est_price) ? ` (planerad ca ${kr(Number(p.est_price))})` : ' (planerad)')
+  if (plan && row.linked) {
+    return (
+      <div className="review-match is-linked">
+        <span>Stänger <b>{plan.title}</b>{est(plan)}</span>
+        <button type="button" className="link-btn" onClick={() => onChange({ linked: false, match_id: null })}>Ångra</button>
+      </div>
+    )
+  }
+  if (plan) {
+    return (
+      <div className="review-match">
+        <span>Hör den ihop med <b>{plan.title}</b>{est(plan)}?</span>
+        <div className="review-match__actions">
+          <button type="button" className="btn btn--secondary" onClick={() => onChange({ linked: true, room_id: row.room_id ?? plan.room_id })}>Ja, koppla</button>
+          <button type="button" className="btn btn--ghost" onClick={() => onChange({ match_id: null })}>Nej</button>
+        </div>
+      </div>
+    )
+  }
+  if (!free.length) return null
+  if (!row.choosing) return <button type="button" className="link-btn" style={{ justifySelf: 'start' }} onClick={() => onChange({ choosing: true })}>Koppla till planerat köp</button>
+  return (
+    <select className="select" aria-label="Planerat köp" value="" onChange={(e) => {
+      const p = free.find((x) => x.id === e.target.value)
+      if (p) onChange({ match_id: p.id, linked: true, choosing: false, room_id: row.room_id ?? p.room_id })
+    }}>
+      <option value="">Välj planerat köp</option>
+      {free.map((p) => <option key={p.id} value={p.id}>{p.title}{Number(p.est_price) ? `, ca ${kr(Number(p.est_price))}` : ''}{p.created_at ? ` · ${fmtDate(p.created_at.slice(0, 10))}` : ''}</option>)}
+    </select>
   )
 }

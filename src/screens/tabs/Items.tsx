@@ -46,6 +46,7 @@ export interface Item {
   scope: Scope            // bygget eller inredningen
   details: Detail[] | null
   missing: boolean        // fotat kvitto utan belopp
+  planned: number | null  // vad det var planerat att kosta, när det är klart
   created_at: string
   raw: Purchase | Task
 }
@@ -55,13 +56,13 @@ export const fromPurchase = (p: Purchase, receiptFile?: string | null): Item => 
   table: 'purchases', id: p.id, title: p.title, room_id: p.room_id, done: p.bought,
   amount: p.bought ? paid(p) : Number(p.est_price) || 0, date: p.bought ? p.bought_on : null, important: p.priority === 1,
   file: p.receipt_path ?? receiptFile ?? null, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, scope: p.scope ?? guessScope(p.title), details: p.details,
-  missing: needsInfo(p), created_at: p.created_at, raw: p,
+  missing: needsInfo(p), planned: p.bought && p.price != null && Number(p.est_price) > 0 ? Number(p.est_price) : null, created_at: p.created_at, raw: p,
 })
 
 export const fromTask = (t: Task): Item => ({
   table: 'tasks', id: t.id, title: t.title, room_id: t.room_id, done: t.status === 'done',
   amount: Number(t.cost) || 0, date: t.status === 'done' ? t.done_on : null, important: t.priority === 1,
-  file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, scope: 'build', details: t.details, missing: false, created_at: t.created_at, raw: t,
+  file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, scope: 'build', details: t.details, missing: false, planned: null, created_at: t.created_at, raw: t,
 })
 
 export const allItems = (state: Pick<ProjectState, 'purchases' | 'tasks'> & { receipts?: Receipt[] }) => {
@@ -195,7 +196,7 @@ export function ItemRow({ it, state, onEdit, onCheck, hideRoom }: { it: Item; st
             {!it.done && it.important && <IconStarFilled size={13} className="star" aria-label="Viktigt" />}
             {it.title}
           </div>
-          <div className="meta">{[it.date ? fmtDate(it.date) : null, room?.name, it.store].filter(Boolean).join(' · ')}</div>
+          <div className="meta">{[it.date ? fmtDate(it.date) : null, room?.name, it.store, it.planned && Math.round(it.planned) !== Math.round(it.amount) ? `planerat ca ${kr(it.planned)}` : null].filter(Boolean).join(' · ')}</div>
           <DetailsList details={it.details} />
           <ItemTags it={it} />
         </div>
