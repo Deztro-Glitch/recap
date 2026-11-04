@@ -8,9 +8,9 @@ Färger, typsnitt och komponenter följer designsystemet i [docs/designsystem/CL
 
 - [src/design.css](src/design.css) är grunden. Recap-specifika tillägg och avsteg ligger i [src/app.css](src/app.css) och använder tokens.
 - Läget färgar hela appen (beslutat med användaren): Projekt (bygga) har designsystemets lila färger, Boende (inreda och bo) har varma espresso/dimgröna färger. Tokens skrivs över under `:root[data-mode="home"]` i app.css och sätts av [src/lib/mode.ts](src/lib/mode.ts), med en 400 ms övergång bara när man byter.
-- Undantag från designsystemets layout, beslutat med användaren: ingen processlist. På mobil används en meny längst ner med en plusknapp i mitten; på dator sidomeny och "Lägg till" uppe till höger. Plusknappen/"Lägg till" är vyns enda färgstarka knapp.
+- Undantag från designsystemets layout, beslutat med användaren: ingen processlist. På mobil används en meny längst ner med en plusknapp i mitten som öppnar appens Lägg till-meny (inte bildväljaren direkt); på dator sidomeny och "Lägg till" uppe till höger. Plusknappen/"Lägg till" är vyns enda färgstarka knapp.
 - Ikoner: `@tabler/icons-react` (outline). Rum får ikon och färg från innehållspaletten, aldrig emojis.
-- Gränssnittet ska förklara sig självt: inga hjälptexter, inga extra lägg till-knappar i vyerna. All inmatning går via "Lägg till"/plusknappen.
+- Gränssnittet ska förklara sig självt: inga hjälptexter, inga extra lägg till-knappar i vyerna. All inmatning går via "Lägg till"/plusknappen, utom "Lägg till" under Planerat i ett rum (önskat av användaren).
 
 ## Data
 

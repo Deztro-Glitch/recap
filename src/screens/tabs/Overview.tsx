@@ -6,7 +6,7 @@ import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan } from '../../components/FloorPlan'
 import { iconFor } from '../../components/icons'
 import { Chips, ease } from '../../components/ui'
-import { CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, tileStyle, type Mode, type Room } from '../../types'
+import { CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, modeScope, tileStyle, type Mode, type Room } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { ContractStatus } from './Contracts'
 import { ItemList, allItems, byDate, byImportance, modeItems, roomFacts, sheetFor, sum, useMarkDone, type Item } from './Items'
@@ -155,7 +155,11 @@ function RoomPanel({ state, open, room, onClose }: { state: ProjectState; open: 
         </dl>
       )}
       <div className="section">
-        <div className="section-head"><h3>Planerat</h3><span className="meta">{kr(sum(items.filter((i) => !i.done)))}</span></div>
+        <div className="section-head">
+          <h3>Planerat</h3>
+          <span className="meta">{kr(sum(items.filter((i) => !i.done)))}</span>
+          <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { room_id: room.id, scope: modeScope(state.project?.mode) } })}>Lägg till</button>
+        </div>
         <ItemList items={items.filter((i) => !i.done).sort(byImportance)} state={state} open={open} onCheck={markDone} empty="Inget planerat" hideRoom />
       </div>
       <div className="section">

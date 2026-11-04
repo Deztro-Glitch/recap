@@ -62,7 +62,8 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const [saving, setSaving] = useState(0)
   // Ett fotat kvitto granskas rad för rad innan det sparas.
   const [reviewFile, setReviewFile] = useState<File | null>(null)
-  // Plusknappen öppnar kameran direkt. Vad bilden är väljer man efteråt.
+  // Fota direkt med kameran, eller välj bilder från biblioteket. Vad bilden är väljer man efteråt.
+  const cameraInput = useRef<HTMLInputElement>(null)
   const photoInput = useRef<HTMLInputElement>(null)
   const [picked, setPicked] = useState<File[]>([])
   const [pickedRoom, setPickedRoom] = useState('')
@@ -75,14 +76,6 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   }, [mode])
   useEffect(() => () => applyMode(null), [])
   const scope = modeScope(mode)
-
-  // Stänger man kameran utan bild vill man troligen skriva in något i stället.
-  useEffect(() => {
-    const el = photoInput.current
-    const onCancel = () => setSheet({ t: 'add' })
-    el?.addEventListener('cancel', onCancel)
-    return () => el?.removeEventListener('cancel', onCancel)
-  }, [state.loading])
 
   // Kvitton: fota först, fyll i sen. Bilden sparas direkt som ett köp, och formuläret öppnas
   // för den som vill fylla i belopp och butik på en gång.
@@ -124,7 +117,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     setPickedRoom((pickRoom.current !== undefined ? pickRoom.current : here.room_id) ?? '')
     pickRoom.current = undefined
     setSheet({ t: 'picked' })
-    if (photoInput.current) photoInput.current.value = ''
+    for (const el of [cameraInput.current, photoInput.current]) if (el) el.value = ''
   }
 
   // Vad bilderna var: kvitton blir köp, före/efter hamnar på rummet, något man vill ha blir planerat.
@@ -190,7 +183,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     if (s.t === 'pick') {
       pickRoom.current = s.room_id
       setSheet(null)
-      return photoInput.current?.click()
+      return cameraInput.current?.click()
     }
     if (s.t === 'receipt') {
       // Kameran/bildväljaren måste öppnas direkt i trycket.
@@ -225,7 +218,8 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   ]
 
   const addRows = [
-    { icon: IconCamera, title: 'Kvitto eller bild', on: () => photoInput.current?.click() },
+    { icon: IconCamera, title: 'Fota kvitto eller bild', on: () => cameraInput.current?.click() },
+    { icon: IconPhoto, title: 'Välj från bilder eller filer', on: () => photoInput.current?.click() },
     { icon: IconChecklist, title: 'Planerat köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, scope } }) },
     { icon: IconCircleCheck, title: 'Klart köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, scope, bought: true } }) },
     { icon: IconFileText, title: 'Avtal', on: () => open({ t: 'contract', item: {} }) },
@@ -237,7 +231,6 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       user={user}
       home={state.project ? { name: state.project.name, onClick: onBack } : undefined}
       onAdd={() => open({ t: 'add' })}
-      onTabAdd={() => photoInput.current?.click()}
       onAvatar={() => go('settings')}
       tabs={tabs}
       nav={
@@ -251,6 +244,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
         </>
       }
     >
+      <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPicked(e.target.files)} />
       <input ref={photoInput} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => onPicked(e.target.files)} />
       <input ref={receiptInput} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => onReceipts(e.target.files)} />
       {saving > 0 && (
