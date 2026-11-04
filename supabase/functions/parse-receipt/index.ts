@@ -64,6 +64,12 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST') return json({ error: 'Använd POST' }, 405)
 
+  // Bara inloggade användare, inte vem som helst med appens publika nyckel.
+  const user = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/user`, {
+    headers: { Authorization: req.headers.get('Authorization') ?? '', apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '' },
+  })
+  if (!user.ok) return json({ error: 'Logga in först' }, 401)
+
   const key = Deno.env.get('OPENAI_API_KEY')
   if (!key) return json({ error: 'OPENAI_API_KEY saknas i Supabase' }, 500)
 
