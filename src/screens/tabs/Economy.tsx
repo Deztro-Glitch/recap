@@ -3,26 +3,27 @@ import { api } from '../../lib/api'
 import { emptyEconomy, economyNumbers } from '../../lib/economy'
 import { ore, useElPrice } from '../../lib/elpris'
 import { kr, parseNum } from '../../lib/format'
+import { valuation } from '../../lib/valuation'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { EL_ZONE_LABEL, type Economy, type ElZone } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
-import { allItems, fmtDate, sum } from './Items'
-import { valuation } from '../../lib/valuation'
+import { fmtDate } from './Items'
 
 // Toppkorten och bolånemätaren i Boendeläget.
 export function EconomyDashboard({ state, open }: ViewProps) {
   const e = state.project?.economy
-  const n = economyNumbers(e ?? emptyEconomy)
+  const n = economyNumbers(e ?? emptyEconomy, state.contracts)
   const edit = () => open({ t: 'economy' })
   const el = useElPrice(e?.zone)
+  const has = !!e || n.fixed > 0
 
   return (
     <>
       <div className="kpis kpis--three">
         <button className="kpi kpi--button" onClick={edit}>
           <div className="kpi__label">Ren månadskostnad</div>
-          <div className="meta">(Ränta, avgift, el och försäkring)</div>
-          <div className="kpi__value">{e ? kr(n.costs) : '–'}</div>
+          <div className="meta">(Ränta och boendeavtal)</div>
+          <div className="kpi__value">{has ? kr(n.costs) : '–'}</div>
           <div className="meta">Pengar ut</div>
         </button>
         <button className="kpi kpi--button" onClick={edit}>
@@ -34,7 +35,7 @@ export function EconomyDashboard({ state, open }: ViewProps) {
         <button className="kpi kpi--button" onClick={edit}>
           <div className="kpi__label">Totalt kassaflöde</div>
           <div className="meta">(Kostnad och amortering)</div>
-          <div className="kpi__value">{e ? kr(n.cashflow) : '–'}</div>
+          <div className="kpi__value">{has ? kr(n.cashflow) : '–'}</div>
           <div className="meta">Varje månad</div>
         </button>
       </div>
@@ -73,7 +74,7 @@ export function EconomyDashboard({ state, open }: ViewProps) {
               </p>
             </>
           ) : (
-            <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); edit() }}>Lägg in bolån och avgifter</button>
+            <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); edit() }}>Lägg in bolånet</button>
           )}
         </div>
         <ValueCard state={state} debt={n.debt} onClick={edit} />
@@ -84,38 +85,48 @@ export function EconomyDashboard({ state, open }: ViewProps) {
 
 // Estimerat marknadsvärde och hur mycket av bostaden som är ens egen.
 function ValueCard({ state, debt, onClick }: { state: ProjectState; debt: number; onClick: () => void }) {
-  const improvements = sum(allItems(state).filter((i) => i.done && i.k6))
-  const v = valuation(state.project?.economy, improvements)
-  const margin = v.value - debt
-  const share = v.value > 0 ? Math.max(0, Math.min(1, margin / v.value)) : 0
-  const pct = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toLocaleString('sv-SE', { maximumFractionDigits: 1 })} %`
+  const v = valuation(state.project?.economy, state.rooms)
 
   return (
     <div className="loan" onClick={onClick} role="button" tabIndex={0} onKeyDown={(k) => k.key === 'Enter' && onClick()}>
-      <div className="section-head">
-        <h2>Estimerat marknadsvärde</h2>
-        {v.source === 'example' && <span className="tag">Exempel</span>}
-      </div>
-      <div className="value-now">
-        <span className="kpi__value">{kr(v.value)}</span>
-        {v.change != null && <span className={`status ${v.change >= 0 ? 'status--won' : 'status--lost'}`}>{pct(v.change)} senaste månaden</span>}
-      </div>
-      <p className="meta" style={{ margin: '2px 0 var(--s-4)' }}>
-        {v.source === 'own' ? 'Din värdering' : 'Baserat på Booli Live'} och K6-förbättringar{improvements ? ` (+${kr(improvements)})` : ''}
-      </p>
+      <div className="section-head"><h2>Estimerat marknadsvärde</h2></div>
+      {v.value == null ? (
+        <>
+          <p className="meta" style={{ margin: '0 0 var(--s-3)' }}>Fyll i {v.missing.join(', ')} under Bostaden.</p>
+          <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); onClick() }}>Lägg in bostaden</button>
+        </>
+      ) : (
+        <>
+          <div className="kpi__value">{kr(v.value)}</div>
+          <p className="meta" style={{ margin: '2px 0 var(--s-4)' }}>
+            Baserat på {v.area.toLocaleString('sv-SE')} kvm och rummens nuvarande skick ({v.renovated} av {v.rooms} rum nyrenoverade)
+          </p>
+          <Margin value={v.value} debt={debt} />
+        </>
+      )}
+    </div>
+  )
+}
 
+// Stapeln: bolånet i neutral färg till vänster och din del (övervärdet) i grönt till höger.
+function Margin({ value, debt }: { value: number; debt: number }) {
+  const margin = value - debt
+  const whole = Math.max(value, debt, 1)
+  return (
+    <>
       <div className="kpi__label">Din totala vinst/marginal</div>
-      <div className="budget-track" aria-hidden style={{ marginTop: 'var(--s-2)' }}>
-        <span className="is-spent" style={{ width: `${share * 100}%` }} />
+      <div className="split-track" aria-hidden>
+        <span className="split-track__debt" style={{ width: `${(Math.min(debt, value) / whole) * 100}%` }} />
+        {margin > 0 && <span className="split-track__own" style={{ width: `${(margin / whole) * 100}%` }} />}
       </div>
       <div className="loan__ends">
         <div><div className="meta">Bolån</div><div className="kpi__value">{kr(debt)}</div></div>
         <div>
           <div className="meta">Din del</div>
-          <div className="kpi__value" style={margin < 0 ? { color: 'var(--danger)' } : undefined}>{kr(margin)}</div>
+          <div className="kpi__value" style={{ color: margin < 0 ? 'var(--danger)' : 'var(--success)' }}>{kr(margin)}</div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -123,29 +134,34 @@ const FIELDS = {
   loan: 'Ursprungligt lån, kr',
   rate: 'Aktuell ränta, %',
   amortization: 'Amortering, kr/mån',
-  fee: 'Avgift till föreningen, kr/mån',
-  electricity: 'El ungefär, kr/mån',
-  insurance: 'Hemförsäkring, kr/mån',
-  value: 'Egen värdering av bostaden, kr',
+  purchasePrice: 'Inköpspris, kr',
+  area: 'Boarea, kvm',
+  sqmAverage: 'Snittpris i området, normalt skick, kr/kvm',
+  sqmTop: 'Toppris i området, nyrenoverat, kr/kvm',
 } as const
 type NumKey = keyof typeof FIELDS
+const KEYS = Object.keys(FIELDS) as NumKey[]
 
 export function EconomySheet({ open, state, onClose }: { open: boolean; state: ProjectState; onClose: () => void }) {
   const toast = useToast()
-  const [f, setF] = useState<Record<NumKey, string> & { loanStart: string; zone: ElZone | null }>({ loan: '', rate: '', amortization: '', fee: '', electricity: '', insurance: '', value: '', loanStart: '', zone: null })
+  const blank = Object.fromEntries(KEYS.map((k) => [k, ''])) as Record<NumKey, string>
+  const [f, setF] = useState({ ...blank, loanStart: '', zone: null as ElZone | null })
 
   useEffect(() => {
     if (!open) return
     const e = state.project?.economy ?? emptyEconomy
-    const s = (n: number) => (n ? String(n).replace('.', ',') : '')
-    setF({ loan: s(e.loan), rate: s(e.rate), amortization: s(e.amortization), fee: s(e.fee), electricity: s(e.electricity), insurance: s(e.insurance), value: s(e.value ?? 0), loanStart: e.loanStart ?? '', zone: e.zone ?? null })
+    const s = (n?: number) => (n ? String(n).replace('.', ',') : '')
+    setF({ ...(Object.fromEntries(KEYS.map((k) => [k, s(e[k])])) as Record<NumKey, string>), loanStart: e.loanStart ?? '', zone: e.zone ?? null })
   }, [open])
 
   const save = async (ev: React.FormEvent) => {
     ev.preventDefault()
+    const old = state.project?.economy ?? emptyEconomy
     const economy: Economy = {
-      loan: parseNum(f.loan), rate: parseNum(f.rate), amortization: parseNum(f.amortization), loanStart: f.loanStart || null,
-      fee: parseNum(f.fee), electricity: parseNum(f.electricity), insurance: parseNum(f.insurance), zone: f.zone, value: parseNum(f.value) || undefined,
+      ...old,
+      loan: parseNum(f.loan), rate: parseNum(f.rate), amortization: parseNum(f.amortization), loanStart: f.loanStart || null, zone: f.zone,
+      purchasePrice: parseNum(f.purchasePrice) || undefined, area: parseNum(f.area) || undefined,
+      sqmAverage: parseNum(f.sqmAverage) || undefined, sqmTop: parseNum(f.sqmTop) || undefined,
     }
     try {
       await api.updateProject(state.project!.id, { economy })
@@ -176,19 +192,19 @@ export function EconomySheet({ open, state, onClose }: { open: boolean; state: P
           <input className="input" type="date" value={f.loanStart} onChange={(e) => setF({ ...f, loanStart: e.target.value })} />
         </Field>
 
-        <h3 style={{ margin: 'var(--s-2) 0 0' }}>Fasta utgifter</h3>
-        {input('fee', '4 200')}
+        <h3 style={{ margin: 'var(--s-2) 0 0' }}>Bostaden</h3>
         <div className="form__row">
-          {input('electricity', '600')}
-          {input('insurance', '180')}
+          {input('purchasePrice', '2 950 000')}
+          {input('area', '58')}
         </div>
+        {input('sqmAverage', '55 000')}
+        {input('sqmTop', '68 000')}
+
         <div className="field">
           <span className="field__label">Elområde</span>
           <Chips value={f.zone} onChange={(z) => setF({ ...f, zone: z === f.zone ? null : z })} options={(Object.keys(EL_ZONE_LABEL) as ElZone[]).map((z) => ({ value: z as ElZone | null, label: EL_ZONE_LABEL[z] }))} />
         </div>
-
-        <h3 style={{ margin: 'var(--s-2) 0 0' }}>Bostaden</h3>
-        {input('value', 'Tomt = exempel tills Booli kopplas in')}
+        <p className="meta" style={{ margin: 0 }}>Avgift, el och försäkring räknas från dina boendeavtal under Avtal.</p>
 
         <div className="form__actions">
           <Primary>Spara</Primary>

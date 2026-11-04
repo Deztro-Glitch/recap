@@ -261,7 +261,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
             {view === 'overview' && <Overview {...props} place={place} setPlace={setPlace} />}
             {view === 'log' && <Log {...props} />}
             {view === 'purchases' && <Purchases {...props} />}
-            {view === 'contracts' && <Contracts {...props} tab={contractTab} setTab={setContractTab} />}
+            {view === 'contracts' && <Contracts {...props} tab={contractTab} />}
             {view === 'settings' && <Settings {...props} user={user} onDeleted={onBack} />}
           </motion.div>
         </AnimatePresence>

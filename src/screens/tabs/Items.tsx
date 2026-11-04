@@ -9,7 +9,7 @@ import { FileField, FileThumb } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
 import { FilterBar, FilterToggle, isFiltered, matches, noFilter, type FilterState } from '../../components/Filters'
 import { SwipeRow } from '../../components/SwipeRow'
-import { SCOPE_LABEL, modeScope, type Detail, type Purchase, type Receipt, type Scope, type Task } from '../../types'
+import { K6_LABEL, SCOPE_LABEL, modeScope, type Detail, type K6Kind, type Purchase, type Receipt, type Scope, type Task } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 
 export const today = () => new Date().toISOString().slice(0, 10)
@@ -43,6 +43,7 @@ export interface Item {
   link: string | null
   stays: boolean          // följer med lägenheten
   k6: boolean             // värdehöjande förbättring
+  k6Kind: K6Kind | null   // grundförbättring eller underhåll (5-årsregeln)
   scope: Scope            // bygget eller inredningen
   details: Detail[] | null
   missing: boolean        // fotat kvitto utan belopp
@@ -55,14 +56,14 @@ export interface Item {
 export const fromPurchase = (p: Purchase, receiptFile?: string | null): Item => ({
   table: 'purchases', id: p.id, title: p.title, room_id: p.room_id, done: p.bought,
   amount: p.bought ? paid(p) : Number(p.est_price) || 0, date: p.bought ? p.bought_on : null, important: p.priority === 1,
-  file: p.receipt_path ?? receiptFile ?? null, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, scope: p.scope ?? guessScope(p.title), details: p.details,
+  file: p.receipt_path ?? receiptFile ?? null, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, k6Kind: p.k6_kind ?? null, scope: p.scope ?? guessScope(p.title), details: p.details,
   missing: needsInfo(p), planned: p.bought && p.price != null && Number(p.est_price) > 0 ? Number(p.est_price) : null, created_at: p.created_at, raw: p,
 })
 
 export const fromTask = (t: Task): Item => ({
   table: 'tasks', id: t.id, title: t.title, room_id: t.room_id, done: t.status === 'done',
   amount: Number(t.cost) || 0, date: t.status === 'done' ? t.done_on : null, important: t.priority === 1,
-  file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, scope: 'build', details: t.details, missing: false, planned: null, created_at: t.created_at, raw: t,
+  file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, k6Kind: t.k6_kind ?? null, scope: 'build', details: t.details, missing: false, planned: null, created_at: t.created_at, raw: t,
 })
 
 export const allItems = (state: Pick<ProjectState, 'purchases' | 'tasks'> & { receipts?: Receipt[] }) => {
@@ -211,12 +212,12 @@ export function ItemRow({ it, state, onEdit, onCheck, hideRoom }: { it: Item; st
   )
 }
 
-export function ItemTags({ it }: { it: Pick<Item, 'stays' | 'k6' | 'missing'> }) {
+export function ItemTags({ it }: { it: Pick<Item, 'stays' | 'k6' | 'k6Kind' | 'missing'> }) {
   if (!it.stays && !it.k6 && !it.missing) return null
   return (
     <div className="tags">
       {it.stays && <span className="tag">Följer med</span>}
-      {it.k6 && <span className="tag">K6</span>}
+      {it.k6 && <span className="tag">{it.k6Kind === 'maintenance' ? 'K6 underhåll' : 'K6'}</span>}
       {it.missing && <span className="status status--warning">Belopp saknas</span>}
     </div>
   )
@@ -248,7 +249,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
   const parentId = (item as Partial<Purchase> | null)?.receipt_id
   const parent = parentId ? state.receipts.find((r) => r.id === parentId) : undefined
   const siblings = parent ? state.purchases.filter((p) => p.receipt_id === parent.id).length : 0
-  const blank = { title: '', room_id: '', scope: 'build' as Scope, done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
+  const blank = { title: '', room_id: '', scope: 'build' as Scope, done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, k6Kind: 'basic' as K6Kind, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
   const [f, setF] = useState(blank)
   const [urls, setUrls] = useState<{ receipt?: string; image?: string }>({})
 
@@ -273,6 +274,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
       important: item.priority === 1,
       stays: !!p.stays,
       k6: !!item.k6,
+      k6Kind: (item.k6_kind ?? 'basic') as K6Kind,
       receipt,
       image,
       details: item.details ?? [],
@@ -293,6 +295,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
       note: f.note.trim() || null,
       priority: f.important ? 1 : 2,
       k6: f.k6,
+      k6_kind: f.k6 ? f.k6Kind : null,
       receipt_path: f.receipt,
       details: cleanDetails(f.details),
     }
@@ -367,6 +370,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
           {!f.done && <Toggle checked={f.important} onChange={(v) => setF({ ...f, important: v })} label="Viktigt" />}
           {!isTask && <Toggle checked={f.stays} onChange={(v) => setF({ ...f, stays: v })} label="Följer med lägenheten" />}
           <Toggle checked={f.k6} onChange={(v) => setF({ ...f, k6: v })} label="Värdehöjande förbättring (K6)" />
+          {f.k6 && <Chips value={f.k6Kind} onChange={(v) => setF({ ...f, k6Kind: v })} options={(['basic', 'maintenance'] as K6Kind[]).map((v) => ({ value: v, label: K6_LABEL[v] }))} />}
         </div>
         {f.done && (parent ? (
           <div className="field">

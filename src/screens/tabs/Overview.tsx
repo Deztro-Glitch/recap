@@ -6,7 +6,7 @@ import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan } from '../../components/FloorPlan'
 import { iconFor } from '../../components/icons'
 import { Chips, ease } from '../../components/ui'
-import { CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, modeScope, tileStyle, type Mode, type Room } from '../../types'
+import { CONDITION_LABEL, CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, modeScope, tileStyle, type Condition, type Mode, type Room } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { ContractStatus } from './Contracts'
 import { ItemList, allItems, byDate, byImportance, modeItems, roomFacts, sheetFor, sum, useMarkDone, type Item } from './Items'
@@ -146,6 +146,11 @@ function RoomPanel({ state, open, room, onClose }: { state: ProjectState; open: 
         <h2>{room.name}</h2>
         <button className="btn btn--ghost" onClick={() => setEditing(true)}>Ändra</button>
         <button className="btn btn--ghost" aria-label="Stäng rummet" onClick={onClose}><IconX size={18} /></button>
+      </div>
+      <div className="field" style={{ marginBottom: 'var(--s-3)' }}>
+        <span className="field__label">Skick</span>
+        <Chips value={(room.condition ?? 2) as Condition} onChange={(c) => state.patch('rooms', room.id, { condition: c })}
+          options={([1, 2, 3] as Condition[]).map((c) => ({ value: c, label: CONDITION_LABEL[c] }))} />
       </div>
       {facts.length > 0 && (
         <dl className="facts">

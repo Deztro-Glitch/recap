@@ -393,3 +393,18 @@ a { color: inherit; }
 .review-match { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: var(--s-2) var(--s-3); border-radius: var(--r-xs); background: var(--hover); font-size: var(--fs-meta); }
 .review-match__actions { display: flex; gap: var(--s-1); margin-left: auto; }
 .review-match.is-linked { box-shadow: inset 0 0 0 1px var(--accent); justify-content: space-between; }
+
+/* Bolån och din del i samma stapel: neutral skuld till vänster, grönt övervärde till höger. */
+.split-track { display: flex; height: 10px; margin-top: var(--s-2); border-radius: 2px; overflow: hidden; background: var(--hover); }
+.split-track__debt { background: var(--track); }
+.split-track__own { background: var(--success); }
+
+/* Bolån och din del i samma stapel: neutral skuld till vänster, grönt övervärde till höger. */
+.split-track { display: flex; height: 10px; margin-top: var(--s-2); border-radius: 2px; overflow: hidden; background: var(--hover); }
+.split-track__debt { background: var(--track); }
+.split-track__own { background: var(--success); }
+
+/* Uträkningen av vinst och skatt i Bostads-CV. */
+.gain { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-4); }
+.gain__row { display: flex; justify-content: space-between; gap: var(--s-3); padding: 2px 0; font-variant-numeric: tabular-nums; }
+.gain__sum { font-weight: 600; border-top: 1px solid var(--hover); margin-top: var(--s-1); padding-top: var(--s-2); }

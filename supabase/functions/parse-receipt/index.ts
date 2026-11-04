@@ -27,13 +27,14 @@ const SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['title', 'price', 'room', 'scope', 'match'],
+        required: ['title', 'price', 'room', 'scope', 'match', 'k6'],
         properties: {
           title: { type: 'string', description: 'Varans namn, läsbart på svenska' },
           price: { type: 'number', description: 'Radens pris i kronor efter rabatt, för hela antalet' },
           room: { type: ['string', 'null'], description: 'Ett av rummen i listan, eller null' },
           scope: { type: 'string', enum: ['build', 'home'] },
           match: { type: ['string', 'null'], description: 'id på det planerade köp raden är, eller null' },
+          k6: { type: ['string', 'null'], enum: ['basic', 'maintenance', null], description: 'Typ av K6-avdrag, eller null' },
         },
       },
     },
@@ -62,6 +63,10 @@ Läs kvittot på bilden och fyll i JSON enligt schemat.
 - room: välj det rum raden troligast hör till bland dessa: ${rooms.length ? rooms.join(', ') : '(inga rum)'}. Annars null.
   Byggmaterial som inte tydligt hör till ett rum får null.
 - ignored: varor som inte hör till hemmet, t.ex. godis, snacks, dricka, mat, tidningar, kassar och påsar.
+- k6: avdrag vid försäljning av bostadsrätt (blankett K6). "basic" för grundförbättring: något nytt som inte fanns
+  eller ombyggnad (t.ex. ny köksinredning, nytt badrum, ny fast installation, nya innerdörrar). "maintenance" för
+  förbättrande reparation och underhåll av ytskikt och fast inredning (t.ex. väggfärg, tapet, golv, kakel, fogmassa).
+  null för lösöre och förbrukning (möbler, textilier, husgeråd, verktyg, städ, belysning som inte är fast).
 - match: om raden är samma sak som ett av de planerade köpen nedan, skriv dess id. Produktnamn räknas, t.ex. är
   "ÄPPLARYD 3-sits" en soffa och passar "Soffa". Priset och rummet ger stöd men behöver inte stämma exakt.
   Varje planerat köp får matchas mot högst en rad. Är du inte säker, skriv null.

@@ -6,7 +6,10 @@ import { daysLeft, kr, parseNum } from '../../lib/format'
 import { FileField } from '../../components/FileField'
 import { SwipeRow } from '../../components/SwipeRow'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
-import { COMMON_CONTRACTS, CONTRACT_KIND_LABEL, HOME_CONTRACTS, PROVIDERS, type Contract, type ContractKind } from '../../types'
+import { COMMON_CONTRACTS, CONTRACT_KIND_LABEL, HOME_CONTRACTS, K6_LABEL, PROVIDERS, type Contract, type ContractKind } from '../../types'
+import { contractScope, homeContracts } from '../../lib/economy'
+import { GAIN_TAX, K6_MIN_PER_YEAR, k6Deductions, lastSaleYear } from '../../lib/k6'
+import { valuation } from '../../lib/valuation'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { allItems, byDate, fmtDate, removeRow, roomFacts, sheetFor, sum, type Item } from './Items'
 
@@ -24,12 +27,11 @@ export function ContractStatus({ c }: { c: Contract }) {
 
 export type ContractTab = 'contracts' | 'cv'
 
-export function Contracts({ state, open, tab, setTab }: ViewProps & { tab: ContractTab; setTab: (t: ContractTab) => void }) {
+export function Contracts({ state, open, tab }: ViewProps & { tab: ContractTab }) {
   return (
     <div>
       <div className="section-head">
         <h1>{tab === 'contracts' ? 'Avtal och abonnemang' : 'Bostads-CV'}</h1>
-        <Chips value={tab} onChange={setTab} options={[{ value: 'contracts', label: 'Avtal' }, { value: 'cv', label: 'Bostads-CV' }]} />
       </div>
       {tab === 'contracts' ? <ContractList state={state} open={open} /> : <HomeCv state={state} open={open} />}
     </div>
@@ -44,8 +46,9 @@ function ContractList({ state, open }: ViewProps) {
     return (da <= SOON ? da : Infinity) - (db <= SOON ? db : Infinity) || a.provider.localeCompare(b.provider, 'sv')
   })
   const monthly = (cs: Contract[]) => cs.reduce((s, c) => s + (Number(c.monthly) || 0), 0)
-  const home = list.filter((c) => HOME_CONTRACTS.includes(c.kind))
-  const subs = list.filter((c) => !HOME_CONTRACTS.includes(c.kind))
+  const home = list.filter((c) => contractScope(c) === 'home')
+  const subs = list.filter((c) => contractScope(c) === 'private')
+  const counted = homeContracts(list)
   // Streaming kan man ha flera av, så det föreslås alltid.
   const missing = COMMON_CONTRACTS.filter((k) => k === 'streaming' || !list.some((c) => c.kind === k))
 
@@ -53,12 +56,12 @@ function ContractList({ state, open }: ViewProps) {
     <>
       {list.length > 0 && (
         <div className="kpis section">
-          <div className="kpi"><div className="meta">Fasta kostnader</div><div className="kpi__value">{kr(monthly(list))}/mån</div></div>
-          <div className="kpi"><div className="meta">Per år</div><div className="kpi__value">{kr(monthly(list) * 12)}</div></div>
+          <div className="kpi"><div className="meta">Boendeavtal</div><div className="kpi__value">{kr(monthly(counted))}/mån</div><div className="meta">Räknas i Ren månadskostnad</div></div>
+          <div className="kpi"><div className="meta">Privata abonnemang</div><div className="kpi__value">{kr(monthly(subs))}/mån</div><div className="meta">{kr(monthly(list) * 12)} per år totalt</div></div>
         </div>
       )}
-      <ContractGroup title="Boende" list={home} state={state} open={open} sum={monthly(home)} />
-      <ContractGroup title="Abonnemang" list={subs} state={state} open={open} sum={monthly(subs)} />
+      <ContractGroup title="Boendeavtal" list={home} state={state} open={open} sum={monthly(home)} />
+      <ContractGroup title="Privata abonnemang" list={subs} state={state} open={open} sum={monthly(subs)} />
       {missing.length > 0 && (
         <div className="section">
           <div className="section-head"><h2>Vanliga avtal</h2></div>
@@ -91,6 +94,7 @@ function ContractGroup({ title, list, state, open, sum }: ViewProps & { title: s
                 <div className="row__text">
                   <div className="row__title">{CONTRACT_KIND_LABEL[c.kind]} · {c.provider}</div>
                   <ContractStatus c={c} />
+                  {c.kind === 'bolan' && <div className="meta">Räknas via Ekonomi</div>}
                 </div>
               </div>
               {c.file_path && state.urls[c.file_path] && (
@@ -107,13 +111,17 @@ function ContractGroup({ title, list, state, open, sum }: ViewProps & { title: s
 
 // Bostads-CV: underlag för K6-avdrag och det som följer med till nästa ägare.
 function HomeCv({ state, open }: ViewProps) {
-  const items = allItems(state).filter((i) => i.done)
-  const k6 = items.filter((i) => i.k6).sort(byDate)
+  const all = allItems(state)
+  const items = all.filter((i) => i.done)
+  const k6 = k6Deductions(items)
   const stays = items.filter((i) => i.stays).sort(byDate)
-  const rooms = state.rooms.map((r) => ({ room: r, facts: roomFacts(allItems(state).filter((i) => i.room_id === r.id)) })).filter((r) => r.facts.length)
+  const rooms = state.rooms.map((r) => ({ room: r, facts: roomFacts(all.filter((i) => i.room_id === r.id)) })).filter((r) => r.facts.length)
   const roomName = (id: string | null) => state.rooms.find((r) => r.id === id)?.name
+  const e = state.project?.economy
+  const value = valuation(e, state.rooms).value
+  const thisYear = new Date().getFullYear()
 
-  const list = (rows: Item[], empty: string) =>
+  const list = (rows: Item[], empty: string, extra?: (i: Item) => React.ReactNode) =>
     rows.length ? (
       <div className="rows">
         {rows.map((i) => (
@@ -121,6 +129,7 @@ function HomeCv({ state, open }: ViewProps) {
             <div className="row__text">
               <div className="row__title">{i.title}</div>
               <div className="meta">{[i.date && fmtDate(i.date), roomName(i.room_id), i.store].filter(Boolean).join(' · ')}</div>
+              {extra?.(i)}
             </div>
             {i.amount > 0 && <span className="row__amount">{kr(i.amount)}</span>}
           </div>
@@ -138,9 +147,24 @@ function HomeCv({ state, open }: ViewProps) {
         <button className="btn btn--secondary no-print" onClick={() => print()}><IconPrinter size={16} /> Skriv ut eller spara som PDF</button>
       </div>
 
+      <GainCalc value={value} purchasePrice={e?.purchasePrice} deductible={k6.deductible} />
+
       <div className="section">
-        <div className="section-head"><h2>Värdehöjande förbättringar (K6)</h2><span className="row__amount">{kr(sum(k6))}</span></div>
-        {list(k6, 'Inget markerat')}
+        <div className="section-head"><h2>Värdehöjande förbättringar (K6)</h2></div>
+        <div className="section-head"><h3>{K6_LABEL.basic}</h3><span className="row__amount">{kr(k6.basicSum)}</span></div>
+        <p className="meta" style={{ marginTop: 0 }}>Ny- eller ombyggnad. Avdragsgill oavsett när den gjordes.</p>
+        {list([...k6.basic].sort(byDate), 'Inget markerat')}
+
+        <div className="section-head" style={{ marginTop: 'var(--s-5)' }}><h3>{K6_LABEL.maintenance}</h3><span className="row__amount">{kr(k6.maintenanceSum)}</span></div>
+        <p className="meta" style={{ marginTop: 0 }}>Avdragsgill bara om du säljer under inköpsåret eller de fem åren efter.</p>
+        {list([...k6.maintenance].sort(byDate), 'Inget markerat', (i) => (
+          <span className={`status ${lastSaleYear(i) >= thisYear ? 'status--sent' : 'status--lost'}`}>
+            {lastSaleYear(i) >= thisYear ? `Inköpt ${lastSaleYear(i) - 5}, gäller vid försäljning till och med ${lastSaleYear(i)}` : `Inköpt ${lastSaleYear(i) - 5}, gäller inte längre`}
+          </span>
+        ))}
+        {k6.belowLimit.length > 0 && (
+          <p className="meta">Under {kr(K6_MIN_PER_YEAR)} ett år räknas inte: {[...new Set(k6.belowLimit)].sort().join(', ')}.</p>
+        )}
       </div>
 
       <div className="section">
@@ -169,21 +193,40 @@ function HomeCv({ state, open }: ViewProps) {
   )
 }
 
+// Vinst vid försäljning i dag: marknadsvärde minus inköpspris minus avdragsgilla K6-förbättringar.
+function GainCalc({ value, purchasePrice, deductible }: { value: number | null; purchasePrice?: number; deductible: number }) {
+  if (value == null || !purchasePrice) {
+    return <p className="meta section">Fyll i bostaden under Ekonomi för att se den beräknade vinsten vid försäljning.</p>
+  }
+  const gain = value - purchasePrice - deductible
+  return (
+    <div className="section gain">
+      <div className="gain__row"><span>Estimerat marknadsvärde</span><span>{kr(value)}</span></div>
+      <div className="gain__row"><span>− Inköpspris</span><span>{kr(purchasePrice)}</span></div>
+      <div className="gain__row"><span>− Avdragsgilla K6-förbättringar</span><span>{kr(deductible)}</span></div>
+      <div className="gain__row gain__sum"><span>{gain >= 0 ? 'Beräknad skattepliktig vinst' : 'Beräknad förlust'}</span><span>{kr(gain)}</span></div>
+      <div className="gain__row"><span>Vinstskatt 22 %</span><span>{kr(Math.max(0, gain) * GAIN_TAX)}</span></div>
+      <p className="meta" style={{ margin: 'var(--s-2) 0 0' }}>Uppskattning vid försäljning i år, utan mäklararvode och andra försäljningskostnader.</p>
+    </div>
+  )
+}
+
 export function ContractSheet({ item, state, onClose }: { item: Contract | Partial<Contract> | null; state: ProjectState; onClose: () => void }) {
   const toast = useToast()
   const c = item?.id ? (item as Contract) : null
-  const [f, setF] = useState({ kind: 'el' as ContractKind, provider: '', monthly: '', ends_on: '', file: null as string | null, note: '' })
+  const [f, setF] = useState({ kind: 'el' as ContractKind, scope: 'home' as 'home' | 'private', provider: '', monthly: '', ends_on: '', file: null as string | null, note: '' })
   const [fileUrl, setFileUrl] = useState<string | undefined>()
 
   useEffect(() => {
     if (!item) return
-    setF({ kind: item.kind ?? 'el', provider: item.provider ?? '', monthly: item.monthly ? String(item.monthly) : '', ends_on: item.ends_on ?? '', file: item.file_path ?? null, note: item.note ?? '' })
+    const kind = item.kind ?? 'el'
+    setF({ kind, scope: item.scope ?? (HOME_CONTRACTS.includes(kind) ? 'home' : 'private'), provider: item.provider ?? '', monthly: item.monthly ? String(item.monthly) : '', ends_on: item.ends_on ?? '', file: item.file_path ?? null, note: item.note ?? '' })
     setFileUrl(item.file_path ? state.urls[item.file_path] : undefined)
   }, [item])
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
-    const row = { kind: f.kind, provider: f.provider.trim(), monthly: parseNum(f.monthly), ends_on: f.ends_on || null, file_path: f.file, note: f.note.trim() || null }
+    const row = { kind: f.kind, scope: f.scope, provider: f.provider.trim(), monthly: parseNum(f.monthly), ends_on: f.ends_on || null, file_path: f.file, note: f.note.trim() || null }
     try {
       if (c) {
         if (c.file_path && c.file_path !== f.file) await api.removeFile(c.file_path)
@@ -207,7 +250,11 @@ export function ContractSheet({ item, state, onClose }: { item: Contract | Parti
   return (
     <Sheet open={!!item} onClose={onClose} title={c ? c.provider : item?.kind ? CONTRACT_KIND_LABEL[item.kind] : 'Nytt avtal'}>
       <form className="form" onSubmit={save}>
-        <Chips value={f.kind} onChange={(k) => setF({ ...f, kind: k })} options={KINDS.map((k) => ({ value: k, label: CONTRACT_KIND_LABEL[k] }))} />
+        <Chips value={f.kind} onChange={(k) => setF({ ...f, kind: k, scope: HOME_CONTRACTS.includes(k) ? 'home' : 'private' })} options={KINDS.map((k) => ({ value: k, label: CONTRACT_KIND_LABEL[k] }))} />
+        <div className="field">
+          <span className="field__label">Räknas som</span>
+          <Chips value={f.scope} onChange={(v) => setF({ ...f, scope: v })} options={[{ value: 'home', label: 'Boendeavtal' }, { value: 'private', label: 'Privat abonnemang' }]} />
+        </div>
         <Field label="Leverantör">
           <input className="input" placeholder={PROVIDERS[f.kind]?.[0] ?? 'Skriv namnet'} value={f.provider} onChange={(e) => setF({ ...f, provider: e.target.value })} required />
         </Field>

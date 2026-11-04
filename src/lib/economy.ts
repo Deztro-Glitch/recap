@@ -1,6 +1,18 @@
-import type { Economy } from '../types'
+import { HOME_CONTRACTS, type Contract, type Economy } from '../types'
 
-export const emptyEconomy: Economy = { loan: 0, rate: 0, amortization: 0, loanStart: null, fee: 0, electricity: 0, insurance: 0 }
+export const emptyEconomy: Economy = { loan: 0, rate: 0, amortization: 0, loanStart: null }
+
+// Boendeavtal räknas in i månadskostnaden, privata abonnemang inte. Bolånet räknas för sig, via räntan.
+export const contractScope = (c: Contract) => c.scope ?? (HOME_CONTRACTS.includes(c.kind) ? 'home' : 'private')
+export const homeContracts = (contracts: Contract[]) => contracts.filter((c) => contractScope(c) === 'home' && c.kind !== 'bolan')
+
+// Fasta kostnader per månad från Avtal. Äldre belopp i Ekonomi räknas bara tills ett avtal av samma slag finns.
+export function fixedCosts(contracts: Contract[], e: Economy) {
+  const home = homeContracts(contracts)
+  const has = (k: Contract['kind']) => home.some((c) => c.kind === k)
+  const legacy = (has('avgift') ? 0 : e.fee ?? 0) + (has('el') ? 0 : e.electricity ?? 0) + (has('forsakring') ? 0 : e.insurance ?? 0)
+  return home.reduce((s, c) => s + (Number(c.monthly) || 0), 0) + legacy
+}
 
 // Hela månader sedan lånet startade.
 export function monthsSince(start: string, now = new Date()) {
@@ -18,17 +30,19 @@ export function afterDeduction(monthlyInterest: number) {
 }
 
 // Allt Boendeläget visar, räknat från dagens datum.
-export function economyNumbers(e: Economy) {
+export function economyNumbers(e: Economy, contracts: Contract[] = []) {
   const months = e.loanStart ? monthsSince(e.loanStart) : 0
   const debt = Math.max(0, e.loan - e.amortization * months)
   const interest = (debt * e.rate) / 100 / 12
   const saving = debt > 0 ? Math.min(e.amortization, debt) : 0
-  const costs = interest + e.fee + e.electricity + e.insurance
+  const fixed = fixedCosts(contracts, e)
+  const costs = interest + fixed
   return {
     debt,
     paidOff: e.loan - debt,
     interest,
     interestAfter: afterDeduction(interest),
+    fixed,
     costs,
     saving,
     cashflow: costs + saving,

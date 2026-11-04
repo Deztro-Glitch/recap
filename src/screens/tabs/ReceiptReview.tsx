@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
 import { readReceipt, guessRoom, type ReceiptScan, type ScanLine } from '../../lib/receiptReader'
 import { Chips, Field, Loader, Primary, Sheet, useToast } from '../../components/ui'
-import { SCOPE_LABEL, modeScope, type Purchase, type Receipt, type Scope } from '../../types'
+import { K6_LABEL, SCOPE_LABEL, modeScope, type K6Kind, type Purchase, type Receipt, type Scope } from '../../types'
 import type { ProjectState } from '../ProjectView'
 import { fmtDate, guessScope, today } from './Items'
 
@@ -78,6 +78,7 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
           await api.update('purchases', plan.id, {
             title: r.title.trim(), price: parseNum(r.price), bought: true, bought_on: date || today(),
             store: store.trim() || null, receipt_id: receipt.id, room_id: r.room_id ?? plan.room_id,
+            ...(r.k6Kind ? { k6: true, k6_kind: r.k6Kind } : {}),
           })
           const est = Number(plan.est_price) || 0
           const d = est - parseNum(r.price)
@@ -86,7 +87,8 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
         }
         await api.insert<Purchase>('purchases', {
           project_id: pid, receipt_id: receipt.id, title: r.title.trim(), price: parseNum(r.price), est_price: 0, bought: true, bought_on: date || today(),
-          store: store.trim() || null, room_id: r.room_id, scope: r.scope, receipt_path: null, image_path: null, priority: 2, stays: false, k6: false,
+          store: store.trim() || null, room_id: r.room_id, scope: r.scope, receipt_path: null, image_path: null, priority: 2, stays: false,
+          k6: !!r.k6Kind, k6_kind: r.k6Kind ?? null,
           link: null, note: null, details: null,
         })
       }
@@ -147,6 +149,10 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
                   </select>
                   <Chips value={r.scope} onChange={(v) => set(r.key, { scope: v })} options={(['build', 'home'] as Scope[]).map((v) => ({ value: v, label: v === 'build' ? 'Projekt' : SCOPE_LABEL[v] }))} />
                 </div>
+                <select className="select" aria-label="K6-avdrag" value={r.k6Kind ?? ''} onChange={(e) => set(r.key, { k6Kind: (e.target.value || null) as K6Kind | null })}>
+                  <option value="">Inget K6-avdrag</option>
+                  {(['basic', 'maintenance'] as K6Kind[]).map((k) => <option key={k} value={k}>K6: {K6_LABEL[k]}</option>)}
+                </select>
                 <MatchPrompt row={r} plan={plannedById(r.match_id)} free={planned.filter((p) => !rows.some((x) => x.key !== r.key && x.linked && x.match_id === p.id))}
                   onChange={(patch) => set(r.key, patch)} />
               </div>

@@ -1,6 +1,6 @@
 import { api, compressImage } from './api'
 import { guessScope } from '../screens/tabs/Items'
-import type { Room, Scope } from '../types'
+import type { K6Kind, Room, Scope } from '../types'
 
 // Vad som står på ett kvitto, uppdelat i rader. Detta är formatet en AI Vision-tjänst ska lämna tillbaka.
 export interface ScanLine {
@@ -9,6 +9,7 @@ export interface ScanLine {
   room_id: string | null
   scope: Scope
   match_id?: string | null   // ett planerat köp som raden troligen är
+  k6Kind?: K6Kind | null     // föreslaget K6-avdrag
 }
 export interface ReceiptScan {
   store: string | null
@@ -121,6 +122,7 @@ export const readWithAi: ReceiptReader = async (file, { rooms, planned }, onProg
     lines: (res.lines ?? []).filter((l: any) => l?.title).map((l: any) => ({
       title: String(l.title), price: price(l.price), room_id: roomId(l.room) ?? guessRoom(String(l.title), rooms), scope: l.scope === 'build' ? 'build' : 'home',
       match_id: match(l.match),
+      k6Kind: l.k6 === 'basic' || l.k6 === 'maintenance' ? l.k6 : null,
     })),
     ignored: (res.ignored ?? []).filter((l: any) => l?.title).map((l: any) => ({ title: String(l.title), price: price(l.price), room_id: null, scope: 'home' as Scope })),
     example: false,
@@ -132,7 +134,7 @@ export const exampleScan = (rooms: Room[]): ReceiptScan => ({
   store: 'Bauhaus',
   date: new Date().toISOString().slice(0, 10),
   total: 1319,
-  lines: [line('Väggfärg Alcro Bestå 3 l', 649, rooms), line('Stekpanna 28 cm', 399, rooms), line('Gardinstång 120 cm', 249, rooms)],
+  lines: [{ ...line('Väggfärg Alcro Bestå 3 l', 649, rooms), k6Kind: 'maintenance' }, line('Stekpanna 28 cm', 399, rooms), line('Gardinstång 120 cm', 249, rooms)],
   ignored: [line('Snickers', 15, rooms), line('Bärkasse', 7, rooms)],
   example: true,
 })

@@ -31,11 +31,16 @@ export interface Economy {
   rate: number            // aktuell ränta, t.ex. 3.9
   amortization: number    // per månad
   loanStart: string | null
-  fee: number             // månadsavgift till föreningen
-  electricity: number     // el per månad, ungefär
-  insurance: number       // hemförsäkring per månad
+  // Äldre fält från innan de fasta kostnaderna hämtades från Avtal. Räknas bara tills ett avtal av samma slag finns.
+  fee?: number
+  electricity?: number
+  insurance?: number
   zone?: ElZone | null    // elområde för dagens spotpris
-  value?: number          // egen värdering av bostaden, tills värderingen hämtas automatiskt
+  // Bostaden, för det estimerade marknadsvärdet
+  purchasePrice?: number  // vad man betalade
+  area?: number           // boarea i kvm
+  sqmAverage?: number     // snittpris i området för normalt skick, kr/kvm
+  sqmTop?: number         // toppris i området för nyrenoverat, kr/kvm
 }
 
 export type ElZone = 'SE1' | 'SE2' | 'SE3' | 'SE4'
@@ -70,7 +75,16 @@ export interface Room {
   icon: IconKey
   color: Palette
   sort: number
+  condition?: Condition   // skick, för det estimerade marknadsvärdet
 }
+
+export type Condition = 1 | 2 | 3
+export const CONDITION_LABEL: Record<Condition, string> = { 1: 'Renoveringsbehov', 2: 'Bruksskick', 3: 'Nyrenoverat' }
+
+// Typ av K6-avdrag för bostadsrätt: grundförbättring gäller alltid, förbättrande reparation och
+// underhåll bara om det gjorts under försäljningsåret eller de fem åren före.
+export type K6Kind = 'basic' | 'maintenance'
+export const K6_LABEL: Record<K6Kind, string> = { basic: 'Grundförbättring', maintenance: 'Underhåll/ytskikt (5-årsregel)' }
 
 export interface Folder {
   id: string
@@ -106,6 +120,7 @@ export interface Purchase {
   priority: Priority
   stays: boolean          // följer med lägenheten (kök, golv) i stället för att vara mitt (möbler)
   k6: boolean             // värdehöjande förbättring, dras av vid försäljning
+  k6_kind?: K6Kind | null
   scope: Scope | null     // tomt = gissas utifrån namnet
   receipt_path: string | null
   receipt_id?: string | null   // raden hör till ett kvitto med flera rader
@@ -138,6 +153,7 @@ export interface Task {
   note: string | null
   priority: Priority
   k6: boolean
+  k6_kind?: K6Kind | null
   receipt_path: string | null
   done_on: string | null
   details: Detail[] | null
@@ -172,6 +188,7 @@ export interface Contract {
   provider: string
   monthly: number
   ends_on: string | null   // bindningstid eller rabatt slutar
+  scope?: 'home' | 'private' | null   // tomt = efter avtalstypen
   file_path: string | null
   note: string | null
   created_at: string
