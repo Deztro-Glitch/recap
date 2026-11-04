@@ -102,7 +102,8 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
               <Field label="Datum"><input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
             </div>
           </div>
-          {scan.example && <span className="tag" style={{ alignSelf: 'flex-start' }}>Exempeldata, AI-läsningen kopplas in senare</span>}
+          {scan.example && <span className="tag" style={{ alignSelf: 'flex-start' }}>Exempeldata i demoläget</span>}
+          {scan.note && <span className="status status--warning">{scan.note}</span>}
 
           <div className="review-lines">
             {rows.map((r) => (

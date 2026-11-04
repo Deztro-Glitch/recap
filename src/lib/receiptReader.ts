@@ -1,4 +1,4 @@
-import { api } from './api'
+import { api, compressImage } from './api'
 import { guessScope } from '../screens/tabs/Items'
 import type { Room, Scope } from '../types'
 
@@ -11,9 +11,10 @@ export interface ReceiptScan {
   lines: ScanLine[]
   ignored: ScanLine[]     // godis, kassar och annat som inte hör till hemmet
   example: boolean        // exempeldata, inte läst från bilden
+  note?: string           // visas i granskningen, t.ex. när AI-läsningen inte svarade
 }
 
-// Byt ut den här mot ett anrop till AI Vision när den finns. Den får bilden och hemmets rum.
+// En läsare får bilden och hemmets rum och lämnar tillbaka raderna.
 export type ReceiptReader = (file: File, rooms: Room[], onProgress?: (p: number) => void) => Promise<ReceiptScan>
 
 const STORES = ['Bauhaus', 'IKEA', 'Clas Ohlson', 'Jula', 'Biltema', 'Hornbach', 'Byggmax', 'Beijer', 'K-Rauta', 'Colorama', 'Elgiganten', 'Mio', 'Jysk', 'Rusta', 'Granit', 'Åhléns', 'Hemtex', 'Mekonomen', 'Netonnet', 'Power']
@@ -72,6 +73,41 @@ export const readWithOcr: ReceiptReader = async (file, rooms, onProgress) => {
   return scan
 }
 
+const toDataUrl = (blob: Blob) =>
+  new Promise<string>((res, rej) => {
+    const r = new FileReader()
+    r.onload = () => res(r.result as string)
+    r.onerror = () => rej(r.error)
+    r.readAsDataURL(blob)
+  })
+
+// Läser kvittot med AI Vision via Edge Function parse-receipt (OpenAI gpt-4o-mini). Nyckeln finns bara i Supabase.
+export const readWithAi: ReceiptReader = async (file, rooms, onProgress) => {
+  onProgress?.(0.1)
+  // Mindre bild går fortare att skicka och räcker för att läsa texten.
+  const image = await toDataUrl(await compressImage(file, 1600))
+  onProgress?.(0.3)
+  const res = await api.parseReceipt(image, rooms.map((r) => r.name))
+  if (!res) throw new Error('Ingen AI-läsning')
+  onProgress?.(1)
+  const roomId = (name: unknown) => {
+    const n = String(name ?? '').toLowerCase()
+    return n ? rooms.find((r) => r.name.toLowerCase() === n)?.id ?? rooms.find((r) => r.name.toLowerCase().startsWith(n))?.id ?? null : null
+  }
+  const price = (x: unknown) => (Number.isFinite(Number(x)) ? Math.round(Number(x) * 100) / 100 : 0)
+  const date = typeof res.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(res.date) ? res.date : null
+  return {
+    store: res.store || null,
+    date,
+    total: res.total == null ? null : price(res.total),
+    lines: (res.lines ?? []).filter((l: any) => l?.title).map((l: any) => ({
+      title: String(l.title), price: price(l.price), room_id: roomId(l.room), scope: l.scope === 'build' ? 'build' : 'home',
+    })),
+    ignored: (res.ignored ?? []).filter((l: any) => l?.title).map((l: any) => ({ title: String(l.title), price: price(l.price), room_id: null, scope: 'home' as Scope })),
+    example: false,
+  }
+}
+
 // Exempel på vad AI:n lämnar tillbaka, för demoläget och för att se hur granskningen fungerar.
 export const exampleScan = (rooms: Room[]): ReceiptScan => ({
   store: 'Bauhaus',
@@ -82,10 +118,20 @@ export const exampleScan = (rooms: Room[]): ReceiptScan => ({
   example: true,
 })
 
-// Den läsare appen använder. Hittar den inga rader i demoläget visas exemplet.
+// Den läsare appen använder: AI först. Svarar den inte läses texten på enheten i stället.
+// I demoläget, där det inte finns någon AI, visas exemplet om inga rader hittas.
 export const readReceipt: ReceiptReader = async (file, rooms, onProgress) => {
+  let note: string | undefined
+  if (!api.demo && file.type.startsWith('image/')) {
+    try {
+      return await readWithAi(file, rooms, onProgress)
+    } catch (err) {
+      console.warn('AI-läsningen misslyckades', err)
+      note = 'AI-läsningen svarade inte, så kvittot lästes på telefonen. Kontrollera raderna.'
+    }
+  }
   const scan = await readWithOcr(file, rooms, onProgress).catch(() => null)
-  if (scan?.lines.length) return scan
+  if (scan?.lines.length) return { ...scan, note }
   if (api.demo) return exampleScan(rooms)
-  return scan ?? { store: null, date: null, total: null, lines: [], ignored: [], example: false }
+  return { ...(scan ?? { store: null, date: null, total: null, lines: [], ignored: [], example: false }), note }
 }
