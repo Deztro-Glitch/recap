@@ -350,7 +350,10 @@ a { color: inherit; }
 .kpi--button .kpi__value { margin: 2px 0; }
 
 /* Bolånet: stapeln krymper i takt med skulden. */
-.loan { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-4); margin-top: var(--s-2); cursor: pointer; }
+.loan { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-4); cursor: pointer; }
+.eco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin: var(--s-2) 0 var(--s-5); align-items: stretch; }
+@media (max-width: 1024px) { .eco-grid { grid-template-columns: minmax(0, 1fr); } }
+.value-now { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); }
 .loan .budget-track { height: 10px; margin-top: 0; }
 .loan__ends { display: flex; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-3); }
 .loan__ends > div:last-child { text-align: right; }
@@ -366,3 +369,18 @@ a { color: inherit; }
 /* Beloppen hamnar i samma höjd även när förklaringen bryts på två rader. */
 .kpi--button { display: flex; flex-direction: column; }
 .kpi--button .kpi__value { margin-top: auto; padding-top: var(--s-1); }
+
+/* ---------- Granskning av kvitto ---------- */
+
+.review-head { display: flex; gap: var(--s-3); align-items: flex-start; }
+.review-head img { width: 72px; height: 96px; object-fit: cover; border-radius: var(--r-xs); background: var(--hover); display: block; }
+.review-head__fields { flex: 1; display: grid; gap: var(--s-2); min-width: 0; }
+.review-lines { display: grid; gap: var(--s-2); }
+.review-line { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-2); display: grid; gap: var(--s-2); }
+.review-line__top { display: grid; grid-template-columns: minmax(0, 1fr) 88px auto; gap: var(--s-2); align-items: center; }
+.review-line__price { text-align: right; }
+.review-line__bottom { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.review-line__bottom .select { flex: 1; min-width: 120px; }
+.review-total { display: flex; align-items: center; gap: var(--s-3); }
+.review-total .row__amount { margin-right: auto; }
+.link-btn { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; }

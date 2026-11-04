@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type Table } from './api'
-import type { Contract, Photo, Project, Purchase, Room, Task } from '../types'
+import type { Contract, Photo, Project, Purchase, Receipt, Room, Task } from '../types'
 
 export interface ProjectData {
   project: Project | null
@@ -9,6 +9,7 @@ export interface ProjectData {
   tasks: Task[]
   photos: Photo[]
   contracts: Contract[]
+  receipts: Receipt[]
   urls: Record<string, string>   // filsökväg → visningsbar adress (kvitton, planritning, bilder, avtal)
   loading: boolean
 }
@@ -18,24 +19,25 @@ const byPriority = <T extends { priority?: number }>(a: T, b: T) => (a.priority 
 
 // Laddar allt för ett projekt och håller det uppdaterat (även när någon annan ändrar).
 export function useProject(pid: string) {
-  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], contracts: [], urls: {}, loading: true })
+  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], contracts: [], receipts: [], urls: {}, loading: true })
   const urlCache = useRef(new Map<string, string>())
 
   const reload = useCallback(async () => {
-    const [projects, rooms, purchases, tasks, rawPhotos, contracts] = await Promise.all([
+    const [projects, rooms, purchases, tasks, rawPhotos, contracts, receipts] = await Promise.all([
       api.listProjects(),
       api.list<Room>('rooms', pid),
       api.list<Purchase>('purchases', pid),
       api.list<Task>('tasks', pid),
       api.list<Photo>('photos', pid),
       api.list<Contract>('contracts', pid).catch(() => [] as Contract[]),
+      api.list<Receipt>('receipts', pid).catch(() => [] as Receipt[]),
     ])
     const project = projects.find((p) => p.id === pid) ?? null
 
     const missingPhotos = rawPhotos.filter((p) => !urlCache.current.has(p.path))
     for (const p of await api.photoUrls(missingPhotos)) if (p.url) urlCache.current.set(p.path, p.url)
 
-    const files = [project?.floorplan_path, ...purchases.map((p) => p.receipt_path), ...purchases.map((p) => p.image_path), ...tasks.map((t) => t.receipt_path), ...contracts.map((c) => c.file_path)]
+    const files = [project?.floorplan_path, ...purchases.map((p) => p.receipt_path), ...purchases.map((p) => p.image_path), ...tasks.map((t) => t.receipt_path), ...contracts.map((c) => c.file_path), ...receipts.map((r) => r.file_path)]
     const missingFiles = files.filter((f): f is string => !!f && !urlCache.current.has(f))
     for (const [path, url] of Object.entries(await api.fileUrls(missingFiles))) urlCache.current.set(path, url)
 
@@ -46,6 +48,7 @@ export function useProject(pid: string) {
       tasks: tasks.sort(byPriority),
       photos: rawPhotos.map((p) => ({ ...p, url: urlCache.current.get(p.path) })),
       contracts,
+      receipts,
       urls: Object.fromEntries(urlCache.current),
       loading: false,
     })

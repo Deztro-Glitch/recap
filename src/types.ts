@@ -35,6 +35,7 @@ export interface Economy {
   electricity: number     // el per månad, ungefär
   insurance: number       // hemförsäkring per månad
   zone?: ElZone | null    // elområde för dagens spotpris
+  value?: number          // egen värdering av bostaden, tills värderingen hämtas automatiskt
 }
 
 export type ElZone = 'SE1' | 'SE2' | 'SE3' | 'SE4'
@@ -107,6 +108,7 @@ export interface Purchase {
   k6: boolean             // värdehöjande förbättring, dras av vid försäljning
   scope: Scope | null     // tomt = gissas utifrån namnet
   receipt_path: string | null
+  receipt_id?: string | null   // raden hör till ett kvitto med flera rader
   image_path: string | null
   bought_on: string | null
   details: Detail[] | null
@@ -172,6 +174,17 @@ export interface Contract {
   ends_on: string | null   // bindningstid eller rabatt slutar
   file_path: string | null
   note: string | null
+  created_at: string
+}
+
+// Ett kvitto med flera rader. Raderna är vanliga inköp med receipt_id.
+export interface Receipt {
+  id: string
+  project_id: string
+  file_path: string | null
+  store: string | null
+  bought_on: string | null
+  total: number | null
   created_at: string
 }
 

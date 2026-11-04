@@ -15,6 +15,7 @@ import { ItemSheet, Purchases, fmtDate, today } from './tabs/Items'
 import { ContractSheet, Contracts, type ContractTab } from './tabs/Contracts'
 import { Overview } from './tabs/Overview'
 import { EconomySheet } from './tabs/Economy'
+import { ReceiptReview } from './tabs/ReceiptReview'
 import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
 
@@ -59,6 +60,8 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const receiptInput = useRef<HTMLInputElement>(null)
   const receiptDefaults = useRef<Partial<Purchase>>({})
   const [saving, setSaving] = useState(0)
+  // Ett fotat kvitto granskas rad för rad innan det sparas.
+  const [reviewFile, setReviewFile] = useState<File | null>(null)
   // Plusknappen öppnar kameran direkt. Vad bilden är väljer man efteråt.
   const photoInput = useRef<HTMLInputElement>(null)
   const [picked, setPicked] = useState<File[]>([])
@@ -86,6 +89,10 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const onReceipts = async (files: FileList | File[] | null) => {
     if (!files?.length || !state.project) return
     const list = Array.from(files)
+    if (list.length === 1 && list[0].type.startsWith('image/')) {
+      if (receiptInput.current) receiptInput.current.value = ''
+      return setReviewFile(list[0])
+    }
     setSaving(list.length)
     try {
       const created: Purchase[] = []
@@ -277,6 +284,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           <ContractSheet item={sheet?.t === 'contract' ? sheet.item : null} state={state} onClose={close} />
           <AddRoomSheet open={sheet?.t === 'room'} onClose={close} state={state} />
           <EconomySheet open={sheet?.t === 'economy'} onClose={close} state={state} />
+          <ReceiptReview file={reviewFile} defaultRoom={receiptDefaults.current.room_id ?? null} state={state} onClose={() => setReviewFile(null)} />
 
           <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">
             <div className="rows">

@@ -9,7 +9,7 @@ import { FileField, FileThumb } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
 import { FilterBar, FilterToggle, isFiltered, matches, noFilter, type FilterState } from '../../components/Filters'
 import { SwipeRow } from '../../components/SwipeRow'
-import { SCOPE_LABEL, modeScope, type Detail, type Purchase, type Scope, type Task } from '../../types'
+import { SCOPE_LABEL, modeScope, type Detail, type Purchase, type Receipt, type Scope, type Task } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 
 export const today = () => new Date().toISOString().slice(0, 10)
@@ -18,6 +18,9 @@ export const fmtDate = (d: string) => new Date(d).toLocaleDateString('sv-SE', { 
 // Tar bort en rad direkt (används när man sveper bort den).
 export async function removeRow(state: ProjectState, table: 'purchases' | 'tasks' | 'contracts', id: string, title: string, toast?: (t: string) => void) {
   await api.remove(table, id)
+  // Var det sista raden på ett kvitto tas kvittot (och bilden) bort också.
+  const receiptId = table === 'purchases' ? state.purchases.find((p) => p.id === id)?.receipt_id : null
+  if (receiptId && !state.purchases.some((p) => p.id !== id && p.receipt_id === receiptId)) await api.remove('receipts', receiptId)
   await state.reload()
   toast?.(`${title} är borttagen`)
 }
@@ -47,10 +50,11 @@ export interface Item {
   raw: Purchase | Task
 }
 
-export const fromPurchase = (p: Purchase): Item => ({
+// receiptFile är bilden på kvittot när raden hör till ett kvitto med flera rader.
+export const fromPurchase = (p: Purchase, receiptFile?: string | null): Item => ({
   table: 'purchases', id: p.id, title: p.title, room_id: p.room_id, done: p.bought,
   amount: p.bought ? paid(p) : Number(p.est_price) || 0, date: p.bought ? p.bought_on : null, important: p.priority === 1,
-  file: p.receipt_path, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, scope: p.scope ?? guessScope(p.title), details: p.details,
+  file: p.receipt_path ?? receiptFile ?? null, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, scope: p.scope ?? guessScope(p.title), details: p.details,
   missing: needsInfo(p), created_at: p.created_at, raw: p,
 })
 
@@ -60,7 +64,10 @@ export const fromTask = (t: Task): Item => ({
   file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, scope: 'build', details: t.details, missing: false, created_at: t.created_at, raw: t,
 })
 
-export const allItems = (state: Pick<ProjectState, 'purchases' | 'tasks'>) => [...state.purchases.map(fromPurchase), ...state.tasks.map(fromTask)]
+export const allItems = (state: Pick<ProjectState, 'purchases' | 'tasks'> & { receipts?: Receipt[] }) => {
+  const files = new Map((state.receipts ?? []).map((r) => [r.id, r.file_path]))
+  return [...state.purchases.map((p) => fromPurchase(p, p.receipt_id ? files.get(p.receipt_id) : null)), ...state.tasks.map(fromTask)]
+}
 
 // Det som hör till läget man är i: bygget i Projekt, inredningen i Boende.
 export const modeItems = (state: ProjectState) => {
@@ -224,6 +231,10 @@ export function ItemSheet({ table, item, state, onClose, title }: {
   const toast = useToast()
   const existing = item?.id ? (table === 'tasks' ? fromTask(item as Task) : fromPurchase(item as Purchase)) : null
   const isTask = table === 'tasks'
+  // Raden kan höra till ett kvitto med flera rader; då visas kvittot i stället för ett eget filfält.
+  const parentId = (item as Partial<Purchase> | null)?.receipt_id
+  const parent = parentId ? state.receipts.find((r) => r.id === parentId) : undefined
+  const siblings = parent ? state.purchases.filter((p) => p.receipt_id === parent.id).length : 0
   const blank = { title: '', room_id: '', scope: 'build' as Scope, done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
   const [f, setF] = useState(blank)
   const [urls, setUrls] = useState<{ receipt?: string; image?: string }>({})
@@ -300,8 +311,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
   }
 
   const del = async () => {
-    await api.remove(table, existing!.id)
-    await state.reload()
+    await removeRow(state, table, existing!.id, existing!.title)
     toast(`${existing!.title} är borttaget`)
     onClose(true)
   }
@@ -345,10 +355,18 @@ export function ItemSheet({ table, item, state, onClose, title }: {
           {!isTask && <Toggle checked={f.stays} onChange={(v) => setF({ ...f, stays: v })} label="Följer med lägenheten" />}
           <Toggle checked={f.k6} onChange={(v) => setF({ ...f, k6: v })} label="Värdehöjande förbättring (K6)" />
         </div>
-        {f.done && (
+        {f.done && (parent ? (
+          <div className="field">
+            <span className="field__label">Kvitto</span>
+            <a className="file" href={parent.file_path ? state.urls[parent.file_path] : undefined} target="_blank" rel="noreferrer">
+              {parent.file_path && <FileThumb path={parent.file_path} url={state.urls[parent.file_path]} size={48} />}
+              <span className="meta">{[parent.store, parent.bought_on && fmtDate(parent.bought_on), `${siblings} rader`].filter(Boolean).join(' · ')}</span>
+            </a>
+          </div>
+        ) : (
           <FileField pid={state.project!.id} label="Kvitto" path={f.receipt} url={urls.receipt}
             onChange={(path, url) => { setF((c) => ({ ...c, receipt: path })); setUrls((u) => ({ ...u, receipt: url })) }} />
-        )}
+        ))}
 
         <More open={!!(existing && (existing.details?.length || existing.link || existing.image || item?.note))}>
           {!isTask && (
