@@ -140,6 +140,13 @@ export function Purchases({ state, open }: ViewProps) {
   const planned = items.filter((i) => !i.done).sort(byImportance)
   const done = items.filter((i) => i.done).sort(byDate)
   const [showFilter, setShowFilter] = useState(false)
+  // Det som hör till det andra läget göms, men man ska se att det finns och kunna byta dit.
+  const mode = state.project?.mode
+  const other = allItems(state).filter((it) => it.scope !== modeScope(mode) && matches(filter, { ...it, text: itemText(it, roomName(it.room_id)) })).length
+  const switchMode = async () => {
+    await api.updateProject(state.project!.id, { mode: mode === 'simple' ? 'full' : 'simple' })
+    await state.reload()
+  }
 
   return (
     <div>
@@ -162,6 +169,11 @@ export function Purchases({ state, open }: ViewProps) {
           <ItemList items={done} state={state} open={open} empty="Inget klart än" />
         </Collapsible>
       </div>
+      {other > 0 && (
+        <button className="link-btn other-mode" onClick={switchMode}>
+          {other} {other === 1 ? 'sak' : 'saker'} i {mode === 'simple' ? 'Projekt' : 'Boende'}
+        </button>
+      )}
     </div>
   )
 }

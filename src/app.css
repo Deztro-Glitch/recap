@@ -384,3 +384,7 @@ a { color: inherit; }
 .review-total { display: flex; align-items: center; gap: var(--s-3); }
 .review-total .row__amount { margin-right: auto; }
 .link-btn { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; }
+
+.other-mode { display: block; margin-top: var(--s-5); }
+/* En kvittorad utan rum syns, så att man ser vad som är kvar att välja. */
+.review-line .select.is-empty { box-shadow: inset 0 0 0 1px var(--warning); }

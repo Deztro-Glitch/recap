@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
 import { readReceipt, guessRoom, type ReceiptScan, type ScanLine } from '../../lib/receiptReader'
 import { Chips, Field, Loader, Primary, Sheet, useToast } from '../../components/ui'
-import { SCOPE_LABEL, type Purchase, type Receipt, type Scope } from '../../types'
+import { SCOPE_LABEL, modeScope, type Purchase, type Receipt, type Scope } from '../../types'
 import type { ProjectState } from '../ProjectView'
 import { guessScope, today } from './Items'
 
@@ -74,7 +74,14 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
       }
       saved.current = true
       await state.reload()
-      toast(`${valid.length} ${valid.length === 1 ? 'sak' : 'saker'} sparade${store.trim() ? ` från ${store.trim()}` : ''}`)
+      // Säg var raderna hamnade, så att man hittar dem även när de hör till det andra läget.
+      const here = modeScope(state.project?.mode)
+      const away = valid.filter((r) => r.scope !== here).length
+      const noRoom = valid.filter((r) => !r.room_id).length
+      toast({
+        title: `${valid.length} ${valid.length === 1 ? 'sak' : 'saker'} sparade i Inköp under Klart`,
+        body: [away && `${away} syns i ${here === 'home' ? 'Projekt' : 'Boende'}läget.`, noRoom && `${noRoom} saknar rum.`].filter(Boolean).join(' ') || undefined,
+      })
       onClose()
     } catch (err: any) {
       toast({ title: 'Kvittot kunde inte sparas', body: err.message })
@@ -116,7 +123,7 @@ export function ReceiptReview({ file, defaultRoom, state, onClose }: { file: Fil
                   <button type="button" className="btn btn--ghost" aria-label={`Ta bort ${r.title || 'raden'}`} onClick={() => setRows((rs) => rs.filter((x) => x.key !== r.key))}><IconX size={16} /></button>
                 </div>
                 <div className="review-line__bottom">
-                  <select className="select" aria-label="Rum" value={r.room_id ?? ''} onChange={(e) => set(r.key, { room_id: e.target.value || null })}>
+                  <select className={`select ${r.room_id ? '' : 'is-empty'}`} aria-label="Rum" value={r.room_id ?? ''} onChange={(e) => set(r.key, { room_id: e.target.value || null })}>
                     <option value="">Inget rum</option>
                     {state.rooms.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                   </select>

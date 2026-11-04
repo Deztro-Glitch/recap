@@ -28,7 +28,7 @@ const NOT_ITEM = /(summa|total|att betala|moms|kort|kontant|växel|betalt|rabatt
 // Gissar rum från ordet, om hemmet har ett rum med det namnet.
 const ROOM_WORDS: [RegExp, string[]][] = [
   [/(stekpanna|kastrull|kniv|skärbräda|diskborste|bestick|tallrik|glas\b|kökshandduk|kaffebryggare|vattenkokare|diskmaskin|kyl|frys|spis|ugn)/i, ['Kök']],
-  [/(duschdraperi|tandborst|badrumsmatta|tvål|badhandduk|toalett|wc-|handfat)/i, ['Badrum', 'WC']],
+  [/(duschdraperi|duschhandtag|duschslang|tandborst|tandkräm|badrumsmatta|tvål|badhandduk|handduk|toalett|wc|handfat|spegel|rengöring|kalkborttag)/i, ['WC', 'Badrum']],
   [/(gardin|soffa|soffbord|kudde|pläd|tv-|matta|fåtölj)/i, ['Vardagsrum']],
   [/(påslakan|lakan|täcke|säng|örngott|nattduksbord|garderob)/i, ['Sovrum']],
   [/(skohylla|krok|dörrmatta|hatthylla)/i, ['Hall']],
@@ -101,7 +101,7 @@ export const readWithAi: ReceiptReader = async (file, rooms, onProgress) => {
     date,
     total: res.total == null ? null : price(res.total),
     lines: (res.lines ?? []).filter((l: any) => l?.title).map((l: any) => ({
-      title: String(l.title), price: price(l.price), room_id: roomId(l.room), scope: l.scope === 'build' ? 'build' : 'home',
+      title: String(l.title), price: price(l.price), room_id: roomId(l.room) ?? guessRoom(String(l.title), rooms), scope: l.scope === 'build' ? 'build' : 'home',
     })),
     ignored: (res.ignored ?? []).filter((l: any) => l?.title).map((l: any) => ({ title: String(l.title), price: price(l.price), room_id: null, scope: 'home' as Scope })),
     example: false,

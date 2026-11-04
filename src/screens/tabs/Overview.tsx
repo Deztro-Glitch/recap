@@ -134,7 +134,8 @@ function HomePanel({ state, open, items }: { state: ProjectState; open: ViewProp
 // Allt som hör till ett rum: färgkoder och mått, planerat och klart, foton.
 function RoomPanel({ state, open, room, onClose }: { state: ProjectState; open: ViewProps['open']; room: Room; onClose: () => void }) {
   const [editing, setEditing] = useState(false)
-  const items = modeItems(state).filter((i) => i.room_id === room.id)
+  // I rummet syns allt som hör till rummet, oavsett läge.
+  const items = allItems(state).filter((i) => i.room_id === room.id)
   const { markDone, field } = useMarkDone(state)
   const facts = roomFacts(allItems(state).filter((i) => i.room_id === room.id))
 
