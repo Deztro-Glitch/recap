@@ -540,3 +540,68 @@ body::before {
   background: linear-gradient(90deg, var(--emerald-2), var(--emerald));
   box-shadow: 0 0 12px color-mix(in srgb, var(--emerald) 60%, transparent);
 }
+
+/* ---------- Fas 4: listor, sök och filter ---------- */
+
+:root {
+  --glass-bg-hover: rgba(255, 255, 255, .75);
+  --glass-chip: rgba(23, 20, 31, .06);
+  --field-glass: rgba(255, 255, 255, .6);
+  --field-glass-border: rgba(23, 20, 31, .08);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;   /* rullgardinsmenyer och datumväljare blir mörka */
+  --glass-bg-hover: rgba(255, 255, 255, .08);
+  --glass-chip: rgba(255, 255, 255, .07);
+  --field-glass: rgba(255, 255, 255, .05);
+  --field-glass-border: rgba(255, 255, 255, .09);
+}
+
+/* Sök och filter smälter in: mörkt halvgenomskinligt med ljus text. */
+.filter-bar .search, .filter-bar .select {
+  background-color: var(--field-glass);
+  box-shadow: inset 0 0 0 1px var(--field-glass-border);
+  color: var(--glass-text);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border-radius: 12px;
+}
+.filter-bar .search { color: var(--glass-text-2); }
+.filter-bar .search input { color: var(--glass-text); }
+.filter-bar .search input::placeholder { color: var(--glass-text-2); opacity: .8; }
+.filter-bar .search:focus-within, .filter-bar .select:focus { background-color: var(--glass-bg-hover); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent); }
+
+/* Rader som glaskort. Lättare blur än de stora korten, så att långa listor scrollar mjukt. */
+.rows { gap: var(--s-2); }
+.rows > .glass { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 14px; }
+.rows > .glass.row, .rows > .glass.row:hover { background: var(--glass-bg); }
+.rows > .glass:hover { background: var(--glass-bg-hover); }
+.glass.row { padding: 12px var(--s-4); }
+.swipe.glass .swipe__front { background: transparent; padding: 12px var(--s-4); }
+.swipe.glass .swipe__front:hover { background: transparent; }
+.swipe.glass .swipe__delete { border-radius: 13px; justify-content: center; padding: 0; overflow: hidden; white-space: nowrap; }
+.glass .row__title, .glass .row__amount { color: var(--glass-text); }
+.glass .is-done .row__title { color: var(--glass-text-2); }
+.glass .row__link { color: var(--glass-text-2); }
+.glass .row__link:hover { color: var(--glass-text); background: var(--glass-chip); }
+.glass .menu-row__icon, .glass .tag { background: var(--glass-chip); color: var(--glass-text); }
+.glass .tag { color: var(--glass-text-2); }
+
+/* Sektioner (Planerat, Klart, månader): vita rubriker, ljusgrå summor. */
+.section-head h1, .section-head h2, .section-head h3, .collapsible__head h2 { color: var(--glass-text); }
+.section-head .meta, .collapsible__head .meta, .section-head .row__amount { color: var(--glass-text-2); }
+.collapsible__chevron { color: var(--glass-text-2); }
+
+/* Planritningen och sidopanelen på Översikt. */
+.plan-card { padding: var(--s-4); }
+.panel.glass { padding: var(--s-4); }
+.gain.glass .gain__sum { border-top-color: var(--glass-border); }
+
+/* Utskrift (Bostads-CV) blir alltid mörk text på vitt, även i mörkt läge. */
+@media print {
+  :root, :root[data-theme="dark"], :root[data-theme="dark"][data-mode="home"] {
+    --text: #17141F; --text-2: #5E5A6E; --glass-text: #17141F; --glass-text-2: #5E5A6E;
+    --glass-bg: transparent; --glass-border: #D3CFE0; --glass-chip: #ECEAF4; --raised: #fff; --hover: #ECEAF4;
+  }
+  body::before { display: none; }
+  .glass { -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+}

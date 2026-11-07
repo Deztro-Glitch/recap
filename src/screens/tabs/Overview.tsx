@@ -72,10 +72,12 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
               })}
             </div>
           )}
-          <FloorPlan state={state} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
+          <GlassCard className="plan-card" lift={false}>
+            <FloorPlan state={state} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
+          </GlassCard>
         </div>
 
-        <aside className="panel" ref={panel}>
+        <aside className="panel glass" ref={panel}>
           {room ? <RoomPanel state={state} open={open} room={room} onClose={() => setPlace(null)} /> : <HomePanel state={state} open={open} items={items} />}
         </aside>
       </div>
@@ -97,7 +99,7 @@ function HomePanel({ state, open, items }: { state: ProjectState; open: ViewProp
           <div className="section-head"><h3>Går snart ut</h3></div>
           <div className="rows">
             {coming.map((c) => (
-              <div key={c.id} className="row" onClick={() => open({ t: 'contract', item: c })}>
+              <GlassCard key={c.id} className="row" onClick={() => open({ t: 'contract', item: c })}>
                 <div className="row__main">
                   <span className="menu-row__icon"><IconFileText size={18} /></span>
                   <div className="row__text">
@@ -105,7 +107,7 @@ function HomePanel({ state, open, items }: { state: ProjectState; open: ViewProp
                     <ContractStatus c={c} />
                   </div>
                 </div>
-              </div>
+              </GlassCard>
             ))}
           </div>
         </div>
@@ -115,13 +117,13 @@ function HomePanel({ state, open, items }: { state: ProjectState; open: ViewProp
         {latest.length ? (
           <div className="rows">
             {latest.map((i) => (
-              <div key={i.id} className="row" onClick={() => open(sheetFor(i))}>
+              <GlassCard key={i.id} className="row" onClick={() => open(sheetFor(i))}>
                 <div className="row__text">
                   <div className="row__title">{i.title}</div>
                   <div className="meta">{[i.date && new Date(i.date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' }), roomName(i.room_id)].filter(Boolean).join(' · ')}</div>
                 </div>
                 {i.amount > 0 && <span className="row__amount">{kr(i.amount)}</span>}
-              </div>
+              </GlassCard>
             ))}
           </div>
         ) : (

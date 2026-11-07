@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { daysLeft, kr, parseNum } from '../../lib/format'
 import { FileField } from '../../components/FileField'
 import { SwipeRow } from '../../components/SwipeRow'
+import { GlassCard } from '../../components/GlassCard'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { COMMON_CONTRACTS, CONTRACT_KIND_LABEL, HOME_CONTRACTS, K6_LABEL, PROVIDERS, type Contract, type ContractKind } from '../../types'
 import { contractScope, homeContracts } from '../../lib/economy'
@@ -56,8 +57,8 @@ function ContractList({ state, open }: ViewProps) {
     <>
       {list.length > 0 && (
         <div className="kpis section">
-          <div className="kpi"><div className="meta">Boendeavtal</div><div className="kpi__value">{kr(monthly(counted))}/mån</div><div className="meta">Räknas i Ren månadskostnad</div></div>
-          <div className="kpi"><div className="meta">Privata abonnemang</div><div className="kpi__value">{kr(monthly(subs))}/mån</div><div className="meta">{kr(monthly(list) * 12)} per år totalt</div></div>
+          <GlassCard className="kpi"><div className="meta">Boendeavtal</div><div className="kpi__value">{kr(monthly(counted))}/mån</div><div className="meta">Räknas i Ren månadskostnad</div></GlassCard>
+          <GlassCard className="kpi"><div className="meta">Privata abonnemang</div><div className="kpi__value">{kr(monthly(subs))}/mån</div><div className="meta">{kr(monthly(list) * 12)} per år totalt</div></GlassCard>
         </div>
       )}
       <ContractGroup title="Boendeavtal" list={home} state={state} open={open} sum={monthly(home)} />
@@ -125,14 +126,14 @@ function HomeCv({ state, open }: ViewProps) {
     rows.length ? (
       <div className="rows">
         {rows.map((i) => (
-          <div key={i.id} className="row" onClick={() => open(sheetFor(i))}>
+          <GlassCard key={i.id} className="row" onClick={() => open(sheetFor(i))}>
             <div className="row__text">
               <div className="row__title">{i.title}</div>
               <div className="meta">{[i.date && fmtDate(i.date), roomName(i.room_id), i.store].filter(Boolean).join(' · ')}</div>
               {extra?.(i)}
             </div>
             {i.amount > 0 && <span className="row__amount">{kr(i.amount)}</span>}
-          </div>
+          </GlassCard>
         ))}
       </div>
     ) : (
@@ -200,7 +201,7 @@ function GainCalc({ value, purchasePrice, deductible }: { value: number | null; 
   }
   const gain = value - purchasePrice - deductible
   return (
-    <div className="section gain">
+    <div className="section gain glass">
       <div className="gain__row"><span>Estimerat marknadsvärde</span><span>{kr(value)}</span></div>
       <div className="gain__row"><span>− Inköpspris</span><span>{kr(purchasePrice)}</span></div>
       <div className="gain__row"><span>− Avdragsgilla K6-förbättringar</span><span>{kr(deductible)}</span></div>

@@ -6,6 +6,7 @@ import { FileThumb } from '../../components/FileField'
 import { DetailsList } from '../../components/Details'
 import { FilterBar, FilterToggle, isFiltered, matches, noFilter, type FilterState } from '../../components/Filters'
 import { SwipeRow } from '../../components/SwipeRow'
+import { GlassCard } from '../../components/GlassCard'
 import { Chips, rowAnim } from '../../components/ui'
 import type { Photo } from '../../types'
 import type { ViewProps } from '../ProjectView'
@@ -129,7 +130,7 @@ export function Log({ state, open }: ViewProps) {
                     return e.item ? (
                       <SwipeRow key={e.key} onClick={e.onClick} onDelete={() => removeRow(state, e.item!.table, e.item!.id, e.item!.title)}>{body}</SwipeRow>
                     ) : (
-                      <motion.div key={e.key} layout="position" {...rowAnim} className="row" onClick={e.onClick}>{body}</motion.div>
+                      <GlassCard key={e.key} layout="position" {...rowAnim} className="row" onClick={e.onClick}>{body}</GlassCard>
                     )
                   })}
                 </AnimatePresence>

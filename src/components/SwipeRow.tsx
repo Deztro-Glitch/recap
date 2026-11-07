@@ -1,6 +1,7 @@
-import { animate, motion, useMotionValue } from 'framer-motion'
+import { animate, motion, useMotionValue, useTransform } from 'framer-motion'
 import { useRef, type ReactNode } from 'react'
 import { ease, rowAnim } from './ui'
+import { GlassCard } from './GlassCard'
 
 const OPEN = -96
 
@@ -10,12 +11,14 @@ export function SwipeRow({ children, onDelete, onClick, className = '' }: { chil
   const x = useMotionValue(0)
   const dragged = useRef(false)
   const width = useRef(0)
+  // Glaset är genomskinligt, så den röda knappen fyller bara ytan som raden har lämnat.
+  const reveal = useTransform(x, (v) => `${Math.max(0, -v - 2)}px`)
 
   const settle = (to: number) => animate(x, to, { duration: 0.3, ease })
 
   return (
-    <motion.div layout="position" {...rowAnim} className="swipe" ref={(el) => { if (el) width.current = el.offsetWidth }}>
-      <button className="swipe__delete" onClick={onDelete} tabIndex={-1}>Ta bort</button>
+    <GlassCard flush lift layout="position" {...rowAnim} className="swipe" ref={(el: HTMLDivElement | null) => { if (el) width.current = el.offsetWidth }}>
+      <motion.button className="swipe__delete" style={{ width: reveal }} onClick={onDelete} tabIndex={-1}>Ta bort</motion.button>
       <motion.div
         className={`row swipe__front ${className}`}
         style={{ x }}
@@ -42,6 +45,6 @@ export function SwipeRow({ children, onDelete, onClick, className = '' }: { chil
       >
         {children}
       </motion.div>
-    </motion.div>
+    </GlassCard>
   )
 }
