@@ -289,47 +289,87 @@
   }
 }
 
-/* Det stora kortet: mätaren i mitten, förklaringen under, amorteringen längst ner. */
-.eco-dash__hero .gauge { margin-top: var(--s-4); }
-.hero__empty { margin: var(--s-5) 0 auto; }
-.hero__legend { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--s-2) var(--s-6); margin-top: var(--s-3); }
+/* Det stora kortet: mätaren för lånet i mitten, förklaringen under, uppskattningen längst ner. */
+.eco-dash__hero .gauge { margin-top: auto; padding-top: var(--s-4); }   /* mätaren mitt i kortets lediga höjd */
+.hero__empty { margin: var(--s-5) 0; }
+.hero__legend { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--s-2) var(--s-6); margin: var(--s-2) 0 var(--s-5); }
 .hero__legend > div { display: flex; align-items: center; gap: var(--s-2); }
-.hero__legend b, .hero__paid b { font-weight: 700; color: var(--text); }
+.hero__legend b { font-weight: 700; color: var(--text); }
 .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .dot--debt { background: var(--gauge-debt); }
 .dot--own { background: var(--success-2); box-shadow: 0 0 8px color-mix(in srgb, var(--success) 60%, transparent); }
-.dot--danger { background: var(--danger); }
-.hero__paid { margin-top: auto; padding-top: var(--s-5); }
-.hero__paid-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-bottom: var(--s-2); }
-.glass.kpi .hero__paid .budget-track { margin-top: 0; }
 
-/* Halvcirkelmätaren (Charts.tsx). Bågen ritas med stroke-dasharray, delarna har runda ändar. */
-.gauge { position: relative; width: 100%; max-width: 420px; margin-inline: auto; }
+/* Halvcirkelmätaren av streck (Charts.tsx): spåret svagt, de fyllda strecken i accent med glöd. */
+.gauge { position: relative; width: 100%; max-width: 400px; margin-inline: auto; }
 .gauge__svg { display: block; width: 100%; height: auto; overflow: visible; }
-.gauge__track, .gauge__part { fill: none; stroke-width: 16; stroke-linecap: round; }
-.gauge__track { stroke: var(--bar-track); }
-.gauge__part--debt { stroke: var(--gauge-debt); }
-.gauge__part--own { stroke: var(--success-2); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--success) 55%, transparent)); }
-.gauge__part--danger { stroke: var(--danger); }
-.gauge__center { position: absolute; left: 0; right: 0; bottom: 4%; text-align: center; }
+.gauge__tick { stroke: var(--gauge-track); stroke-width: 4.2; stroke-linecap: round; }
+.gauge__tick.is-on { stroke: var(--success-2); }
+.gauge__fill { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--success) 55%, transparent)); }
+.gauge__center { position: absolute; left: 0; right: 0; bottom: 2%; text-align: center; }
 .glass.kpi .gauge__center .kpi__value { margin: 0; font-size: clamp(22px, 4.2vw, 34px); }
 
-/* Minidiagrammet (Charts.tsx): en stapel per del av kassaflödet, amorteringen i accent. */
-.minibars { display: flex; align-items: flex-end; gap: var(--s-2); margin-top: auto; padding-top: var(--s-3); }
-.minibars__col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.minibars__track { position: relative; width: 100%; max-width: 26px; height: 88px; display: flex; align-items: flex-end; }
-.minibars__bar { display: block; width: 100%; border-radius: 999px; background: var(--gauge-debt); }
-.minibars__bar.is-accent { background: linear-gradient(180deg, var(--success), var(--success-2)); box-shadow: 0 0 12px color-mix(in srgb, var(--success) 50%, transparent); }
-.minibars__label { max-width: 100%; font-size: 11px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 760px) { .minibars__track { height: 72px; max-width: 22px; } }
+/* Marknadsvärdet: en egen ruta med streckad kant och "≈", så att det inte blandas ihop med lånets fakta. */
+.estimate {
+  margin-top: auto;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-row);
+  background: var(--estimate-bg);
+  border: 1px dashed var(--estimate-line);
+}
+.eco-dash__hero .estimate { margin-top: auto; }   /* längst ner i det stora kortet */
+.estimate__head { display: flex; align-items: center; gap: var(--s-2); color: var(--text-2); font-size: var(--fs-meta); font-weight: 600; }
+.estimate__tag {
+  margin-left: auto;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-2); box-shadow: inset 0 0 0 1px var(--estimate-line);
+}
+.estimate__row { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-top: var(--s-2); }
+.estimate__value { font-size: 20px; font-weight: 600; letter-spacing: -.01em; color: var(--text); opacity: .85; }
+.estimate__own { font-size: var(--fs-meta); font-weight: 700; color: var(--positive-ink, var(--success)); }
+.estimate__own.is-negative { color: var(--danger); }
+
+/* Stapeldiagrammet (Charts.tsx): breda staplar med ett svagt spår till full höjd, beloppet ovanför och etiketten under. */
+.minibars { display: flex; align-items: stretch; gap: 10px; margin-top: auto; padding-top: var(--s-5); }
+.minibars__col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
+.minibars__track {
+  position: relative; width: 100%; max-width: 64px; height: 120px;
+  display: flex; align-items: flex-end;
+  border-radius: 14px; background: var(--bar-track);
+  box-shadow: inset 0 1px 2px rgba(14, 21, 18, .08);
+}
+.minibars__bar {
+  position: relative; width: 100%; border-radius: 14px;
+  background: linear-gradient(180deg, var(--bar-cost-top), var(--bar-cost));
+}
+.minibars__bar.is-accent {
+  background: linear-gradient(180deg, var(--success), var(--success-2));
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--success) 45%, transparent);
+}
+.minibars__value {
+  position: absolute; left: 50%; bottom: calc(100% + 5px); transform: translateX(-50%);
+  font-size: 11.5px; font-weight: 700; white-space: nowrap; color: var(--text);
+}
+.minibars__value.is-inside { bottom: auto; top: 8px; color: #FFFFFF; }
+.minibars__bar.is-accent .minibars__value.is-inside { color: var(--on-accent); }
+.minibars__label {
+  max-width: 100%;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--fill);
+  font-size: 11.5px; font-weight: 600; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .minibars { gap: 6px; }
+  .minibars__track { height: 96px; border-radius: 12px; }
+  .minibars__bar { border-radius: 12px; }
+  .minibars__value { font-size: 10.5px; }
+  .minibars__label { padding: 2px 6px; font-size: 10.5px; }
+}
 
 /* Staplar: tjocka spår med runda ändar. Fyllningen glider ut från noll (framer-motion). */
 .budget-track { position: relative; height: var(--bar-h); border-radius: 999px; overflow: hidden; background: var(--bar-track); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35); }
 .budget-track > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; }
-.budget-track .is-paid {
-  background: linear-gradient(90deg, var(--success-2), var(--success));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--success) 50%, transparent);
-}
 
 
 /* ---------- Granskning av kvitto ---------- */

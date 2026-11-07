@@ -481,8 +481,17 @@ p { margin: 0; }
   --positive-ink: #047857;
   --danger: #C2362F;
   --bar-track: var(--card-ink-fill);
-  --gauge-debt: rgba(14, 21, 18, .42);   /* skulden i mätaren och kostnadsstaplarna */
-  background: linear-gradient(160deg, var(--card-light) 0%, var(--card-light-2) 100%);
+  --gauge-debt: rgba(14, 21, 18, .42);   /* skulden i förklaringen */
+  --gauge-track: rgba(14, 21, 18, .12);  /* omålade streck i mätaren */
+  --bar-cost: rgba(14, 21, 18, .55);     /* kostnadsstaplarna */
+  --bar-cost-top: rgba(14, 21, 18, .38);
+  --estimate-bg: rgba(255, 255, 255, .35);
+  --estimate-line: rgba(14, 21, 18, .2);
+  /* Glas: genomskinligt ljust, ett skimmer uppe till vänster och kraftig blur, så att ljuset bakom anas. */
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, .55), transparent 55%),
+    linear-gradient(160deg, var(--card-light) 0%, var(--card-light-2) 100%);
+  -webkit-backdrop-filter: blur(30px) saturate(170%); backdrop-filter: blur(30px) saturate(170%);
   box-shadow: var(--card-light-shadow);
   color: var(--text);
 }

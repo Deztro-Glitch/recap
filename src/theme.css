@@ -68,8 +68,8 @@
     0 0 32px color-mix(in srgb, var(--accent) 34%, transparent);
 
   /* Ljusa statistikkort: ljust frostat glas med mörk text, svagt tonat av lägets accent. */
-  --card-light: color-mix(in srgb, color-mix(in srgb, var(--accent) 6%, #F4F7F5) 92%, transparent);
-  --card-light-2: color-mix(in srgb, color-mix(in srgb, var(--accent) 14%, #E2EBE6) 86%, transparent);
+  --card-light: color-mix(in srgb, color-mix(in srgb, var(--accent) 6%, #F4F7F5) 74%, transparent);
+  --card-light-2: color-mix(in srgb, color-mix(in srgb, var(--accent) 16%, #E2EBE6) 58%, transparent);
   --card-ink: #0E1512;                      /* rubriker och siffror på ljusa kort */
   --card-ink-2: rgba(14, 21, 18, .58);      /* detaljer på ljusa kort */
   --card-ink-fill: rgba(14, 21, 18, .07);   /* ikonrutor, märkningar och spår på ljusa kort */
@@ -91,7 +91,12 @@
   --num-negative: linear-gradient(180deg, #FCA5A5 0%, var(--danger) 100%);
   --bar-track: rgba(255, 255, 255, .07);
   --bar-h: 14px;
-  --gauge-debt: rgba(255, 255, 255, .45);  /* skulden i mätaren och kostnadsstaplarna (mörka ytor) */
+  --gauge-debt: rgba(255, 255, 255, .45);  /* skulden i förklaringen (mörka ytor) */
+  --gauge-track: rgba(255, 255, 255, .14);
+  --bar-cost: rgba(255, 255, 255, .35);
+  --bar-cost-top: rgba(255, 255, 255, .6);
+  --estimate-bg: rgba(255, 255, 255, .04);
+  --estimate-line: rgba(255, 255, 255, .2);
 
   /* ---------- Innehållsfärger för rum (ikon, planritning). Par: färg + mörk text ---------- */
   --c-sand-bg: #E9CBA3;  --c-sand-fg: #4A2E0F;
