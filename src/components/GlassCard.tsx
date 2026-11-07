@@ -16,6 +16,9 @@ export function GlassCard({ lift, flush, className, onClick, children, ...rest }
     <motion.div
       className={classes}
       onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick(e as never) } } : undefined}
       whileHover={lifts ? { y: -4 } : undefined}
       whileTap={onClick && !still ? { scale: 0.99 } : undefined}
       transition={{ type: 'spring', stiffness: 380, damping: 30 }}

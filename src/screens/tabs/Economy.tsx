@@ -5,6 +5,7 @@ import { ore, useElPrice } from '../../lib/elpris'
 import { kr, parseNum } from '../../lib/format'
 import { valuation } from '../../lib/valuation'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
+import { GlassCard } from '../../components/GlassCard'
 import { EL_ZONE_LABEL, type Economy, type ElZone } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { fmtDate } from './Items'
@@ -20,28 +21,28 @@ export function EconomyDashboard({ state, open }: ViewProps) {
   return (
     <>
       <div className="kpis kpis--three">
-        <button className="kpi kpi--button" onClick={edit}>
+        <GlassCard className="kpi" onClick={edit}>
           <div className="kpi__label">Ren månadskostnad</div>
           <div className="meta">(Ränta och boendeavtal)</div>
           <div className="kpi__value">{has ? kr(n.costs) : '–'}</div>
           <div className="meta">Pengar ut</div>
-        </button>
-        <button className="kpi kpi--button" onClick={edit}>
+        </GlassCard>
+        <GlassCard className="kpi" onClick={edit}>
           <div className="kpi__label">Ditt sparande</div>
           <div className="meta">(Amortering)</div>
           <div className="kpi__value">{e ? kr(n.saving) : '–'}</div>
           <div className="meta">Pengar in i bostaden</div>
-        </button>
-        <button className="kpi kpi--button" onClick={edit}>
+        </GlassCard>
+        <GlassCard className="kpi" onClick={edit}>
           <div className="kpi__label">Totalt kassaflöde</div>
           <div className="meta">(Kostnad och amortering)</div>
           <div className="kpi__value">{has ? kr(n.cashflow) : '–'}</div>
           <div className="meta">Varje månad</div>
-        </button>
+        </GlassCard>
       </div>
 
       {e?.zone && el && (
-        <div className="el-price" onClick={edit}>
+        <GlassCard className="el-price" onClick={edit} lift={false}>
           <div>
             <div className="kpi__label">Elpris nu, {e.zone}</div>
             <div className="kpi__value">{el.now != null ? `${ore(el.now)}/kWh` : '–'}</div>
@@ -50,11 +51,11 @@ export function EconomyDashboard({ state, open }: ViewProps) {
             Snitt i dag {ore(el.avg)}, lägst {ore(el.min)}, högst {ore(el.max)}
             <br />Spotpris utan moms och avgifter
           </div>
-        </div>
+        </GlassCard>
       )}
 
       <div className="eco-grid">
-        <div className="loan" onClick={edit} role="button" tabIndex={0} onKeyDown={(k) => k.key === 'Enter' && edit()}>
+        <GlassCard className="loan" onClick={edit} lift={false}>
           <div className="section-head">
             <h2>Bolån</h2>
             {e?.loan ? <span className="meta">{kr(n.paidOff)} amorterat</span> : null}
@@ -76,7 +77,7 @@ export function EconomyDashboard({ state, open }: ViewProps) {
           ) : (
             <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); edit() }}>Lägg in bolånet</button>
           )}
-        </div>
+        </GlassCard>
         <ValueCard state={state} debt={n.debt} onClick={edit} />
       </div>
     </>
@@ -88,7 +89,7 @@ function ValueCard({ state, debt, onClick }: { state: ProjectState; debt: number
   const v = valuation(state.project?.economy, state.rooms)
 
   return (
-    <div className="loan" onClick={onClick} role="button" tabIndex={0} onKeyDown={(k) => k.key === 'Enter' && onClick()}>
+    <GlassCard className="loan" onClick={onClick} lift={false}>
       <div className="section-head"><h2>Estimerat marknadsvärde</h2></div>
       {v.value == null ? (
         <>
@@ -104,7 +105,7 @@ function ValueCard({ state, debt, onClick }: { state: ProjectState; debt: number
           <Margin value={v.value} debt={debt} />
         </>
       )}
-    </div>
+    </GlassCard>
   )
 }
 
@@ -123,7 +124,7 @@ function Margin({ value, debt }: { value: number; debt: number }) {
         <div><div className="meta">Bolån</div><div className="kpi__value">{kr(debt)}</div></div>
         <div>
           <div className="meta">Din del</div>
-          <div className="kpi__value" style={{ color: margin < 0 ? 'var(--danger)' : 'var(--success)' }}>{kr(margin)}</div>
+          <div className={`kpi__value ${margin < 0 ? 'is-negative' : 'is-positive'}`}>{kr(margin)}</div>
         </div>
       </div>
     </>

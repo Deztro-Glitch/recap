@@ -353,7 +353,7 @@ a { color: inherit; }
 .kpi--button .kpi__value { margin: 2px 0; }
 
 /* Bolånet: stapeln krymper i takt med skulden. */
-.loan { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-4); cursor: pointer; }
+.loan { cursor: pointer; }
 .eco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin: var(--s-2) 0 var(--s-5); align-items: stretch; }
 @media (max-width: 1024px) { .eco-grid { grid-template-columns: minmax(0, 1fr); } }
 .value-now { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); }
@@ -397,10 +397,6 @@ a { color: inherit; }
 .review-match__actions { display: flex; gap: var(--s-1); margin-left: auto; }
 .review-match.is-linked { box-shadow: inset 0 0 0 1px var(--accent); justify-content: space-between; }
 
-/* Bolån och din del i samma stapel: neutral skuld till vänster, grönt övervärde till höger. */
-.split-track { display: flex; height: 10px; margin-top: var(--s-2); border-radius: 2px; overflow: hidden; background: var(--hover); }
-.split-track__debt { background: var(--track); }
-.split-track__own { background: var(--success); }
 
 /* Bolån och din del i samma stapel: neutral skuld till vänster, grönt övervärde till höger. */
 .split-track { display: flex; height: 10px; margin-top: var(--s-2); border-radius: 2px; overflow: hidden; background: var(--hover); }
@@ -474,4 +470,73 @@ body::before {
 /* Utan stöd för blur blir glaset en vanlig upphöjd yta, så att texten alltid går att läsa. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass { background: var(--raised); }
+}
+
+/* ---------- Fas 3: glas i menyn och på Översikt ---------- */
+
+:root {
+  --glass-text: var(--text);
+  --glass-text-2: var(--text-2);
+  --glass-soft: rgba(255, 255, 255, .35);
+  --main-bg: var(--surface);
+  --main-border: transparent;
+  --nav-glow: var(--accent);
+  --emerald: #059669;
+  --emerald-2: #10B981;
+  --bar-track: rgba(23, 20, 31, .08);
+  --bar-loan: linear-gradient(90deg, rgba(23, 20, 31, .28), rgba(23, 20, 31, .45));
+}
+:root[data-theme="dark"] {
+  --glass-text: #FFFFFF;
+  --glass-text-2: rgba(255, 255, 255, .7);
+  --glass-soft: rgba(255, 255, 255, .025);
+  --main-bg: rgba(255, 255, 255, .02);
+  --main-border: rgba(255, 255, 255, .06);
+  --nav-glow: #B3A3FF;
+  --emerald: #34D399;
+  --emerald-2: #10B981;
+  --bar-track: rgba(255, 255, 255, .08);
+  --bar-loan: linear-gradient(90deg, rgba(255, 255, 255, .45), rgba(255, 255, 255, .8));
+}
+:root[data-theme="dark"][data-mode="home"] { --nav-glow: #B8DDBB; }
+
+/* Huvudytan släpper igenom ljuset så att glaskorten har något att sudda ut. */
+.main { background: var(--main-bg); box-shadow: inset 0 0 0 1px var(--main-border); border-radius: var(--r-xl); }
+
+/* Sidomenyn: glas utan kant, ljuset syns igenom. */
+.sidebar {
+  background: var(--glass-soft); border-radius: var(--r-xl);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.nav-item:hover { background: color-mix(in srgb, var(--glass-text) 4%, transparent); }
+.nav-item.is-active {
+  background: color-mix(in srgb, var(--nav-glow) 12%, transparent);
+  color: var(--nav-glow);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--nav-glow) 55%, transparent);
+}
+.nav-item.is-active svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--nav-glow) 70%, transparent)); }
+.tabbar__item.is-active { color: var(--nav-glow); background: color-mix(in srgb, var(--nav-glow) 12%, transparent); }
+.tabbar__item.is-active svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--nav-glow) 70%, transparent)); }
+
+/* Text i glaskort: vit för siffror och rubriker, ljusgrå för resten. */
+.glass { color: var(--glass-text); }
+.glass .meta { color: var(--glass-text-2); }
+.glass h2, .glass .kpi__label, .glass .kpi__value { color: var(--glass-text); }
+.glass.kpi { padding: var(--s-3) var(--s-4); display: flex; flex-direction: column; }
+.glass.kpi .kpi__value { margin-top: auto; padding-top: var(--s-1); }
+.glass.el-price { padding: var(--s-3) var(--s-4); margin-top: var(--s-2); }
+@media (max-width: 760px) { .glass.kpi { padding: var(--s-2) var(--s-3); } }
+.glass .is-positive { color: var(--emerald); }
+.glass .is-negative { color: var(--danger); }
+
+/* Staplarna: runda, neutral vit för lånet, smaragdgrönt för din del. */
+.glass .budget-track, .glass .split-track { height: 10px; border-radius: 999px; background: var(--bar-track); }
+.glass .budget-track > span { border-radius: 999px; }
+.glass .budget-track .is-spent { background: var(--bar-loan); }
+.glass .split-track { gap: 3px; }
+.glass .split-track > span { border-radius: 999px; transition: width var(--t-base) var(--ease); }
+.glass .split-track__debt { background: var(--bar-loan); }
+.glass .split-track__own {
+  background: linear-gradient(90deg, var(--emerald-2), var(--emerald));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--emerald) 60%, transparent);
 }

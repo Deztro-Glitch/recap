@@ -13,6 +13,7 @@ import { ItemList, allItems, byDate, byImportance, modeItems, roomFacts, sheetFo
 import { RoomPhotos } from './Photos'
 import { RoomEditSheet } from './Rooms'
 import { EconomyDashboard } from './Economy'
+import { GlassCard } from '../../components/GlassCard'
 
 // Översikt: nyckeltal, planritningen och en panel som visar hemmet eller det rum man tryckt på.
 export function Overview({ state, open, place, setPlace }: ViewProps & { place: string | null; setPlace: (id: string | null) => void }) {
@@ -51,7 +52,7 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
       ) : (
         <div className="kpis">
           {kpis.map((k) => (
-            <div key={k.label} className="kpi"><div className="meta">{k.label}</div><div className="kpi__value">{kr(k.value)}</div></div>
+            <GlassCard key={k.label} className="kpi"><div className="meta">{k.label}</div><div className="kpi__value">{kr(k.value)}</div></GlassCard>
           ))}
         </div>
       )}
