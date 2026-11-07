@@ -29,13 +29,47 @@ export function afterDeduction(monthlyInterest: number) {
   return (year - deduction) / 12
 }
 
-// Ett lån räknat från dagens datum: skulden = lån − amortering × hela månader sedan start.
-export function loanNumbers(l: Pick<OtherLoan, 'loan' | 'amortization' | 'rate' | 'loanStart'>) {
+// Bolånet räknat från dagens datum: skulden = lån − amortering × hela månader sedan start.
+export function loanNumbers(l: { loan: number; amortization: number; rate: number; loanStart: string | null }) {
   const months = l.loanStart ? monthsSince(l.loanStart) : 0
   const debt = Math.max(0, l.loan - l.amortization * months)
   const interest = (debt * l.rate) / 100 / 12
   const amortization = debt > 0 ? Math.min(l.amortization, debt) : 0
   return { debt, paidOff: l.loan - debt, interest, amortization, monthly: interest + amortization, paid: l.loan > 0 ? (l.loan - debt) / l.loan : 0 }
+}
+
+// Månader tills skulden är borta med rak amortering. null om ingen amortering.
+export function monthsToDebtFree(debt: number, amortization: number) {
+  if (debt <= 0) return 0
+  return amortization > 0 ? Math.ceil(debt / amortization) : null
+}
+
+// "2 år och 7 månader"
+export function durationText(months: number | null) {
+  if (months == null) return 'Ingen amortering'
+  if (months === 0) return 'Skuldfri'
+  const y = Math.floor(months / 12), m = months % 12
+  return [y && `${y} år`, m && `${m} ${m === 1 ? 'månad' : 'månader'}`].filter(Boolean).join(' och ')
+}
+
+// Ett övrigt lån i dag. Äldre lån (ursprungslån och startdatum) räknas om på samma sätt som bolånet.
+export function otherLoanNumbers(l: OtherLoan) {
+  const start = l.debt != null ? l.debt : (l.loan ?? 0)
+  const from = l.debt != null ? l.debtDate : l.loanStart
+  const months = from ? monthsSince(from) : 0
+  const debt = Math.max(0, start - l.amortization * months)
+  const interest = (debt * l.rate) / 100 / 12
+  const amortization = debt > 0 ? Math.min(l.amortization, debt) : 0
+  const fee = debt > 0 ? l.fee ?? 0 : 0
+  const original = l.loan && l.loan >= debt ? l.loan : null
+  return {
+    debt, interest, amortization, fee,
+    monthly: interest + amortization + fee,
+    original,
+    paidOff: original != null ? original - debt : null,
+    paid: original ? (original - debt) / original : null,
+    months: monthsToDebtFree(debt, l.amortization),
+  }
 }
 
 // Allt Boendeläget visar, räknat från dagens datum. Ren månadskostnad gäller bara boendet;
@@ -44,7 +78,7 @@ export function economyNumbers(e: Economy, contracts: Contract[] = []) {
   const home = loanNumbers(e)
   const fixed = fixedCosts(contracts, e)
   const costs = home.interest + fixed
-  const others = (e.loans ?? []).map((l) => ({ ...l, ...loanNumbers(l) }))
+  const others = (e.loans ?? []).map((l) => ({ ...l, ...otherLoanNumbers(l) }))
   const otherMonthly = others.reduce((s, l) => s + l.monthly, 0)
   return {
     debt: home.debt,

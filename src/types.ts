@@ -41,17 +41,21 @@ export interface Economy {
   area?: number           // boarea i kvm
   sqmAverage?: number     // snittpris i området för normalt skick, kr/kvm
   sqmTop?: number         // toppris i området för nyrenoverat, kr/kvm
-  loans?: OtherLoan[]     // andra lån än bolånet, t.ex. MC-lån. Räknas in i kassaflödet.
+  loans?: OtherLoan[]     // övriga lån än bolånet, t.ex. MC-lån och billån. Räknas in i kassaflödet.
 }
 
-// Ett annat lån än bolånet (bil, MC, studielån). Samma räkning som bolånet.
+// Ett övrigt lån (bil, MC, studielån). Man fyller i skulden som den är i dag; den minskar sedan med
+// amorteringen varje hel månad efter debtDate.
 export interface OtherLoan {
   id: string
   name: string            // t.ex. "MC-lån, KTM 990 Duke"
-  loan: number            // ursprungligt lån
+  debt?: number           // kvarvarande skuld när den fylldes i
+  debtDate?: string       // när skulden fylldes i (YYYY-MM-DD)
   amortization: number    // per månad
   rate: number            // ränta i procent
-  loanStart: string | null
+  fee?: number            // fakturaavgift per månad
+  loan?: number           // ursprungligt lån, för hur stor del som är betald (valfritt)
+  loanStart?: string | null  // äldre lån: start, när skulden räknades från ursprungslånet
 }
 
 export type ElZone = 'SE1' | 'SE2' | 'SE3' | 'SE4'

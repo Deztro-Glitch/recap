@@ -281,7 +281,7 @@
 .eco-dash__flow { grid-area: flow; }
 .eco-dash__cost { grid-area: cost; }
 .eco-dash__todo { grid-area: todo; }
-.eco-dash__loans { grid-area: loans; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.eco-dash__loans { grid-area: loans; }
 .eco-dash__el { grid-area: el; }
 @media (max-width: 1100px) {
   .eco-dash {
@@ -329,6 +329,7 @@
 .estimate__value { font-size: 20px; font-weight: 600; letter-spacing: -.01em; color: var(--text); opacity: .85; }
 .estimate__own { font-size: var(--fs-meta); font-weight: 700; color: var(--positive-ink, var(--success)); }
 .estimate__own.is-negative { color: var(--danger); }
+.estimate__sub { margin-top: 2px; font-size: var(--fs-small); color: var(--text-2); }
 
 /* Stapeldiagrammet (Charts.tsx): breda staplar med ett svagt spår till full höjd, beloppet ovanför och etiketten under. */
 .minibars { display: flex; align-items: stretch; gap: 10px; margin-top: auto; padding-top: 34px; }   /* plats för beloppet över den högsta stapeln */
@@ -367,13 +368,14 @@
 
 /* Flikarna i Kassaflöde (Segmented i Charts.tsx): markeringen glider mellan valen. */
 .segmented {
-  display: flex; gap: 2px; margin-top: var(--s-3); padding: 4px;
+  display: flex; gap: 2px; margin: var(--s-3) auto 0; padding: 4px;
+  width: fit-content; max-width: 100%;   /* centrerad, bara så bred som flikarna */
   border-radius: 999px; background: var(--fill);
   overflow-x: auto; scrollbar-width: none;
 }
 .segmented__item {
-  position: relative; flex: 1 0 auto;
-  padding: 7px 14px; border: 0; border-radius: 999px; background: none; cursor: pointer;
+  position: relative; flex: 0 0 auto; min-width: 120px; text-align: center;
+  padding: 7px 18px; border: 0; border-radius: 999px; background: none; cursor: pointer;
   font: 600 var(--fs-meta) var(--font); color: var(--text-2); white-space: nowrap;
   transition: color var(--t-fast);
 }
@@ -403,10 +405,24 @@
 .ring__fill { stroke: var(--success-2); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--success) 55%, transparent)); }
 .ring__text { transform: rotate(90deg); transform-origin: 22px 22px; font: 700 10px var(--font); fill: var(--text); }
 
-/* Andra lån i Ekonomi-formuläret. */
-.loan-edit { display: grid; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-row); box-shadow: inset 0 0 0 1px var(--line); }
-.loan-edit__head { display: flex; align-items: flex-end; gap: var(--s-2); }
-.loan-edit__head .field { flex: 1; }
+/* Prickarna i Övriga lån: ett lån i taget, den aktiva pricken är utdragen. */
+.dots { display: flex; justify-content: center; gap: 6px; margin-top: var(--s-4); }
+.dots__dot {
+  width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--gauge-track); box-shadow: inset 0 0 0 1px var(--line);
+  transition: width var(--t-fast) var(--ease-out), background-color var(--t-fast);
+}
+.dots__dot.is-active { width: 22px; background: var(--success-2); box-shadow: none; }
+
+/* Lånepanelen (Loans.tsx): välj lån överst, kalkylatorn under fälten. */
+.loans-pick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.calc { padding: var(--s-4); border-radius: var(--r-row); background: var(--fill); box-shadow: inset 0 0 0 1px var(--line); }
+.calc__head { display: grid; gap: 2px; }
+.calc__big { font-size: 22px; font-weight: var(--fw-number); letter-spacing: -.02em; color: var(--text); }
+.calc__rows { display: grid; gap: 4px; margin: var(--s-3) 0 0; }
+.calc__rows > div { display: flex; justify-content: space-between; gap: var(--s-3); }
+.calc__rows dd { margin: 0; font-weight: 600; color: var(--text); }
+.calc__sum { border-top: 1px solid var(--line); padding-top: var(--s-2); margin-top: 2px; font-weight: 700; }
 
 /* Att göra (Todos.tsx): fält och plusknapp överst, listan under med runda bockar. */
 .todo-add { display: flex; gap: var(--s-2); margin-top: var(--s-4); }
