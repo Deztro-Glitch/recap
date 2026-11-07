@@ -64,7 +64,7 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
               {state.rooms.map((r, i) => {
                 const Icon = iconFor(r.icon)
                 return (
-                  <motion.button key={r.id} className={`tile ${r.id === place ? 'is-selected' : ''}`} style={tileStyle(r.color ?? PALETTE[i % PALETTE.length])} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: i * 0.03, ease }} onClick={() => setPlace(r.id === place ? null : r.id)}>
+                  <motion.button key={r.id} className={`glass tile ${r.id === place ? 'is-selected' : ''}`} style={tileStyle(r.color ?? PALETTE[i % PALETTE.length])} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: i * 0.03, ease }} onClick={() => setPlace(r.id === place ? null : r.id)}>
                     <div className="tile__name">{r.name}</div>
                     <Icon className="tile__icon" />
                   </motion.button>

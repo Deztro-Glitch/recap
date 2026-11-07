@@ -232,4 +232,4 @@ export const ROOM_PRESETS: { name: string; icon: IconKey; color: Palette }[] = [
   { name: 'Förråd', icon: 'box', color: 'sand' },
 ]
 
-export const tileStyle = (c: Palette) => ({ '--tile-bg': `var(--c-${c}-bg)`, '--tile-fg': `var(--c-${c}-fg)` }) as CSSProperties
+export const tileStyle = (c: Palette) => ({ '--tile': `var(--c-${c}-bg)` }) as CSSProperties

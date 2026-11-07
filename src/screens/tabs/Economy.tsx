@@ -55,7 +55,7 @@ export function EconomyDashboard({ state, open }: ViewProps) {
       )}
 
       <div className="eco-grid">
-        <GlassCard className="loan" onClick={edit} lift={false}>
+        <GlassCard onClick={edit} lift={false}>
           <div className="section-head">
             <h2>Bolån</h2>
             {e?.loan ? <span className="meta">{kr(n.paidOff)} amorterat</span> : null}
@@ -89,7 +89,7 @@ function ValueCard({ state, debt, onClick }: { state: ProjectState; debt: number
   const v = valuation(state.project?.economy, state.rooms)
 
   return (
-    <GlassCard className="loan" onClick={onClick} lift={false}>
+    <GlassCard onClick={onClick} lift={false}>
       <div className="section-head"><h2>Estimerat marknadsvärde</h2></div>
       {v.value == null ? (
         <>

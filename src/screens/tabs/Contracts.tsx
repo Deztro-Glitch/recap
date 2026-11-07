@@ -201,7 +201,7 @@ function GainCalc({ value, purchasePrice, deductible }: { value: number | null; 
   }
   const gain = value - purchasePrice - deductible
   return (
-    <div className="section gain glass">
+    <div className="section glass">
       <div className="gain__row"><span>Estimerat marknadsvärde</span><span>{kr(value)}</span></div>
       <div className="gain__row"><span>− Inköpspris</span><span>{kr(purchasePrice)}</span></div>
       <div className="gain__row"><span>− Avdragsgilla K6-förbättringar</span><span>{kr(deductible)}</span></div>

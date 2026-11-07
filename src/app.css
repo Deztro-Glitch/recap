@@ -1,24 +1,18 @@
 /* ==========================================================================
-   app.css — Recap-specifikt ovanpå design.css. Bara tokens från design.css.
+   app.css — Recaps egna vyer ovanpå design.css.
+   Inga egna färgvärden här: allt kommer från theme.css.
    ========================================================================== */
 
-html { background: var(--shell); }
-/* Bakgrunden är ett eget lager (body::before) så att glasytor har något att sudda ut. */
-body { background: none; }
-button { font: inherit; color: inherit; }
-a { color: inherit; }
 
-/* Appskalet fyller skärmen: sidomeny på dator, meny längst ner på mobil. */
+/* ---------- Appskalet: fyller skärmen, sidomeny på dator, meny längst ner på mobil ---------- */
+
 .app {
   height: 100dvh;
   min-height: 0;
-  grid-template-rows: minmax(0, 1fr);
   padding: calc(env(safe-area-inset-top, 0px) + var(--s-2)) var(--s-2) calc(env(safe-area-inset-bottom, 0px) + var(--s-2));
 }
-.app { background: transparent; }
-.main { position: relative; }
 .sidebar__foot { margin-top: auto; }
-.nav-item svg { flex: none; }
+.nav-label { padding: var(--s-4) var(--s-3) var(--s-1); }
 
 .topbar__home {
   display: flex; align-items: center; gap: var(--s-1);
@@ -28,8 +22,9 @@ a { color: inherit; }
 .topbar__home span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .topbar__home svg { flex: none; color: var(--text-2); }
 
-/* Bottenmenyn (bara mobil). Plusknappen är vyns enda färgstarka knapp. */
+/* Bottenmenyn (bara mobil) är ett glaskort. Plusknappen är vyns enda färgstarka knapp. */
 .tabbar { display: none; }
+.glass.tabbar { padding: 6px; border-radius: var(--r-sheet); }
 .tabbar__item {
   flex: 1; min-width: 0; border: 0; background: transparent; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -37,61 +32,18 @@ a { color: inherit; }
   color: var(--text-2); font-size: 11.5px; font-weight: 500;
   transition: color var(--t-fast), background var(--t-fast);
 }
-.tabbar__item.is-active { color: var(--text); font-weight: 600; background: var(--surface); }
+.tabbar__item.is-active {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-glow);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--accent-glow) 55%, transparent);
+}
+.tabbar__item.is-active svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-glow) 70%, transparent)); }
 .tabbar__add {
   flex: none; width: 52px; height: 44px; margin: 0 var(--s-2); align-self: center;
-  border: 0; border-radius: var(--r-sm); cursor: pointer;
-  background: var(--accent); color: var(--on-accent);
+  border: 0; border-radius: 16px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-
-/* Menyrader (Lägg till, Mer) */
-.menu-row__icon {
-  width: 36px; height: 36px; flex: none; border-radius: var(--r-sm);
-  display: flex; align-items: center; justify-content: center;
-  background: var(--hover); color: var(--text);
-}
-
-.section-head h1, .section-head h2 { margin-right: auto; }
-
-/* ---------- Rader ---------- */
-
-.swipe { position: relative; border-radius: var(--r-sm); overflow: hidden; }
-.swipe__delete {
-  /* 1px in från kanterna, annars syns det röda i de rundade hörnen bakom raden */
-  position: absolute; inset: 1px 1px 1px auto; width: calc(100% - 2px);
-  border: 0; border-radius: var(--r-sm); cursor: pointer;
-  display: flex; align-items: center; justify-content: flex-end; padding-right: var(--s-4);
-  background: var(--danger); color: #fff; font-weight: 600;
-}
-.swipe__front { position: relative; background: var(--raised); touch-action: pan-y; }
-.swipe__front:hover { background: var(--hover); }
-
-.row__main { display: flex; align-items: center; gap: var(--s-3); min-width: 0; flex: 1; }
-.row__text { min-width: 0; }
-.row__text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row__amount { font-weight: 600; white-space: nowrap; }
-.row.is-done .row__title { color: var(--text-2); text-decoration: line-through; }
-.row__link { color: var(--text-2); display: inline-flex; padding: var(--s-1); border-radius: var(--r-xs); }
-.row__link:hover { color: var(--text); background: var(--surface); }
-.status-btn { border: 0; background: transparent; padding: var(--s-2); margin: calc(var(--s-2) * -1); border-radius: var(--r-xs); cursor: pointer; flex: none; }
-.status-btn:hover { background: var(--surface); }
-
-/* ---------- Budget ---------- */
-
-.budget-track { position: relative; height: 8px; border-radius: 2px; background: var(--hover); margin-top: var(--s-3); overflow: hidden; }
-.budget-track > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px; transition: width var(--t-base) var(--ease); }
-.budget-track .is-planned { background: var(--track); }
-.budget-track .is-spent { background: var(--accent); }
-.budget-track .is-over { background: var(--danger); }
-.budget-track .marker { width: 2px; background: var(--text); left: auto; }
-.budget-status { margin-top: var(--s-3); }
-
-/* ---------- Tiles: Tabler-ikon som svg ---------- */
-
-.tile { text-align: left; border: 0; font: inherit; }
-.tile__name { overflow-wrap: anywhere; hyphens: auto; position: relative; }
-.tile svg.tile__icon { width: 72px; height: 72px; stroke-width: 1.5; }
 
 @media (max-width: 760px) {
   .app { gap: var(--s-1); grid-template-rows: auto minmax(0, 1fr); }
@@ -99,187 +51,8 @@ a { color: inherit; }
   .app--tabs .sidebar { display: none; }
   .app--tabs .topbar__add { display: none; }
   .sidebar { flex: none; scrollbar-width: none; }
-  .main { padding: var(--s-4) var(--s-3); }
-  .topbar { margin-bottom: var(--s-4); }
-  .tabbar { display: flex; align-items: stretch; padding: var(--s-1) 0 0; }
-  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpi { padding: var(--s-2) var(--s-3); }
-  .kpi__value { font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tabbar { display: flex; align-items: stretch; }
 }
-
-/* ---------- Panel för formulär (botten på mobil, höger på dator) ---------- */
-
-.backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(23, 20, 31, .4); }
-.sheet {
-  position: fixed; z-index: 51; top: var(--s-2); right: var(--s-2); bottom: var(--s-2);
-  width: min(420px, calc(100% - 16px));
-  overflow-y: auto;
-  background: var(--surface); color: var(--text);
-  border-radius: var(--r-md);
-  padding: var(--s-4) var(--s-5) var(--s-5);
-}
-.sheet__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s-4); }
-@media (max-width: 760px) {
-  .sheet {
-    top: auto; left: 0; right: 0; bottom: 0; width: 100%;
-    max-height: 90dvh;
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-    padding: var(--s-4) var(--s-4) calc(env(safe-area-inset-bottom, 0px) + var(--s-5));
-  }
-}
-
-.form { display: grid; gap: var(--s-4); }
-.form__row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
-.form__actions { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-2); }
-.form__actions .btn--primary { width: 100%; }
-
-/* ---------- Notiser ---------- */
-
-.toast-host { position: fixed; z-index: 70; right: var(--s-5); bottom: 96px; }
-@media (max-width: 760px) {
-  .toast-host { left: var(--s-2); right: var(--s-2); top: calc(env(safe-area-inset-top, 0px) + var(--s-2)); bottom: auto; }
-  .toast-host .toast { max-width: none; }
-}
-
-/* ---------- Foton ---------- */
-
-.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s-1); }
-.photo-grid button { position: relative; padding: 0; border: 0; aspect-ratio: 1; border-radius: var(--r-xs); overflow: hidden; background: var(--hover); cursor: pointer; }
-.photo-grid img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter var(--t-fast); }
-.photo-grid button:hover img { filter: brightness(1.05); }
-.photo-grid .photo-kind { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: var(--r-xs); background: var(--surface); }
-@media (max-width: 760px) { .photo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-
-.ba { position: relative; aspect-ratio: 4 / 3; max-width: 720px; border-radius: var(--r-sm); overflow: hidden; background: var(--hover); user-select: none; touch-action: pan-y; cursor: ew-resize; }
-.ba img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-.ba__line { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; transform: translateX(-50%); }
-.ba__knob {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 36px; height: 36px; border-radius: var(--r-xs);
-  background: #fff; color: #17141F;
-  display: flex; align-items: center; justify-content: center;
-}
-.ba__label { position: absolute; top: var(--s-3); padding: 2px var(--s-2); border-radius: var(--r-xs); background: var(--surface); color: var(--text); font-size: var(--fs-meta); font-weight: 600; }
-.pairs { display: grid; gap: var(--s-5); }
-
-.viewer { position: fixed; inset: 0; z-index: 60; background: var(--shell); display: flex; flex-direction: column; gap: var(--s-3); padding: calc(env(safe-area-inset-top, 0px) + var(--s-3)) var(--s-3) calc(env(safe-area-inset-bottom, 0px) + var(--s-3)); }
-.viewer img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
-.viewer__bar { display: flex; align-items: center; gap: var(--s-2); }
-
-/* ---------- Filer (kvitton, idébilder) ---------- */
-
-.file { display: flex; align-items: center; gap: var(--s-3); }
-.file__preview {
-  width: 72px; height: 72px; flex: none;
-  border-radius: var(--r-sm); overflow: hidden;
-  background: var(--hover); color: var(--text-2);
-  display: flex; align-items: center; justify-content: center;
-}
-.file__preview img { width: 100%; height: 100%; object-fit: cover; }
-.file__actions { display: flex; gap: var(--s-2); }
-.thumb {
-  flex: none; border-radius: var(--r-xs); overflow: hidden;
-  background: var(--hover); color: var(--text-2);
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-.details__row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; gap: var(--s-2); }
-
-/* ---------- Planritning ---------- */
-
-.plan { position: relative; max-width: 880px; border-radius: var(--r-sm); overflow: hidden; background: #fff; user-select: none; -webkit-user-select: none; }
-.plan img { display: block; width: 100%; height: auto; pointer-events: none; }
-.plan__layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.plan.is-editing .plan__layer { touch-action: none; }
-.plan__room { fill-opacity: .62; mix-blend-mode: multiply; cursor: pointer; stroke: none; transition: fill-opacity var(--t-fast); }
-.plan__room:hover { fill-opacity: .8; }
-.plan.is-editing .plan__room { fill-opacity: .45; }
-.plan .plan__room.is-selected { fill-opacity: .7; stroke: var(--accent); stroke-width: 2.5; vector-effect: non-scaling-stroke; cursor: move; mix-blend-mode: normal; }
-.plan__vertex { fill: #fff; stroke: var(--accent); stroke-width: 3; vector-effect: non-scaling-stroke; cursor: grab; }
-.plan__vertex.is-active { fill: var(--accent); }
-.plan__mid { fill: var(--accent); fill-opacity: .6; pointer-events: none; }
-.plan__vertex { pointer-events: none; }
-.plan__hit { fill: transparent; cursor: grab; }
-.plan__label {
-  position: absolute; transform: translate(-50%, -50%);
-  font: 400 12.5px var(--font-display); white-space: nowrap;
-  padding: 1px 6px; border-radius: var(--r-xs);
-  background: rgba(255, 255, 255, .85);
-  pointer-events: none;
-}
-.plan-tools { display: flex; flex-direction: column; gap: var(--s-3); margin-bottom: var(--s-3); }
-.btn:disabled { opacity: .4; cursor: default; }
-
-/* ---------- Inloggning ---------- */
-
-.auth { min-height: 100dvh; padding: var(--s-2); display: flex; }
-.auth .main { flex: 1; display: flex; flex-direction: column; padding: var(--s-6) var(--s-5); }
-.auth__form { width: 100%; max-width: 360px; margin-top: var(--s-6); }
-@media (max-width: 760px) { .auth .main { padding: var(--s-5) var(--s-4); } }
-
-.loading { display: flex; padding: var(--s-6) 0; }
-
-/* Sparar kvitton i bakgrunden */
-.saving {
-  position: fixed; z-index: 70; left: 50%; transform: translateX(-50%);
-  top: calc(env(safe-area-inset-top, 0px) + var(--s-3));
-  display: flex; align-items: center; gap: var(--s-2);
-  padding: 0 var(--s-4) 0 var(--s-2); border-radius: var(--r-sm);
-  background: var(--raised); box-shadow: 0 8px 28px rgba(23, 20, 31, .14);
-}
-.saving .loading { padding: 0; }
-.saving .loader { width: 40px; height: 30px; }
-
-.mode-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.mode-picker .tile { min-height: 96px; }
-
-.picked { width: 100%; max-height: 160px; object-fit: contain; border-radius: var(--r-sm); background: var(--hover); }
-.row__title .star { color: var(--warning); margin-right: 4px; vertical-align: -1px; }
-
-/* ---------- Filter, märkning och kolumner ---------- */
-
-.filter-bar { display: flex; gap: var(--s-2); align-items: center; margin: var(--s-3) 0 var(--s-2); }
-.filter-bar .select { width: auto; flex: none; }
-.tags { display: flex; gap: var(--s-1); flex-wrap: wrap; margin-top: 2px; }
-.tag { font-size: var(--fs-meta); color: var(--text-2); background: var(--hover); border-radius: var(--r-xs); padding: 0 6px; line-height: 20px; }
-.toggles { display: grid; gap: var(--s-2); }
-
-.columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); align-items: start; }
-
-/* Översikt: planritningen till vänster, panelen för hemmet eller rummet till höger. */
-.overview { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--s-5); align-items: start; }
-.panel { border-radius: var(--r-sm); padding: var(--s-4); box-shadow: inset 0 0 0 1px var(--hover); scroll-margin-top: var(--s-4); }
-.panel .section { margin-top: var(--s-4); }
-.tile.is-selected { box-shadow: inset 0 0 0 2px var(--tile-fg); }
-
-.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s-2) var(--s-4); margin: 0; }
-.facts dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
-
-.cv__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); margin-top: var(--s-4); }
-.cv__head .btn { margin-left: auto; }
-.cv__rooms { display: grid; gap: var(--s-4); }
-
-@media (max-width: 1024px) {
-  .columns, .overview { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 760px) {
-  .filter-bar { flex-wrap: wrap; }
-  .filter-bar .search { flex: 1 1 100%; }
-  .filter-bar .select { flex: 1 1 0; min-width: 0; }
-}
-
-/* Bostads-CV skrivs ut utan menyer. */
-@media print {
-  .sidebar, .topbar, .tabbar, .no-print, .section-head .chips { display: none !important; }
-  .app, .main { display: block; background: #fff; padding: 0; }
-  .row { break-inside: avoid; }
-}
-
-/* ---------- Läge: Projekt (bygga) och Boende (inreda och bo) ---------- */
-
-/* Färgerna för lägena finns i glasdelen längst ner: bara accent och ljusfläckar skiljer. */
 
 /* Bara när man byter läge glider färgerna över, så att vanlig hover inte blir trög. */
 :root.is-switching *, :root.is-switching *::before, :root.is-switching *::after {
@@ -289,401 +62,285 @@ a { color: inherit; }
   :root.is-switching *, :root.is-switching *::before, :root.is-switching *::after { transition: none !important; }
 }
 
-/* ---------- Listor som kort ---------- */
 
-/* Varje rad är ett eget kort med rundade hörn, så att listan inte flyter i tomma intet. */
-.rows { gap: var(--s-1); }
-.rows > .row { background: var(--raised); }
-.rows > .row:hover { background: var(--hover); }
+/* ---------- Menyrader (Lägg till, Mer) ---------- */
+
+.menu-row__icon {
+  width: 36px; height: 36px; flex: none; border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--fill); color: var(--text);
+}
+
+
+/* ---------- Rader man sveper för att ta bort ---------- */
+
+.swipe { position: relative; overflow: hidden; }
+.swipe__delete {
+  /* Bredden följer svepet (SwipeRow), så att det röda bara fyller ytan raden lämnar. */
+  position: absolute; inset: 1px 1px 1px auto;
+  border: 0; border-radius: 13px; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; white-space: nowrap;
+  background: var(--danger); color: #FFFFFF; font-weight: 600;
+}
+.swipe__front { position: relative; padding: 12px var(--s-4); touch-action: pan-y; }
+
+
+/* ---------- Sektioner som fälls ihop (Klart) ---------- */
 
 .collapsible__head {
   display: flex; align-items: center; gap: var(--s-3); width: 100%;
   padding: 0; margin-bottom: var(--s-3); border: 0; background: none; color: inherit; font: inherit; cursor: pointer; text-align: left;
 }
 .collapsible__head h2 { margin: 0 auto 0 0; }
-.collapsible__chevron { flex: none; color: var(--text-2); transition: transform var(--t-base) var(--ease); }
+.collapsible__head .meta, .collapsible__chevron { color: var(--text-2); }
+.collapsible__chevron { flex: none; transition: transform var(--t-base) var(--ease); }
 .collapsible__head[aria-expanded="false"] .collapsible__chevron { transform: rotate(-90deg); }
 
-/* Sök och filter: alltid synligt på dator, bakom en knapp på mobilen. */
+
+/* ---------- Sök och filter: alltid synligt på dator, bakom en knapp på mobilen ---------- */
+
+.filter-bar { display: flex; gap: var(--s-2); align-items: center; margin: var(--s-3) 0 var(--s-2); }
+.filter-bar .select { width: auto; flex: none; }
+.filter-bar .search, .filter-bar .select { -webkit-backdrop-filter: var(--glass-blur-light); backdrop-filter: var(--glass-blur-light); }
 .filter-toggle { display: none; position: relative; }
 .filter-toggle.is-active::after { content: ""; position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 @media (max-width: 760px) {
+  .filter-bar { flex-wrap: wrap; }
+  .filter-bar .search { flex: 1 1 100%; }
+  .filter-bar .select { flex: 1 1 0; min-width: 0; }
   .filter-toggle { display: inline-flex; }
   .filter-bar:not(.is-open) { display: none; }
 }
 
-.nav-label { padding: var(--s-4) var(--s-3) var(--s-1); }
-
-@media (max-width: 760px) {
-  .overview .section-head h2 { font-size: 17px; }
-  .overview .plan { max-width: 100%; }
-  .kpi__value { font-size: 17px; }
-}
-
-/* ---------- Ekonomi i Boendeläget ---------- */
-
-.kpi--button { border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: background var(--t-fast); }
-.kpi--button:hover { background: var(--hover); }
-.kpi--button .kpi__value { margin: 2px 0; }
-
-/* Bolånet: stapeln krymper i takt med skulden. */
-.loan { cursor: pointer; }
-.eco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin: var(--s-2) 0 var(--s-5); align-items: stretch; }
-@media (max-width: 1024px) { .eco-grid { grid-template-columns: minmax(0, 1fr); } }
-.value-now { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); }
-.loan .budget-track { height: 10px; margin-top: 0; }
-.loan__ends { display: flex; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-3); }
-.loan__ends > div:last-child { text-align: right; }
-
-@media (max-width: 760px) {
-  .kpis--three .kpi:nth-child(3) { grid-column: 1 / -1; }
-}
-
-.kpi__label { font-size: var(--fs-meta); font-weight: 600; }
-.el-price { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-2) var(--s-4); margin-top: var(--s-2); padding: var(--s-3) var(--s-4); border-radius: var(--r-sm); background: var(--hover); cursor: pointer; }
-.el-price > .meta { text-align: right; }
-@media (max-width: 760px) { .el-price > .meta { text-align: left; } }
-/* Beloppen hamnar i samma höjd även när förklaringen bryts på två rader. */
-.kpi--button { display: flex; flex-direction: column; }
-.kpi--button .kpi__value { margin-top: auto; padding-top: var(--s-1); }
-
-/* ---------- Granskning av kvitto ---------- */
-
-.review-head { display: flex; gap: var(--s-3); align-items: flex-start; }
-.review-head img { width: 72px; height: 96px; object-fit: cover; border-radius: var(--r-xs); background: var(--hover); display: block; }
-.review-head__fields { flex: 1; display: grid; gap: var(--s-2); min-width: 0; }
-.review-lines { display: grid; gap: var(--s-2); }
-.review-line { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-2); display: grid; gap: var(--s-2); }
-.review-line__top { display: grid; grid-template-columns: minmax(0, 1fr) 88px auto; gap: var(--s-2); align-items: center; }
-.review-line__price { text-align: right; }
-.review-line__bottom { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
-.review-line__bottom .select { flex: 1; min-width: 120px; }
-.review-total { display: flex; align-items: center; gap: var(--s-3); }
-.review-total .row__amount { margin-right: auto; }
-.link-btn { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; }
-
+.toggles { display: grid; gap: var(--s-2); }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); align-items: start; }
 .other-mode { display: block; margin-top: var(--s-5); }
-/* En kvittorad utan rum syns, så att man ser vad som är kvar att välja. */
-.review-line .select.is-empty { box-shadow: inset 0 0 0 1px var(--warning); }
-
-/* Förslag att en kvittorad stänger ett planerat köp. */
-.review-match { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: var(--s-2) var(--s-3); border-radius: var(--r-xs); background: var(--hover); font-size: var(--fs-meta); }
-.review-match__actions { display: flex; gap: var(--s-1); margin-left: auto; }
-.review-match.is-linked { box-shadow: inset 0 0 0 1px var(--accent); justify-content: space-between; }
 
 
-/* Bolån och din del i samma stapel: neutral skuld till vänster, grönt övervärde till höger. */
-.split-track { display: flex; height: 10px; margin-top: var(--s-2); border-radius: 2px; overflow: hidden; background: var(--hover); }
-.split-track__debt { background: var(--track); }
-.split-track__own { background: var(--success); }
+/* ---------- Paneler som glider in (botten på mobil, höger på dator) ---------- */
 
-/* Uträkningen av vinst och skatt i Bostads-CV. */
-.gain { background: var(--raised); border-radius: var(--r-sm); padding: var(--s-4); }
-.gain__row { display: flex; justify-content: space-between; gap: var(--s-3); padding: 2px 0; font-variant-numeric: tabular-nums; }
-.gain__sum { font-weight: 600; border-top: 1px solid var(--hover); margin-top: var(--s-1); padding-top: var(--s-2); }
-
-/* ==========================================================================
-   Premium glas — appen är alltid mörk.
-   Allt glas byggs av tokens här. Projekt och Boende skiljer sig bara i
-   accentfärgen och färgen på ljusfläckarna bakom glaset, aldrig i ytorna.
-   ========================================================================== */
-
-/* ---------- Tokens ---------- */
-
-:root[data-theme="dark"] {
-  color-scheme: dark;   /* rullgardinsmenyer och datumväljare blir mörka */
-
-  /* Grunden: nästan svart, utan färgton. Ytorna är genomskinliga vita lager. */
-  --shell: #0A0A0C;
-  --surface: rgba(255, 255, 255, .04);
-  --raised: rgba(255, 255, 255, .05);
-  --hover: rgba(255, 255, 255, .07);
-  --track: rgba(255, 255, 255, .14);
-  --text: #F5F5F7;
-  --text-2: rgba(255, 255, 255, .62);
-
-  /* Typsnitt */
-  --font: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-
-  /* Projekt: djup lila och elektrisk blå */
-  --accent: #7C5CFF;
-  --on-accent: #FFFFFF;
-  --nav-glow: #A78BFA;
-  --blob-1: #5B21B6;
-  --blob-2: #1D4ED8;
-  --blob-3: #7C3AED;
-
-  /* Glas */
-  --r-xl: 18px;
-  --glass-bg: rgba(255, 255, 255, .03);
-  --glass-bg-hover: rgba(255, 255, 255, .06);
-  --glass-chip: rgba(255, 255, 255, .06);
-  --glass-border: rgba(255, 255, 255, .08);   /* tunna avdelare inne i glas */
-  --glass-edge: linear-gradient(135deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, .07) 35%, rgba(255, 255, 255, .02) 65%, rgba(255, 255, 255, 0) 100%);
-  --glass-blur: blur(24px) saturate(150%);
-  --glass-shadow: 0 10px 40px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .04);
-  --glass-shadow-hover: 0 18px 50px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06);
-  --glass-text: #FFFFFF;
-  --glass-text-2: rgba(255, 255, 255, .7);
-  --field-glass: rgba(255, 255, 255, .04);
-  --field-glass-border: rgba(255, 255, 255, .09);
-  --sheet-bg: rgba(12, 12, 16, .55);
-  --scrim: rgba(0, 0, 0, .45);
-  --viewer-bg: rgba(0, 0, 0, .72);
-
-  /* Siffror och staplar */
-  --num: linear-gradient(180deg, #FFFFFF 35%, rgba(255, 255, 255, .62) 100%);
-  --emerald: #34D399;
-  --emerald-2: #10B981;
-  --bar-track: rgba(255, 255, 255, .07);
-  --bar-loan: linear-gradient(90deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, .75));
-}
-
-/* Boende: djup smaragdgrön och dämpad bärnsten. */
-:root[data-theme="dark"][data-mode="home"] {
-  --accent: #34D399;
-  --on-accent: #03140D;
-  --nav-glow: #6EE7B7;
-  --blob-1: #065F46;
-  --blob-2: #92400E;
-  --blob-3: #047857;
-}
-
-/* ---------- Bakgrund: suddiga ljusfläckar bakom allt ---------- */
-
-body { background: none; }
-.mesh { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-.mesh i {
-  position: absolute; border-radius: 50%;
-  filter: blur(150px);
-  transition: background-color 600ms ease;
-}
-.mesh i:nth-child(1) { width: 62vmax; height: 62vmax; left: -22vmax; top: -26vmax; background: var(--blob-1); opacity: .6; }
-.mesh i:nth-child(2) { width: 48vmax; height: 48vmax; right: -22vmax; top: 18vh; background: var(--blob-2); opacity: .42; }
-.mesh i:nth-child(3) { width: 38vmax; height: 38vmax; left: 30vw; bottom: -26vmax; background: var(--blob-3); opacity: .3; }
-
-/* ---------- Glaset ---------- */
-
-.glass {
-  position: relative;
-  background: var(--glass-bg);
-  border: 0;
-  border-radius: var(--r-xl);
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-  padding: var(--s-4);
-  color: var(--glass-text);
-  transition: box-shadow var(--t-fast) var(--ease-out), background-color var(--t-fast);
-}
-/* Kantljuset: ljust uppe till vänster, nästan osynligt nere till höger. */
-.glass::before {
-  content: ""; position: absolute; inset: 0; z-index: 1;
-  border-radius: inherit; padding: 1px;
-  background: var(--glass-edge);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-}
-.glass--interactive { cursor: pointer; }
-.glass--interactive:hover { background-color: var(--glass-bg-hover); box-shadow: var(--glass-shadow-hover); }
-.glass--flush { padding: 0; }
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass { background: rgba(20, 20, 24, .92); }
-}
-
-/* Text i glas: vit för siffror och rubriker, ljusgrå för resten. */
-.glass .meta { color: var(--glass-text-2); }
-.glass h2, .glass h3, .glass .kpi__label, .glass .row__title, .glass .row__amount, .glass .facts dd { color: var(--glass-text); }
-.glass .is-done .row__title { color: var(--glass-text-2); }
-
-/* ---------- Skalet: sidomeny, huvudyta, bottenmeny ---------- */
-
-.main { background: transparent; box-shadow: none; border-radius: var(--r-xl); }
-.glass.sidebar { padding: var(--s-3) var(--s-2); }
-.wordmark, .display, .tile__name { font-weight: 800; letter-spacing: -.02em; }
-.nav-item:hover { background: var(--glass-chip); color: var(--text); }
-.nav-item.is-active, .tabbar__item.is-active {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--nav-glow);
-  text-shadow: 0 0 14px color-mix(in srgb, var(--nav-glow) 55%, transparent);
-}
-.nav-item.is-active svg, .tabbar__item.is-active svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--nav-glow) 70%, transparent)); }
-.glass.tabbar { padding: 6px; border-radius: 22px; }
-
-/* ---------- Knappar och val ---------- */
-
-/* Accentfärgen lyser bara här: Lägg till, aktiva menyval, staplar. */
-.btn--primary, .tabbar__add {
-  background: var(--accent); color: var(--on-accent);
-  font-weight: 700;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .28),
-    0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent),
-    0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
-  transition: box-shadow var(--t-fast), transform var(--t-fast);
-}
-.btn--primary:hover, .tabbar__add:hover {
-  opacity: 1;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .32),
-    0 8px 26px color-mix(in srgb, var(--accent) 60%, transparent),
-    0 0 56px color-mix(in srgb, var(--accent) 42%, transparent);
-}
-.tabbar__add { border-radius: 16px; }
-.btn--secondary, .chip { background: var(--glass-chip); color: var(--text); }
-.btn--secondary:hover, .chip:hover { background: var(--glass-bg-hover); }
-.btn--ghost { color: var(--text); }
-.btn--ghost:hover, .btn--danger:hover { background: var(--glass-chip); }
-.chip.is-active, .chip.is-active:hover { background: #FFFFFF; color: #0A0A0C; }
-.switch__track { background-color: var(--glass-chip); }
-.menu-row__icon, .tag { background: var(--glass-chip); color: var(--glass-text); }
-.tag { color: var(--glass-text-2); }
-.row__link { color: var(--glass-text-2); }
-.row__link:hover, .status-btn:hover { color: var(--glass-text); background: var(--glass-chip); }
-
-/* ---------- Siffror ---------- */
-
-.kpi__value {
-  font-weight: 800; letter-spacing: -.025em;
-  background: var(--num);
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent;
-}
-.kpi__value.is-positive { background-image: linear-gradient(180deg, #6EE7B7 0%, var(--emerald-2) 100%); }
-.kpi__value.is-negative { background-image: linear-gradient(180deg, #FCA5A5 0%, var(--danger) 100%); }
-.row__amount { font-weight: 700; }
-
-/* ---------- Kort på Översikt och i Avtal ---------- */
-
-.glass.kpi { padding: var(--s-3) var(--s-4); display: flex; flex-direction: column; }
-.glass.kpi .kpi__value { margin-top: auto; padding-top: var(--s-1); }
-.glass.el-price { padding: var(--s-3) var(--s-4); margin-top: var(--s-2); }
-@media (max-width: 760px) { .glass.kpi { padding: var(--s-2) var(--s-3); } }
-.plan-card { padding: var(--s-4); }
-.kpis + .overview { margin-top: var(--s-4); }
-.panel.glass { padding: var(--s-4); }
-.gain.glass .gain__sum { border-top-color: var(--glass-border); }
-
-/* Staplarna: runda, neutral vit för lånet, smaragdgrönt med glöd för din del. */
-.glass .budget-track, .glass .split-track { height: 10px; border-radius: 999px; background: var(--bar-track); }
-.glass .budget-track > span { border-radius: 999px; }
-.glass .budget-track .is-spent { background: var(--bar-loan); }
-.glass .split-track { gap: 3px; }
-.glass .split-track > span { border-radius: 999px; transition: width var(--t-base) var(--ease); }
-.glass .split-track__debt { background: var(--bar-loan); }
-.glass .split-track__own {
-  background: linear-gradient(90deg, var(--emerald-2), var(--emerald));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--emerald) 60%, transparent);
-}
-
-/* ---------- Listor ---------- */
-
-/* Rader: lättare blur än de stora korten, så att långa listor scrollar mjukt på telefonen.
-   Bakgrunden är redan kraftigt suddig, så skillnaden syns inte. */
-.rows { gap: var(--s-2); }
-.rows > .glass { -webkit-backdrop-filter: blur(12px) saturate(150%); backdrop-filter: blur(12px) saturate(150%); border-radius: 14px; }
-.glass.row { padding: 12px var(--s-4); }
-.rows > .row:not(.glass) { background: var(--glass-bg); box-shadow: inset 0 0 0 1px var(--glass-border); border-radius: 14px; }
-.rows > .row:not(.glass):hover { background: var(--glass-bg-hover); }
-.swipe.glass .swipe__front { background: transparent; padding: 12px var(--s-4); }
-.swipe.glass .swipe__front:hover { background: transparent; }
-.swipe.glass .swipe__delete { border-radius: 13px; justify-content: center; padding: 0; overflow: hidden; white-space: nowrap; }
-
-/* Sektioner (Planerat, Klart, månader): vita rubriker, ljusgrå summor. */
-.section-head h1, .section-head h2, .section-head h3, .collapsible__head h2 { color: var(--glass-text); }
-.section-head .meta, .collapsible__head .meta, .section-head .row__amount, .collapsible__chevron { color: var(--glass-text-2); }
-
-/* ---------- Fält ---------- */
-
-.input, .select, .textarea, .search {
-  background-color: var(--field-glass);
-  box-shadow: inset 0 0 0 1px var(--field-glass-border);
-  color: var(--glass-text);
-  border-radius: 12px;
-}
-.filter-bar .search, .filter-bar .select { -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-.search { color: var(--glass-text-2); }
-.search input { color: var(--glass-text); }
-.input::placeholder, .textarea::placeholder, .search input::placeholder { color: var(--glass-text-2); opacity: .8; }
-.input:focus, .select:focus, .textarea:focus, .search:focus-within {
-  background-color: var(--glass-bg-hover);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 75%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
-}
-.field.has-error .input { box-shadow: inset 0 0 0 1px var(--danger); }
-.field__label { color: var(--glass-text); }
-
-/* ---------- Paneler som glider in, notiser ---------- */
-
-.backdrop { background: var(--scrim); }
+.backdrop { position: fixed; inset: 0; z-index: 50; background: var(--scrim); }
 /* Panelen scrollar, så kantljuset görs med inre skuggor i stället för ::before (som skulle följa med i scrollen). */
 .glass.sheet {
-  position: fixed;
-  background: var(--sheet-bg);
-  -webkit-backdrop-filter: blur(32px) saturate(160%); backdrop-filter: blur(32px) saturate(160%);
-  border-radius: 22px;
+  position: fixed; z-index: 51; top: var(--s-2); right: var(--s-2); bottom: var(--s-2);
+  width: min(420px, calc(100% - 16px));
+  overflow-y: auto;
   padding: var(--s-4) var(--s-5) var(--s-5);
-  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .16), inset -1px -1px 0 rgba(255, 255, 255, .03), 0 24px 70px rgba(0, 0, 0, .6);
+  border-radius: var(--r-sheet);
+  background: var(--sheet-bg);
+  -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: var(--glass-edge-inset), var(--shadow-float);
 }
 .glass.sheet::before { display: none; }
+.sheet__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s-4); }
 @media (max-width: 760px) {
   .glass.sheet {
-    border-radius: 22px 22px 0 0;
+    top: auto; left: 0; right: 0; bottom: 0; width: 100%;
+    max-height: 90dvh;
+    border-radius: var(--r-sheet) var(--r-sheet) 0 0;
     padding: var(--s-4) var(--s-4) calc(env(safe-area-inset-bottom, 0px) + var(--s-5));
   }
 }
-.toast {
-  background: var(--sheet-bg); color: var(--glass-text);
-  border-radius: 16px;
-  -webkit-backdrop-filter: blur(28px) saturate(160%); backdrop-filter: blur(28px) saturate(160%);
-  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .16), inset -1px -1px 0 rgba(255, 255, 255, .03), 0 16px 48px rgba(0, 0, 0, .5);
+
+.form { display: grid; gap: var(--s-4); }
+.form__row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+.form__actions { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-2); }
+.form__actions .btn--primary { width: 100%; }
+
+
+/* ---------- Notiser och sparande i bakgrunden ---------- */
+
+.toast-host { position: fixed; z-index: 70; right: var(--s-5); bottom: 96px; }
+@media (max-width: 760px) {
+  .toast-host { left: var(--s-2); right: var(--s-2); top: calc(env(safe-area-inset-top, 0px) + var(--s-2)); bottom: auto; }
+  .toast-host .toast { max-width: none; }
 }
-.toast__body { color: var(--glass-text-2); }
 
-/* ---------- Bilder ---------- */
+.saving {
+  position: fixed; z-index: 70; left: 50%; transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top, 0px) + var(--s-3));
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 0 var(--s-4) 0 var(--s-2); border-radius: var(--r-field);
+  background: var(--sheet-bg);
+  -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: var(--glass-edge-inset), 0 8px 28px rgba(0, 0, 0, .4);
+}
+.saving .loading { padding: 0; }
+.saving .loader { width: 40px; height: 30px; }
+.loading { display: flex; padding: var(--s-6) 0; }
 
-.photo-grid { gap: var(--s-2); }
-.photo-grid button { border-radius: 12px; background: var(--glass-bg); box-shadow: inset 0 0 0 1px var(--glass-border); }
-.photo-grid .photo-kind, .ba__label {
-  background: rgba(8, 8, 12, .55); color: #FFFFFF;
+
+/* ---------- Foton ---------- */
+
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s-2); }
+.photo-grid button { position: relative; padding: 0; border: 0; aspect-ratio: 1; border-radius: var(--r-field); overflow: hidden; background: var(--glass); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+.photo-grid img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter var(--t-fast); }
+.photo-grid button:hover img { filter: brightness(1.05); }
+@media (max-width: 760px) { .photo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Etiketter ovanpå bilder: frostat mörkt glas. */
+.photo-kind, .ba__label, .plan__label {
+  color: #FFFFFF; background: var(--label-bg);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  border-radius: 8px;
+  border-radius: var(--r-label);
 }
+.photo-grid .photo-kind { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; }
+
+/* Före och efter med reglage. */
+.ba { position: relative; aspect-ratio: 4 / 3; max-width: 720px; border-radius: var(--r-field); overflow: hidden; background: var(--glass); user-select: none; touch-action: pan-y; cursor: ew-resize; }
+.ba img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.ba__line { position: absolute; top: 0; bottom: 0; width: 2px; background: #FFFFFF; transform: translateX(-50%); }
+.ba__knob {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 36px; height: 36px; border-radius: var(--r-xs);
+  background: #FFFFFF; color: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.ba__label { position: absolute; top: var(--s-3); padding: 2px var(--s-2); font-size: var(--fs-meta); font-weight: 600; }
+
+/* Stor bild: mörk frostad botten. */
 .viewer {
-  background: var(--viewer-bg);
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column; gap: var(--s-3);
+  padding: calc(env(safe-area-inset-top, 0px) + var(--s-3)) var(--s-3) calc(env(safe-area-inset-bottom, 0px) + var(--s-3));
+  background: var(--overlay);
   -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%);
-  color: var(--glass-text);
 }
-.viewer img { border-radius: 12px; }
-.viewer .btn--ghost { color: var(--glass-text); background: var(--glass-chip); }
+.viewer img { flex: 1; min-height: 0; width: 100%; object-fit: contain; border-radius: var(--r-field); }
+.viewer__bar { display: flex; align-items: center; gap: var(--s-2); }
+.viewer .btn--ghost { background: var(--fill); }
+
+
+/* ---------- Filer (kvitton, idébilder) ---------- */
+
+.file { display: flex; align-items: center; gap: var(--s-3); }
+.file__preview, .thumb { overflow: hidden; background: var(--fill); color: var(--text-2); display: flex; align-items: center; justify-content: center; }
+.file__preview { width: 72px; height: 72px; flex: none; border-radius: var(--r-field); }
+.file__preview img, .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.file__actions { display: flex; gap: var(--s-2); }
+.thumb { flex: none; border-radius: var(--r-xs); display: inline-flex; }
+.picked { width: 100%; max-height: 160px; object-fit: contain; border-radius: var(--r-field); background: var(--fill); }
+.details__row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; gap: var(--s-2); }
+
 
 /* ---------- Planritningen ---------- */
 
 /* Den vita ritningen görs genomskinlig med SVG-filtret #plan-ink i index.html: det vita försvinner in i glaset
    och linjerna blir ljusa. (Invert + blandningsläge fungerar inte, glaset isolerar bilden.)
    Rummens färger ligger i ett eget lager ovanpå och påverkas inte. */
-.plan { background: transparent; }
-.plan img { filter: url(#plan-ink); mix-blend-mode: normal; }
-.plan__room { mix-blend-mode: normal; fill-opacity: .32; }
+.plan { position: relative; max-width: 880px; border-radius: var(--r-sm); overflow: hidden; user-select: none; -webkit-user-select: none; }
+.plan img { display: block; width: 100%; height: auto; pointer-events: none; filter: url(#plan-ink); }
+.plan__layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.plan.is-editing .plan__layer { touch-action: none; }
+.plan__room { fill-opacity: .32; cursor: pointer; stroke: none; transition: fill-opacity var(--t-fast); }
 .plan__room:hover { fill-opacity: .48; }
 .plan.is-editing .plan__room { fill-opacity: .28; }
-.plan .plan__room.is-selected { fill-opacity: .5; }
+.plan .plan__room.is-selected { fill-opacity: .5; stroke: var(--accent); stroke-width: 2.5; vector-effect: non-scaling-stroke; cursor: move; }
+.plan__vertex { fill: #FFFFFF; stroke: var(--accent); stroke-width: 3; vector-effect: non-scaling-stroke; cursor: grab; pointer-events: none; }
+.plan__vertex.is-active { fill: var(--accent); }
+.plan__mid { fill: var(--accent); fill-opacity: .6; pointer-events: none; }
+.plan__hit { fill: transparent; cursor: grab; }
 .plan__label {
-  background: rgba(8, 8, 12, .6); color: #FFFFFF !important;   /* rummets mörka textfärg syns inte på mörkt */
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  font-weight: 600; border-radius: 6px;
+  position: absolute; transform: translate(-50%, -50%);
+  padding: 1px 6px;
+  font-size: var(--fs-small); font-weight: 600; white-space: nowrap;
+  pointer-events: none;
+}
+.plan-tools { display: flex; flex-direction: column; gap: var(--s-3); margin-bottom: var(--s-3); }
+
+
+/* ---------- Översikt: planritningen till vänster, panelen för hemmet eller rummet till höger ---------- */
+
+.overview { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--s-5); align-items: start; }
+.kpis + .overview { margin-top: var(--s-4); }
+.plan-card { padding: var(--s-4); }
+.panel { scroll-margin-top: var(--s-4); }
+.panel .section { margin-top: var(--s-4); }
+.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s-2) var(--s-4); margin: 0; }
+.facts dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; color: var(--text); }
+@media (max-width: 1024px) {
+  .columns, .overview { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .overview .section-head h2 { font-size: 17px; }
+  .overview .plan { max-width: 100%; }
 }
 
-/* ---------- Utskrift (Bostads-CV): alltid mörk text på vitt ---------- */
+
+/* ---------- Ekonomi i Boendeläget ---------- */
+
+.eco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin: var(--s-2) 0 var(--s-5); align-items: stretch; }
+@media (max-width: 1024px) { .eco-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .kpis--three .kpi:nth-child(3) { grid-column: 1 / -1; } }
+
+.glass.el-price {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-2) var(--s-4);
+  margin-top: var(--s-2); padding: var(--s-3) var(--s-4);
+}
+.el-price > .meta { text-align: right; }
+@media (max-width: 760px) { .el-price > .meta { text-align: left; } }
+
+.loan__ends { display: flex; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-3); }
+.loan__ends > div:last-child { text-align: right; }
+
+/* Staplarna: runda, neutral vit för lånet, smaragdgrönt med glöd för din del. */
+.budget-track, .split-track { height: 10px; border-radius: 999px; overflow: hidden; background: var(--bar-track); }
+.budget-track { position: relative; }
+.budget-track > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; transition: width var(--t-base) var(--ease); }
+.budget-track .is-spent { background: var(--bar-loan); }
+.split-track { display: flex; gap: 3px; margin-top: var(--s-2); }
+.split-track > span { border-radius: 999px; transition: width var(--t-base) var(--ease); }
+.split-track__debt { background: var(--bar-loan); }
+.split-track__own {
+  background: linear-gradient(90deg, var(--success-2), var(--success));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--success) 60%, transparent);
+}
+
+
+/* ---------- Granskning av kvitto ---------- */
+
+.review-head { display: flex; gap: var(--s-3); align-items: flex-start; }
+.review-head img { width: 72px; height: 96px; object-fit: cover; border-radius: var(--r-xs); background: var(--fill); display: block; }
+.review-head__fields { flex: 1; display: grid; gap: var(--s-2); min-width: 0; }
+.review-lines { display: grid; gap: var(--s-2); }
+.review-line { background: var(--glass); box-shadow: inset 0 0 0 1px var(--line); border-radius: var(--r-row); padding: var(--s-2); display: grid; gap: var(--s-2); }
+.review-line__top { display: grid; grid-template-columns: minmax(0, 1fr) 88px auto; gap: var(--s-2); align-items: center; }
+.review-line__price { text-align: right; }
+.review-line__bottom { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.review-line__bottom .select { flex: 1; min-width: 120px; }
+/* En kvittorad utan rum syns, så att man ser vad som är kvar att välja. */
+.review-line .select.is-empty { box-shadow: inset 0 0 0 1px var(--warning); }
+.review-total { display: flex; align-items: center; gap: var(--s-3); }
+.review-total .row__amount { margin-right: auto; }
+/* Förslag att en kvittorad stänger ett planerat köp. */
+.review-match { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); padding: var(--s-2) var(--s-3); border-radius: var(--r-field); background: var(--fill); font-size: var(--fs-meta); }
+.review-match__actions { display: flex; gap: var(--s-1); margin-left: auto; }
+.review-match.is-linked { box-shadow: inset 0 0 0 1px var(--accent); justify-content: space-between; }
+
+
+/* ---------- Bostads-CV ---------- */
+
+.cv__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); margin-top: var(--s-4); }
+.cv__head .btn { margin-left: auto; }
+.cv__rooms { display: grid; gap: var(--s-4); }
+.gain__row { display: flex; justify-content: space-between; gap: var(--s-3); padding: 2px 0; }
+.gain__sum { font-weight: 600; border-top: 1px solid var(--line); margin-top: var(--s-1); padding-top: var(--s-2); }
+
+
+/* ---------- Inloggning ---------- */
+
+.auth { min-height: 100dvh; padding: var(--s-2); display: flex; }
+.auth .main { flex: 1; display: flex; flex-direction: column; padding: var(--s-6) var(--s-5); }
+.auth__form { width: 100%; max-width: 360px; margin-top: var(--s-6); }
+@media (max-width: 760px) { .auth .main { padding: var(--s-5) var(--s-4); } }
+
+
+/* ---------- Utskrift (Bostads-CV) utan menyer, glas och ljus ---------- */
 
 @media print {
-  :root[data-theme="dark"], :root[data-theme="dark"][data-mode="home"] {
-    --text: #17141F; --text-2: #5E5A6E; --glass-text: #17141F; --glass-text-2: #5E5A6E;
-    --glass-bg: transparent; --glass-border: #D3CFE0; --glass-chip: #ECEAF4; --raised: #fff; --hover: #ECEAF4;
-    --num: linear-gradient(#17141F, #17141F);
-  }
-  .mesh, .glass::before { display: none; }
-  .glass { -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border: 1px solid #D3CFE0; }
+  .sidebar, .topbar, .tabbar, .no-print, .section-head .chips, .mesh, .glass::before { display: none !important; }
+  .app, .main { display: block; padding: 0; }
+  .glass { -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border: 1px solid var(--line); }
+  .row { break-inside: avoid; }
 }

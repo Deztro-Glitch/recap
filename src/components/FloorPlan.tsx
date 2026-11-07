@@ -372,7 +372,7 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
           )}
         </svg>
         {labels.map((l) => (
-          <span key={l.id} className="plan__label" style={{ left: `${l.at.x * 100}%`, top: `${l.at.y * 100}%`, color: `var(--c-${l.room.color}-fg)` }}>
+          <span key={l.id} className="plan__label" style={{ left: `${l.at.x * 100}%`, top: `${l.at.y * 100}%` }}>
             {l.room.name}
           </span>
         ))}

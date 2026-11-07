@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import { App } from './App'
 import { ToastProvider } from './components/ui'
+import './theme.css'
 import './design.css'
 import './app.css'
 

@@ -1,92 +1,16 @@
 /* ==========================================================================
-   design.css — Teddys designsystem
-   Läs CLAUDE.md för reglerna. Ändra värden här, inte i enskilda komponenter.
+   design.css — grundkomponenterna (glas, knappar, fält, rader, kort).
+   Bygger på Teddys designsystem (docs/designsystem/CLAUDE.md) med glastemat.
+   Inga egna färgvärden här: allt kommer från theme.css.
    ========================================================================== */
 
 
 /* --------------------------------------------------------------------------
-   1. Tokens — ljust läge (standard)
-   -------------------------------------------------------------------------- */
-:root {
-  /* Accent: den ENDA färgen som betyder "framåt / aktivt / valt".
-     Byt bara dessa två för en kunds varumärkesfärg. */
-  --accent: #6B4EFF;
-  --on-accent: #FFFFFF;
-
-  /* Ytor — lila-tonade neutraler, aldrig ren grå */
-  --shell: #E7E4F0;        /* appens yttersta bakgrund, sidomeny, processlist */
-  --surface: #F6F5FA;      /* huvudytan där innehållet bor */
-  --raised: #FFFFFF;       /* enstaka upphöjda ytor, t.ex. notiser */
-  --hover: #ECEAF4;        /* hover, valda rader, fyllda fält */
-  --track: #D3CFE0;        /* inaktiva steg, avstängd växlare */
-
-  /* Text */
-  --text: #17141F;
-  --text-2: #5E5A6E;       /* bara för detaljer som hör till något större */
-
-  /* Status */
-  --success: #1F8A4C;
-  --warning: #B7791F;
-  --danger: #C2362F;
-
-  /* Innehållsfärger — för kategorier, fraktioner, typer. Par: bakgrund + text */
-  --c-sand-bg: #E9CBA3;  --c-sand-fg: #4A2E0F;
-  --c-coral-bg: #F2A88E; --c-coral-fg: #5A1E0C;
-  --c-steel-bg: #BAC6D8; --c-steel-fg: #1E2A3D;
-  --c-sun-bg: #F0D86E;   --c-sun-fg: #4A3B00;
-  --c-mint-bg: #A9DCC1;  --c-mint-fg: #0E3D27;
-  --c-sky-bg: #A2C7F0;   --c-sky-fg: #0D2E57;
-  --c-lilac-bg: #CDBFFF; --c-lilac-fg: #2A1A6B;
-  --c-rose-bg: #F3B6CC;  --c-rose-fg: #5C1630;
-
-  /* Typografi */
-  --font: "Archivo", system-ui, sans-serif;
-  --font-display: "Archivo Black", "Archivo", sans-serif;
-  --fs-title: 20px;      /* sidrubrik */
-  --fs-section: 16px;    /* sektionsrubrik */
-  --fs-body: 14px;
-  --fs-meta: 13px;
-  --fs-small: 12.5px;    /* absolut minsta storlek */
-
-  /* Form */
-  --r-xs: 4px;           /* knappar, kryssrutor */
-  --r-sm: 6px;           /* rutor, fält, rader, navigering */
-  --r-md: 8px;           /* huvudytan */
-  --r-lg: 12px;          /* appskalet */
-
-  /* Avstånd */
-  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px;
-
-  /* Rörelse — lugn och mjuk */
-  --ease: cubic-bezier(.65, 0, .35, 1);
-  --ease-out: cubic-bezier(.2, .8, .2, 1);
-  --t-fast: 300ms;
-  --t-base: 500ms;
-}
-
-/* --------------------------------------------------------------------------
-   2. Mörkt läge — sätt data-theme="dark" på <html>
-   -------------------------------------------------------------------------- */
-:root[data-theme="dark"] {
-  --accent: #9A85FF;
-  --on-accent: #FFFFFF;
-  --shell: #0E0C15;
-  --surface: #1A1724;
-  --raised: #221E2F;
-  --hover: #252134;
-  --track: #353047;
-  --text: #F1EFF7;
-  --text-2: #A9A4BC;
-  --success: #4CC985;
-  --warning: #E6B450;
-  --danger: #F0716A;
-}
-
-/* --------------------------------------------------------------------------
-   3. Bas
+   1. Bas
    -------------------------------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; }
 
+html { background: var(--bg); }
 html, body { margin: 0; }
 [hidden] { display: none !important; }
 
@@ -95,36 +19,71 @@ body {
   font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text);
-  background: var(--shell);
+  background: none;                     /* ljusfläckarna (.mesh) ligger mellan html och innehållet */
   font-variant-numeric: tabular-nums;   /* siffror i jämna kolumner */
   -webkit-font-smoothing: antialiased;
-  transition: background var(--t-base), color var(--t-base);
 }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
 
-h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
 h1 { font-size: var(--fs-title); }
 h2 { font-size: var(--fs-section); }
 h3 { font-size: var(--fs-body); }
 p { margin: 0; }
 
 .meta { font-size: var(--fs-meta); color: var(--text-2); }
-.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; }
-.wordmark { font-family: var(--font-display); font-size: 18px; }
+.wordmark { font-size: 18px; font-weight: var(--fw-number); letter-spacing: -.02em; }
 .wordmark span { color: var(--accent); }
 
+/* Ljuset bakom glaset: stora suddiga färgfläckar (markup i index.html). */
+.mesh { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.mesh i { position: absolute; border-radius: 50%; filter: blur(150px); transition: background-color 600ms ease; }
+.mesh i:nth-child(1) { width: 62vmax; height: 62vmax; left: -22vmax; top: -26vmax; background: var(--blob-1); opacity: .6; }
+.mesh i:nth-child(2) { width: 48vmax; height: 48vmax; right: -22vmax; top: 18vh; background: var(--blob-2); opacity: .42; }
+.mesh i:nth-child(3) { width: 38vmax; height: 38vmax; left: 30vw; bottom: -26vmax; background: var(--blob-3); opacity: .3; }
+
+
 /* --------------------------------------------------------------------------
-   4. Appskal — sidomeny | huvudyta, processlist längst ner
+   2. Glas — används via komponenten GlassCard eller klassen .glass
+   -------------------------------------------------------------------------- */
+.glass {
+  position: relative;
+  padding: var(--s-4);
+  border-radius: var(--r-card);
+  background: var(--glass);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  transition: box-shadow var(--t-fast) var(--ease-out), background-color var(--t-fast);
+}
+.glass::before {
+  content: ""; position: absolute; inset: 0; z-index: 1;
+  border-radius: inherit; padding: 1px;
+  background: var(--glass-edge);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.glass--interactive { cursor: pointer; }
+.glass--interactive:hover { background-color: var(--glass-hover); box-shadow: var(--shadow-hover); }
+.glass--flush { padding: 0; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: rgba(20, 20, 24, .92); }
+}
+
+
+/* --------------------------------------------------------------------------
+   3. Appskal — sidomeny | huvudyta
    -------------------------------------------------------------------------- */
 .app {
-  min-height: 100vh;
   display: grid;
   grid-template-columns: 200px minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--s-2);
-  padding: var(--s-2);
-  background: var(--shell);
 }
-.app--no-process { grid-template-rows: minmax(0, 1fr); }
 
 .sidebar { display: flex; flex-direction: column; gap: 2px; padding: var(--s-3) var(--s-2); }
 .sidebar .wordmark { padding: var(--s-1) var(--s-3) var(--s-4); }
@@ -138,33 +97,25 @@ p { margin: 0; }
   text-decoration: none; cursor: pointer;
   transition: color var(--t-fast), background var(--t-fast);
 }
-.nav-item:hover { color: var(--text); }
-.nav-item.is-active { background: var(--surface); color: var(--text); font-weight: 600; }
+.nav-item svg { flex: none; }
+.nav-item:hover { color: var(--text); background: var(--fill); }
+.nav-item.is-active {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-glow);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--accent-glow) 55%, transparent);
+}
+.nav-item.is-active svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-glow) 70%, transparent)); }
 
 .main {
-  background: var(--surface);
-  border-radius: var(--r-md);
+  position: relative;
+  border-radius: var(--r-card);
   padding: var(--s-4) var(--s-5) var(--s-5);
   min-width: 0;
   overflow: auto;
-  transition: background var(--t-base);
 }
 
 .topbar { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-5); }
-
-.search {
-  flex: 1; max-width: 420px;
-  display: flex; align-items: center; gap: var(--s-2);
-  background: var(--hover);
-  border-radius: var(--r-sm);
-  padding: 0 var(--s-3);
-  color: var(--text-2);
-}
-.topbar > .search { margin-right: auto; }
-.search input {
-  flex: 1; border: 0; background: transparent; outline: none;
-  font: inherit; color: var(--text); padding: 10px 0;
-}
 
 .avatar {
   width: 32px; height: 32px; border-radius: 50%;
@@ -179,49 +130,12 @@ p { margin: 0; }
   gap: var(--s-3); flex-wrap: wrap;
   margin-bottom: var(--s-3);
 }
+.section-head h1, .section-head h2 { margin-right: auto; }
+.section-head .meta, .section-head .row__amount { color: var(--text-2); }
+
 
 /* --------------------------------------------------------------------------
-   5. Processlisten — SIGNATUREN. Används i alla flöden med flera steg.
-   -------------------------------------------------------------------------- */
-.processbar {
-  grid-column: 1 / -1;
-  display: flex; align-items: center; gap: var(--s-4);
-  padding: var(--s-2) var(--s-3);
-}
-.processbar__context { width: 180px; flex: none; min-width: 0; }
-.processbar__context strong { display: block; font-size: var(--fs-body); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.processbar__nav {
-  width: 34px; height: 34px; flex: none;
-  border: 0; border-radius: 50%;
-  background: var(--surface); color: var(--text);
-  display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 18px;
-  transition: background var(--t-fast);
-}
-.processbar__nav:hover { background: var(--hover); }
-
-.steps { flex: 1; display: flex; gap: var(--s-1); min-width: 0; }
-.step { flex: 1; cursor: pointer; min-width: 0; }
-.step__track {
-  display: block; height: 4px; border-radius: 2px;
-  background: var(--track);
-  transition: background var(--t-base) var(--ease);
-}
-.step__label {
-  display: block; margin-top: 6px;
-  font-size: var(--fs-small); color: var(--text-2);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.step.is-done .step__track,
-.step.is-current .step__track { background: var(--accent); }
-.step.is-current .step__label { color: var(--text); font-weight: 600; }
-
-.processbar__total { text-align: right; flex: none; }
-.processbar__total .display { font-size: 17px; display: block; }
-
-/* --------------------------------------------------------------------------
-   6. Knappar — EN primärknapp per vy
+   4. Knappar — en primärknapp per vy, och den lyser i accentfärgen
    -------------------------------------------------------------------------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
@@ -229,24 +143,37 @@ p { margin: 0; }
   padding: 11px 16px;
   font: 600 var(--fs-body) var(--font);
   cursor: pointer; text-decoration: none;
-  transition: background var(--t-fast), color var(--t-fast);
+  transition: background var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
 }
-.btn--secondary { background: var(--hover); color: var(--text); }
-.btn--secondary:hover { background: var(--track); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn--secondary { background: var(--fill); color: var(--text); }
+.btn--secondary:hover { background: var(--glass-hover); }
 .btn--ghost { background: transparent; color: var(--text); }
-.btn--ghost:hover { background: var(--hover); }
+.btn--ghost:hover { background: var(--fill); }
+.btn--danger { background: transparent; color: var(--danger); }
+.btn--danger:hover { background: var(--fill); }
 
-/* Primär: versaler, krusning vid hover */
+/* Primär: versaler, glöd och krusning vid hover. Samma glöd på plusknappen i bottenmenyn. */
+.btn--primary, .tabbar__add {
+  background: var(--accent); color: var(--on-accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.btn--primary:hover, .tabbar__add:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .32),
+    0 8px 26px color-mix(in srgb, var(--accent) 60%, transparent),
+    0 0 56px color-mix(in srgb, var(--accent) 42%, transparent);
+}
 .btn--primary {
   justify-content: space-between; gap: 24px;
   min-width: 160px;
   padding: 14px 18px;
-  background: var(--accent); color: var(--on-accent);
-  font-size: 12.5px; letter-spacing: 1.2px; text-transform: uppercase;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
 }
-.btn--primary:hover { opacity: .95; }
 .btn--primary .ripple { width: 0; height: 0; border-radius: 100%; margin-right: 6px; }
 .btn--primary:hover .ripple { animation: ripple 1.8s var(--ease-out) infinite; }
 @keyframes ripple {
@@ -254,121 +181,141 @@ p { margin: 0; }
   100% { box-shadow: 0 0 0 20px rgba(255,255,255,.12), 0 0 0 40px rgba(255,255,255,.06), 0 0 0 60px rgba(255,255,255,.03), 0 0 0 80px rgba(255,255,255,0); }
 }
 
-.btn--danger { background: transparent; color: var(--danger); }
-.btn--danger:hover { background: var(--hover); }
+.link-btn { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; }
+
 
 /* --------------------------------------------------------------------------
-   7. Filterchips
+   5. Chips — det valda är vitt
    -------------------------------------------------------------------------- */
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
   border: 0; border-radius: 999px;
   padding: 6px 12px;
-  background: var(--hover); color: var(--text);
+  background: var(--fill); color: var(--text);
   font: 600 var(--fs-meta) var(--font);
   cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast);
 }
-.chip.is-active { background: var(--text); color: var(--surface); }
+.chip:hover { background: var(--glass-hover); }
+.chip.is-active, .chip.is-active:hover { background: var(--text); color: var(--bg); }
+
 
 /* --------------------------------------------------------------------------
-   8. Innehållsrutor (tiles) — färg och ikon per kategori
-   Användning: <div class="tile" style="--tile-bg:var(--c-sand-bg);--tile-fg:var(--c-sand-fg)">
+   6. Rumsrutor — glas med rummets färg i ikonen och ett svagt sken
+   Användning: <button class="glass tile" style="--tile: var(--c-sand-bg)">
    -------------------------------------------------------------------------- */
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--s-2); }
-.tile {
-  --tile-bg: var(--c-lilac-bg); --tile-fg: var(--c-lilac-fg);
-  position: relative; overflow: hidden;
+.glass.tile {
+  --tile: var(--c-lilac-bg);
+  overflow: hidden;
   min-height: 110px;
   padding: var(--s-3) var(--s-4);
-  border-radius: var(--r-sm);
-  background: var(--tile-bg); color: var(--tile-fg);
+  border: 0; font: inherit; text-align: left;
+  background: radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--tile) 20%, transparent), transparent 62%), var(--glass);
   cursor: pointer;
-  transition: filter var(--t-fast), box-shadow var(--t-base) var(--ease);
 }
-.tile:hover { filter: brightness(1.05); }
-.tile__name { font-family: var(--font-display); font-size: 18px; line-height: 1.1; }
-.tile__meta { font-size: var(--fs-meta); font-weight: 600; margin-top: var(--s-1); opacity: .85; }
-.tile__icon { position: absolute; right: -6px; bottom: -12px; font-size: 64px; line-height: 1; opacity: .28; pointer-events: none; }
-.tile__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .9; }
-.tile__check {
-  position: absolute; top: 10px; right: 10px;
-  width: 22px; height: 22px; border-radius: var(--r-xs);
-  border: 2px solid currentColor; opacity: .45;
-  display: flex; align-items: center; justify-content: center;
-  transition: all var(--t-base) var(--ease);
-}
-.tile__check svg { width: 14px; height: 14px; opacity: 0; transition: opacity var(--t-fast); }
-.tile__check path { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.tile.is-selected { box-shadow: inset 0 0 0 3px var(--accent); }
-.tile.is-selected .tile__check { background: var(--accent); border-color: var(--accent); opacity: 1; }
-.tile.is-selected .tile__check svg { opacity: 1; }
+.glass.tile:hover { background-color: var(--glass-hover); box-shadow: var(--shadow-hover); }
+.glass.tile.is-selected { box-shadow: inset 0 0 0 1.5px var(--tile), var(--shadow); }
+.tile__name { position: relative; font-size: 18px; font-weight: var(--fw-number); line-height: 1.1; letter-spacing: -.02em; overflow-wrap: anywhere; hyphens: auto; }
+.tile__icon { position: absolute; right: -6px; bottom: -12px; width: 72px; height: 72px; stroke-width: 1.5; color: var(--tile); opacity: .55; pointer-events: none; }
+
 
 /* --------------------------------------------------------------------------
-   9. Listor och rader
+   7. Listor och rader — varje rad är ett eget glaskort
    -------------------------------------------------------------------------- */
-.rows { display: flex; flex-direction: column; gap: 2px; }
+.rows { display: flex; flex-direction: column; gap: var(--s-2); }
 .row {
   display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
-  padding: 11px var(--s-3);
-  border-radius: var(--r-sm);
+  padding: 12px var(--s-4);
+  border-radius: var(--r-row);
   cursor: pointer;
   transition: background var(--t-fast);
 }
-.row:hover, .row.is-selected { background: var(--hover); }
-.row__title { font-weight: 600; }
-.row__swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+/* Rader som inte är GlassCard (menyer, panelens listor): samma glas utan egen blur. */
+.rows > .row:not(.glass) { background: var(--glass); box-shadow: inset 0 0 0 1px var(--line); }
+.rows > .row:not(.glass):hover { background: var(--glass-hover); }
+/* GlassCard-rader: lättare blur än stora kort. Bakgrunden är redan kraftigt suddig, så skillnaden syns inte. */
+.rows > .glass { border-radius: var(--r-row); -webkit-backdrop-filter: var(--glass-blur-light); backdrop-filter: var(--glass-blur-light); }
+.row__title { font-weight: 600; color: var(--text); }
+.row__main { display: flex; align-items: center; gap: var(--s-3); min-width: 0; flex: 1; }
+.row__text { min-width: 0; }
+.row__text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row__amount { font-weight: 700; white-space: nowrap; color: var(--text); }
+.row__title .star { color: var(--warning); margin-right: 4px; vertical-align: -1px; }
+.row__link { color: var(--text-2); display: inline-flex; padding: var(--s-1); border-radius: var(--r-xs); }
+.row__link:hover { color: var(--text); background: var(--fill); }
+
 
 /* --------------------------------------------------------------------------
-   10. Tabell — inga ramar runt, bara linjer mellan rader
+   8. Tabell — inga ramar runt, bara linjer mellan rader
    -------------------------------------------------------------------------- */
 .table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 .table th {
   text-align: left; font-weight: 600; font-size: var(--fs-meta); color: var(--text-2);
   padding: var(--s-2) var(--s-3);
-  border-bottom: 2px solid var(--hover);
+  border-bottom: 2px solid var(--line);
 }
-.table td { padding: 12px var(--s-3); border-bottom: 1px solid var(--hover); }
+.table td { padding: 12px var(--s-3); border-bottom: 1px solid var(--line); }
 .table tbody tr { transition: background var(--t-fast); cursor: pointer; }
-.table tbody tr:hover { background: var(--hover); }
+.table tbody tr:hover { background: var(--fill); }
 .table .num { text-align: right; }
 
+
 /* --------------------------------------------------------------------------
-   11. Status
+   9. Status och taggar
    -------------------------------------------------------------------------- */
 .status {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: var(--fs-meta); font-weight: 600;
 }
 .status::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
-.status--draft { color: var(--text-2); }
 .status--sent { color: var(--accent); }
-.status--won { color: var(--success); }
 .status--warning { color: var(--warning); }
 .status--lost { color: var(--danger); }
 
+.tags { display: flex; gap: var(--s-1); flex-wrap: wrap; margin-top: 2px; }
+.tag { font-size: var(--fs-meta); color: var(--text-2); background: var(--fill); border-radius: var(--r-xs); padding: 0 6px; line-height: 20px; }
+
+
 /* --------------------------------------------------------------------------
-   12. Fält — fyllda, inga ramar. Fokus visas med accent.
+   10. Fält — halvgenomskinliga med tunn kant. Fokus visas med accent.
    -------------------------------------------------------------------------- */
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field__label { font-size: var(--fs-meta); font-weight: 600; }
+.field__label { font-size: var(--fs-meta); font-weight: 600; color: var(--text); }
+.input, .select, .textarea, .search {
+  border: 0; border-radius: var(--r-field);
+  background-color: var(--field); color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: box-shadow var(--t-fast), background-color var(--t-fast);
+}
 .input, .select, .textarea {
   width: 100%;
-  border: 0; border-radius: var(--r-sm);
-  background: var(--hover); color: var(--text);
   font: var(--fs-body) var(--font);
   padding: 12px 14px;
   outline: none;
-  box-shadow: inset 0 0 0 2px transparent;
-  transition: box-shadow var(--t-fast), background var(--t-fast);
 }
-.input::placeholder, .textarea::placeholder { color: var(--text-2); }
-.input:focus, .select:focus, .textarea:focus { box-shadow: inset 0 0 0 2px var(--accent); background: var(--surface); }
+.input::placeholder, .textarea::placeholder, .search input::placeholder { color: var(--text-2); opacity: .8; }
+.input:focus, .select:focus, .textarea:focus, .search:focus-within {
+  background-color: var(--glass-hover);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 75%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
 .field__error { font-size: var(--fs-meta); color: var(--danger); font-weight: 500; }
-.field.has-error .input { box-shadow: inset 0 0 0 2px var(--danger); }
+.field.has-error .input { box-shadow: inset 0 0 0 1px var(--danger); }
+
+.search {
+  flex: 1; max-width: 420px;
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 0 var(--s-3);
+  color: var(--text-2);
+}
+.search input {
+  flex: 1; border: 0; background: transparent; outline: none;
+  font: inherit; color: var(--text); padding: 10px 0;
+}
+
 
 /* --------------------------------------------------------------------------
-   13. Kryssruta — fylls från båda sidor, sedan ritas bocken
+   11. Kryssruta — fylls från båda sidor, sedan ritas bocken
    <label class="checkbox"><input type="checkbox"><span class="checkbox__box">
      <svg viewBox="0 0 30 30"><path d="M8 15.5 L13 20.5 L22.5 10"/></svg></span>Text</label>
    -------------------------------------------------------------------------- */
@@ -397,39 +344,18 @@ p { margin: 0; }
 .checkbox input:focus-visible + .checkbox__box { outline: 2px solid var(--accent); outline-offset: 3px; }
 @keyframes draw-check { to { stroke-dashoffset: 0; } }
 
-/* --------------------------------------------------------------------------
-   14. Växlare — kantig, fyrkantig knopp. Inte iOS.
-   <label class="switch"><input type="checkbox"><span class="switch__track"></span>Text</label>
-   -------------------------------------------------------------------------- */
-.switch { display: inline-flex; align-items: center; gap: var(--s-3); cursor: pointer; font-weight: 500; }
-.switch input { position: absolute; opacity: 0; pointer-events: none; }
-.switch__track {
-  position: relative; flex: none;
-  width: 52px; height: 28px;
-  border-radius: var(--r-sm);
-  background: var(--track);
-  transition: background var(--t-base) var(--ease);
-}
-.switch__track::after {
-  content: ""; position: absolute; top: 4px; left: 4px;
-  width: 20px; height: 20px; border-radius: 3px;
-  background: var(--surface);
-  transition: left var(--t-base) var(--ease), background var(--t-base);
-}
-.switch input:checked + .switch__track { background: var(--accent); }
-.switch input:checked + .switch__track::after { left: 28px; background: #fff; }
-.switch input:focus-visible + .switch__track { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 /* --------------------------------------------------------------------------
-   15. Notis / bekräftelse
+   12. Notis — frostat glas, kantljuset med inre skuggor
    -------------------------------------------------------------------------- */
 .toast {
   display: flex; gap: var(--s-3); align-items: flex-start;
   max-width: 400px;
   padding: var(--s-4);
-  border-radius: var(--r-sm);
-  background: var(--raised); color: var(--text);
-  box-shadow: 0 8px 28px rgba(23, 20, 31, .14);
+  border-radius: 16px;
+  background: var(--sheet-bg); color: var(--text);
+  -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: var(--glass-edge-inset), 0 16px 48px rgba(0, 0, 0, .5);
 }
 .toast__icon {
   width: 28px; height: 28px; flex: none; border-radius: var(--r-xs);
@@ -440,44 +366,53 @@ p { margin: 0; }
 .toast__body { color: var(--text-2); margin: 2px 0 var(--s-3); }
 .toast__actions { display: flex; gap: var(--s-2); flex-wrap: wrap; }
 
+
 /* --------------------------------------------------------------------------
-   16. Laddning — pulslinje
-   <svg class="loader" width="64" height="48"><polyline class="loader__back" points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"/>
-   <polyline class="loader__front" points="0.157 23.954, 14 23.954, 21.843 48, 43 0, 50 24, 64 24"/></svg>
+   13. Laddning — pulslinje
    -------------------------------------------------------------------------- */
 .loader polyline { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .loader__back { stroke: color-mix(in srgb, var(--accent) 22%, transparent); }
 .loader__front { stroke: var(--accent); stroke-dasharray: 48, 144; stroke-dashoffset: 192; animation: pulse-line 1.4s linear infinite; }
 @keyframes pulse-line { 72.5% { opacity: 0; } to { stroke-dashoffset: 0; } }
 
+
 /* --------------------------------------------------------------------------
-   17. Tomt läge
+   14. Tomt läge
    -------------------------------------------------------------------------- */
 .empty { padding: var(--s-6) var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); align-items: flex-start; }
 
-/* --------------------------------------------------------------------------
-   18. Nyckeltal
-   -------------------------------------------------------------------------- */
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--s-2); }
-.kpi { background: var(--hover); border-radius: var(--r-sm); padding: var(--s-3) var(--s-4); }
-.kpi__value { font-family: var(--font-display); font-size: 24px; line-height: 1.2; margin-top: 2px; }
 
 /* --------------------------------------------------------------------------
-   19. Mobil
+   15. Nyckeltal — stora summor i vit gradient
+   -------------------------------------------------------------------------- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--s-2); }
+.glass.kpi { padding: var(--s-3) var(--s-4); display: flex; flex-direction: column; }
+.kpi__label { font-size: var(--fs-meta); font-weight: 600; color: var(--text); }
+.kpi__value {
+  font-size: var(--fs-number); font-weight: var(--fw-number); line-height: 1.2; letter-spacing: -.025em;
+  margin-top: 2px;
+  background: var(--num);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+}
+.glass.kpi .kpi__value { margin-top: auto; padding-top: var(--s-1); }
+.kpi__value.is-positive { background-image: var(--num-positive); }
+.kpi__value.is-negative { background-image: var(--num-negative); }
+
+
+/* --------------------------------------------------------------------------
+   16. Mobil
    -------------------------------------------------------------------------- */
 @media (max-width: 760px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   .sidebar { flex-direction: row; overflow-x: auto; padding: var(--s-1); }
   .sidebar .wordmark { display: none; }
   .nav-item { white-space: nowrap; }
-  .main { padding: var(--s-4); }
-  .processbar { flex-wrap: wrap; gap: var(--s-3); }
-  .processbar__context { order: 1; width: auto; flex: 1 1 calc(100% - 110px); }
-  .processbar__total { order: 2; }
-  .processbar__nav[data-go="-1"] { order: 3; }
-  .steps { order: 4; flex: 1 1 calc(100% - 100px); }
-  .processbar__nav[data-go="1"] { order: 5; }
-  .processbar .btn--primary { order: 6; flex: 1 1 100%; }
+  .main { padding: var(--s-4) var(--s-3); }
+  .topbar { margin-bottom: var(--s-4); }
+  .tiles, .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .glass.kpi { padding: var(--s-2) var(--s-3); }
+  .kpi__value { font-size: var(--fs-number-mobile); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {

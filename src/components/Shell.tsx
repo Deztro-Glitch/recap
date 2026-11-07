@@ -34,8 +34,8 @@ export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvata
   )
 
   return (
-    <div className={`app app--no-process ${tabs ? 'app--tabs' : ''}`}>
-      <nav className="sidebar glass">
+    <div className={`app ${tabs ? 'app--tabs' : ''}`}>
+      <nav className="sidebar">
         <Wordmark />
         {nav}
         {navFoot && <div className="sidebar__foot">{navFoot}</div>}

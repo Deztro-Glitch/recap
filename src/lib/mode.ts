@@ -1,6 +1,6 @@
 import type { Mode } from '../types'
 
-// Läget (Projekt eller Boende) färgar hela appen. Färgerna finns i app.css under [data-mode].
+// Läget (Projekt eller Boende) styr accenten och ljuset bakom glaset. Färgerna finns i theme.css under [data-mode].
 export function applyMode(mode: Mode | null) {
   const root = document.documentElement
   const next = mode === 'simple' ? 'home' : mode ? 'project' : ''
@@ -19,8 +19,8 @@ export function applyMode(mode: Mode | null) {
   syncThemeColor()
 }
 
-// Statusfältet på iPhone följer appens yttersta färg.
+// Statusfältet på iPhone följer appens botten.
 export function syncThemeColor() {
-  const shell = getComputedStyle(document.documentElement).getPropertyValue('--shell').trim()
-  if (shell) document.querySelector('meta[name=theme-color]')?.setAttribute('content', shell)
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
+  if (bg) document.querySelector('meta[name=theme-color]')?.setAttribute('content', bg)
 }
