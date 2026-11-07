@@ -1,4 +1,4 @@
-import { HOME_CONTRACTS, type Contract, type Economy } from '../types'
+import { CONTRACT_KIND_LABEL, HOME_CONTRACTS, type Contract, type Economy } from '../types'
 
 export const emptyEconomy: Economy = { loan: 0, rate: 0, amortization: 0, loanStart: null }
 
@@ -48,4 +48,19 @@ export function economyNumbers(e: Economy, contracts: Contract[] = []) {
     cashflow: costs + saving,
     share: e.loan > 0 ? debt / e.loan : 0,
   }
+}
+
+// Månadskostnaden uppdelad för stapeldiagrammet: räntan och varje slags boendeavtal (äldre belopp i Ekonomi
+// räknas på samma sätt som i fixedCosts). Amorteringen läggs till separat, den är sparande och ingen kostnad.
+export function costParts(e: Economy, contracts: Contract[] = []) {
+  const parts = new Map<string, number>()
+  const add = (label: string, amount: number) => amount > 0 && parts.set(label, (parts.get(label) ?? 0) + amount)
+  add('Ränta', economyNumbers(e, contracts).interest)
+  const home = homeContracts(contracts)
+  for (const c of home) add(CONTRACT_KIND_LABEL[c.kind], Number(c.monthly) || 0)
+  const has = (k: Contract['kind']) => home.some((c) => c.kind === k)
+  if (!has('avgift')) add(CONTRACT_KIND_LABEL.avgift, e.fee ?? 0)
+  if (!has('el')) add(CONTRACT_KIND_LABEL.el, e.electricity ?? 0)
+  if (!has('forsakring')) add(CONTRACT_KIND_LABEL.forsakring, e.insurance ?? 0)
+  return [...parts].map(([label, amount]) => ({ label, amount }))
 }

@@ -266,21 +266,69 @@
 
 /* ---------- Ekonomi i Boendeläget ---------- */
 
-.eco-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--gap); margin: var(--gap) 0 var(--s-6); align-items: stretch; }
-@media (max-width: 760px) { .kpis--three .kpi:nth-child(3) { grid-column: 1 / -1; } }
+/* Rutnätet: bolån och värde är det stora kortet som drar blicken, kassaflödet brett med staplar,
+   de mindre korten runt omkring. Smalare skärmar staplar det stora kortet överst. */
+.eco-dash {
+  display: grid; gap: var(--gap);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas:
+    "hero hero flow flow"
+    "hero hero cost save"
+    "hero hero el   el";
+  margin-bottom: var(--s-6);
+}
+.eco-dash__hero { grid-area: hero; }
+.eco-dash__flow { grid-area: flow; }
+.eco-dash__cost { grid-area: cost; }
+.eco-dash__save { grid-area: save; }
+.eco-dash__el { grid-area: el; }
+@media (max-width: 1100px) {
+  .eco-dash {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "hero hero" "flow flow" "cost save" "el el";
+  }
+}
 
-/* Staplarna: tjocka spår med runda ändar, neutral fyllning för lånet, smaragdgrönt med glöd för din del.
-   Fyllningen glider ut från noll (framer-motion i Economy.tsx). */
-.budget-track, .split-track { height: var(--bar-h); border-radius: 999px; overflow: hidden; background: var(--bar-track); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35); }
-.budget-track { position: relative; }
-.budget-track > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; transition: width var(--t-base) var(--ease); }
-.budget-track .is-spent { background: var(--bar-loan); }
-.split-track { display: flex; gap: 3px; margin-top: var(--s-2); }
-.split-track > span { border-radius: 999px; transition: width var(--t-base) var(--ease); }
-.split-track__debt { background: var(--bar-loan); }
-.split-track__own {
+/* Det stora kortet: mätaren i mitten, förklaringen under, amorteringen längst ner. */
+.eco-dash__hero .gauge { margin-top: var(--s-4); }
+.hero__empty { margin: var(--s-5) 0 auto; }
+.hero__legend { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--s-2) var(--s-6); margin-top: var(--s-3); }
+.hero__legend > div { display: flex; align-items: center; gap: var(--s-2); }
+.hero__legend b, .hero__paid b { font-weight: 700; color: var(--text); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot--debt { background: var(--gauge-debt); }
+.dot--own { background: var(--success-2); box-shadow: 0 0 8px color-mix(in srgb, var(--success) 60%, transparent); }
+.dot--danger { background: var(--danger); }
+.hero__paid { margin-top: auto; padding-top: var(--s-5); }
+.hero__paid-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-bottom: var(--s-2); }
+.glass.kpi .hero__paid .budget-track { margin-top: 0; }
+
+/* Halvcirkelmätaren (Charts.tsx). Bågen ritas med stroke-dasharray, delarna har runda ändar. */
+.gauge { position: relative; width: 100%; max-width: 420px; margin-inline: auto; }
+.gauge__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.gauge__track, .gauge__part { fill: none; stroke-width: 16; stroke-linecap: round; }
+.gauge__track { stroke: var(--bar-track); }
+.gauge__part--debt { stroke: var(--gauge-debt); }
+.gauge__part--own { stroke: var(--success-2); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--success) 55%, transparent)); }
+.gauge__part--danger { stroke: var(--danger); }
+.gauge__center { position: absolute; left: 0; right: 0; bottom: 4%; text-align: center; }
+.glass.kpi .gauge__center .kpi__value { margin: 0; font-size: clamp(22px, 4.2vw, 34px); }
+
+/* Minidiagrammet (Charts.tsx): en stapel per del av kassaflödet, amorteringen i accent. */
+.minibars { display: flex; align-items: flex-end; gap: var(--s-2); margin-top: auto; padding-top: var(--s-3); }
+.minibars__col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.minibars__track { position: relative; width: 100%; max-width: 26px; height: 88px; display: flex; align-items: flex-end; }
+.minibars__bar { display: block; width: 100%; border-radius: 999px; background: var(--gauge-debt); }
+.minibars__bar.is-accent { background: linear-gradient(180deg, var(--success), var(--success-2)); box-shadow: 0 0 12px color-mix(in srgb, var(--success) 50%, transparent); }
+.minibars__label { max-width: 100%; font-size: 11px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) { .minibars__track { height: 72px; max-width: 22px; } }
+
+/* Staplar: tjocka spår med runda ändar. Fyllningen glider ut från noll (framer-motion). */
+.budget-track { position: relative; height: var(--bar-h); border-radius: 999px; overflow: hidden; background: var(--bar-track); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35); }
+.budget-track > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; }
+.budget-track .is-paid {
   background: linear-gradient(90deg, var(--success-2), var(--success));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--success) 60%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 

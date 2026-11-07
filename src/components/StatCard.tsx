@@ -9,7 +9,7 @@ type IconType = React.ComponentType<{ size?: number; stroke?: number }>
 export function StatCard({ icon: Icon, label, value, badge, onOpen, className, children }: {
   icon: IconType
   label: string
-  value: ReactNode
+  value?: ReactNode   // utelämnas när kortet visar en graf i stället för en enda siffra
   badge?: ReactNode
   onOpen: () => void
   className?: string
@@ -23,7 +23,7 @@ export function StatCard({ icon: Icon, label, value, badge, onOpen, className, c
         {badge && <span className="kpi__badge">{badge}</span>}
         <span className="kpi__open" aria-hidden><IconArrowUpRight size={15} stroke={2} /></span>
       </div>
-      <div className="kpi__value">{value}</div>
+      {value !== undefined && <div className="kpi__value">{value}</div>}
       {children}
     </GlassCard>
   )

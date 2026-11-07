@@ -91,7 +91,7 @@
   --num-negative: linear-gradient(180deg, #FCA5A5 0%, var(--danger) 100%);
   --bar-track: rgba(255, 255, 255, .07);
   --bar-h: 14px;
-  --bar-loan: linear-gradient(90deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, .75));
+  --gauge-debt: rgba(255, 255, 255, .45);  /* skulden i mätaren och kostnadsstaplarna (mörka ytor) */
 
   /* ---------- Innehållsfärger för rum (ikon, planritning). Par: färg + mörk text ---------- */
   --c-sand-bg: #E9CBA3;  --c-sand-fg: #4A2E0F;

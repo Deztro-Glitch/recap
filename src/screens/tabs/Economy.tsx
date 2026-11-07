@@ -1,81 +1,99 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { api } from '../../lib/api'
-import { emptyEconomy, economyNumbers } from '../../lib/economy'
+import { costParts, emptyEconomy, economyNumbers } from '../../lib/economy'
 import { ore, useElPrice } from '../../lib/elpris'
-import { parseNum } from '../../lib/format'
+import { kr, parseNum } from '../../lib/format'
 import { valuation } from '../../lib/valuation'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { StatCard } from '../../components/StatCard'
-import { IconArrowsExchange, IconBolt, IconBuildingBank, IconHomeDollar, IconPigMoney, IconReceipt2 } from '@tabler/icons-react'
+import { IconArrowsExchange, IconBolt, IconHomeDollar, IconPigMoney, IconReceipt2 } from '@tabler/icons-react'
 import { Counter } from '../../components/Counter'
+import { Gauge, MiniBars, grow, type Bar, type GaugePart } from '../../components/Charts'
 import { EL_ZONE_LABEL, type Economy, type ElZone } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 
-// Staplarna glider ut från noll när kortet visas.
-const grow = { duration: 1.1, ease: [0.2, 0.8, 0.2, 1] as const, delay: 0.15 }
-
-// Statistikkorten i Boendeläget: rubrik med ikon och en siffra. Detaljerna finns i Ekonomi (tryck på ett kort).
+// Boendeläget: ett stort kort för bolån och värde med en halvcirkelmätare, kassaflödet med ett stapeldiagram
+// och tre mindre kort. Varje kort öppnar sin detaljvy; därifrån når man Ekonomi-formuläret.
 export function EconomyDashboard({ state, open }: ViewProps) {
   const e = state.project?.economy
   const n = economyNumbers(e ?? emptyEconomy, state.contracts)
   const edit = () => open({ t: 'economy' })
-  // Korten öppnar sin detaljvy. Därifrån når man Ekonomi-formuläret.
   const detail = (title: string) => () => open({ t: 'stat', title, economy: true })
   const el = useElPrice(e?.zone)
   const has = !!e || n.fixed > 0
+  const bars: Bar[] = [
+    ...costParts(e ?? emptyEconomy, state.contracts),
+    ...(n.saving > 0 ? [{ label: 'Amortering', amount: n.saving, tone: 'accent' as const }] : []),
+  ]
 
   return (
-    <>
-      <div className="kpis kpis--three">
-        <StatCard icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onOpen={detail('Ren månadskostnad')} />
-        <StatCard icon={IconPigMoney} label="Ditt sparande" value={e ? <Counter value={n.saving} /> : '–'} onOpen={detail('Ditt sparande')} />
-        <StatCard icon={IconArrowsExchange} label="Totalt kassaflöde" value={has ? <Counter value={n.cashflow} /> : '–'} onOpen={detail('Totalt kassaflöde')} />
-      </div>
+    <div className="eco-dash">
+      <LoanValueCard state={state} onOpen={detail('Bolån och marknadsvärde')} onEdit={edit} />
 
-      <div className="eco-grid">
-        {e?.zone && el && (
-          <StatCard icon={IconBolt} label={`Elpris nu, ${e.zone}`} value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'} onOpen={detail(`Elpris nu, ${e.zone}`)} />
-        )}
-        <StatCard icon={IconBuildingBank} label="Bolån" value={e?.loan ? <Counter value={n.debt} /> : '–'} onOpen={detail('Bolån')}>
-          {e?.loan ? (
-            <div className="budget-track" aria-label={`${Math.round(n.share * 100)} % av lånet kvar`}>
-              <motion.span className="is-spent" initial={{ width: 0 }} animate={{ width: `${n.share * 100}%` }} transition={grow} />
-            </div>
-          ) : (
-            <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); edit() }}>Lägg in bolånet</button>
-          )}
-        </StatCard>
-        <ValueCard state={state} debt={n.debt} onOpen={detail('Estimerat marknadsvärde')} onEdit={edit} />
-      </div>
-    </>
+      <StatCard className="eco-dash__flow" icon={IconArrowsExchange} label="Totalt kassaflöde" value={has ? <Counter value={n.cashflow} /> : '–'} onOpen={detail('Totalt kassaflöde')}>
+        {bars.length > 0 && <MiniBars bars={bars} />}
+      </StatCard>
+      <StatCard className="eco-dash__cost" icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onOpen={detail('Ren månadskostnad')} />
+      <StatCard className="eco-dash__save" icon={IconPigMoney} label="Ditt sparande" value={e ? <Counter value={n.saving} /> : '–'} onOpen={detail('Ditt sparande')} />
+      {e?.zone && el && (
+        <StatCard className="eco-dash__el" icon={IconBolt} label={`Elpris nu, ${e.zone}`} value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'} onOpen={detail(`Elpris nu, ${e.zone}`)} />
+      )}
+    </div>
   )
 }
 
-// Estimerat marknadsvärde. Märkningen och stapeln visar din del: värdet minus bolånet.
-function ValueCard({ state, debt, onOpen, onEdit }: { state: ProjectState; debt: number; onOpen: () => void; onEdit: () => void }) {
-  const v = valuation(state.project?.economy, state.rooms)
-  if (v.value == null) {
-    return (
-      <StatCard icon={IconHomeDollar} label="Estimerat marknadsvärde" value="–" onOpen={onOpen}>
-        <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); onEdit() }}>Lägg in bostaden</button>
-      </StatCard>
-    )
-  }
-  const margin = v.value - debt
-  const whole = Math.max(v.value, debt, 1)
+// Det stora kortet: mätaren visar värdet uppdelat i skuld och din del, och under den hur mycket som är amorterat.
+function LoanValueCard({ state, onOpen, onEdit }: { state: ProjectState; onOpen: () => void; onEdit: () => void }) {
+  const e = state.project?.economy
+  const n = economyNumbers(e ?? emptyEconomy, state.contracts)
+  const v = valuation(e, state.rooms)
+  const value = v.value
+  const margin = value != null ? value - n.debt : null
+  const whole = Math.max(value ?? 0, n.debt, 1)
+  const parts: GaugePart[] = value == null
+    ? []
+    : margin! >= 0
+      ? [{ share: n.debt / whole, tone: 'debt', label: 'Skuld' }, { share: margin! / whole, tone: 'own', label: 'Din del' }]
+      : [{ share: 1, tone: 'danger', label: 'Skuld över värdet' }]
+  const ask = (text: string) => <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); onEdit() }}>{text}</button>
+
   return (
     <StatCard
+      className="eco-dash__hero"
       icon={IconHomeDollar}
-      label="Estimerat marknadsvärde"
-      value={<Counter value={v.value} />}
-      badge={<span className={margin < 0 ? 'is-negative' : 'is-positive'} title="Din del: värdet minus bolånet">{margin > 0 ? '+' : ''}<Counter value={margin} /></span>}
+      label="Bolån och marknadsvärde"
+      badge={margin != null && <span className={margin < 0 ? 'is-negative' : 'is-positive'} title="Din del: värdet minus bolånet">{margin > 0 ? '+' : ''}<Counter value={margin} /></span>}
       onOpen={onOpen}
     >
-      <div className="split-track" aria-label="Bolån och din del av värdet">
-        <motion.span className="split-track__debt" initial={{ width: 0 }} animate={{ width: `${(Math.min(debt, v.value) / whole) * 100}%` }} transition={grow} />
-        {margin > 0 && <motion.span className="split-track__own" initial={{ width: 0 }} animate={{ width: `${(margin / whole) * 100}%` }} transition={{ ...grow, delay: grow.delay + 0.35 }} />}
-      </div>
+      {value == null ? (
+        <div className="hero__empty">{ask(e?.loan ? 'Lägg in bostaden' : 'Lägg in bolån och bostad')}</div>
+      ) : (
+        <>
+          <Gauge parts={parts}>
+            <div className="kpi__value"><Counter value={value} /></div>
+            <div className="meta">Marknadsvärde</div>
+          </Gauge>
+          <div className="hero__legend">
+            <div><i className="dot dot--debt" /><span className="meta">Skuld</span><b><Counter value={n.debt} /></b></div>
+            <div><i className={`dot ${margin! < 0 ? 'dot--danger' : 'dot--own'}`} /><span className="meta">Din del</span><b><Counter value={margin!} /></b></div>
+          </div>
+        </>
+      )}
+
+      {e?.loan ? (
+        <div className="hero__paid">
+          <div className="hero__paid-head">
+            <span className="meta">Amorterat hittills</span>
+            <b><Counter value={n.paidOff} /> <span className="meta">av {kr(e.loan)}</span></b>
+          </div>
+          <div className="budget-track" aria-label={`${Math.round((1 - n.share) * 100)} % av lånet amorterat`}>
+            <motion.span className="is-paid" initial={{ width: 0 }} animate={{ width: `${(1 - n.share) * 100}%` }} transition={{ ...grow, delay: grow.delay + 0.5 }} />
+          </div>
+        </div>
+      ) : value != null ? (
+        <div className="hero__paid">{ask('Lägg in bolånet')}</div>
+      ) : null}
     </StatCard>
   )
 }

@@ -465,7 +465,7 @@ p { margin: 0; }
 }
 .glass.kpi:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .kpi__badge .is-negative { color: var(--danger); }
-.glass.kpi .budget-track, .glass.kpi .split-track { flex: none; margin-top: auto; }   /* staplar och knappar längst ner */
+.glass.kpi .budget-track { flex: none; margin-top: auto; }   /* staplar och knappar längst ner */
 .glass.kpi > .btn { align-self: flex-start; margin-top: auto; }
 
 /* Ljusa kort (statistiken): ljust frostat glas med mörk text, som tydliga skivor mot den mörka botten.
@@ -481,13 +481,13 @@ p { margin: 0; }
   --positive-ink: #047857;
   --danger: #C2362F;
   --bar-track: var(--card-ink-fill);
-  --bar-loan: linear-gradient(90deg, rgba(14, 21, 18, .3), rgba(14, 21, 18, .65));
+  --gauge-debt: rgba(14, 21, 18, .42);   /* skulden i mätaren och kostnadsstaplarna */
   background: linear-gradient(160deg, var(--card-light) 0%, var(--card-light-2) 100%);
   box-shadow: var(--card-light-shadow);
   color: var(--text);
 }
 .glass--light.glass--interactive:hover { box-shadow: var(--card-light-shadow-hover); }
-.glass--light .budget-track, .glass--light .split-track { box-shadow: inset 0 1px 2px rgba(14, 21, 18, .15); }
+.glass--light .budget-track { box-shadow: inset 0 1px 2px rgba(14, 21, 18, .15); }
 
 
 /* --------------------------------------------------------------------------
