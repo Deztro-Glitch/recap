@@ -9,13 +9,13 @@
   color-scheme: dark;   /* rullgardinsmenyer och datumväljare blir mörka */
 
   /* ---------- Grund ---------- */
-  --bg: #0A0A0C;                            /* appens botten, nästan svart utan färgton */
+  --bg: #050505;                            /* appens botten: djup rymd, ljusfläckarna är ljuskällor i den */
   --text: #F5F5F7;                          /* rubriker, siffror, titlar */
   --text-2: rgba(255, 255, 255, .7);        /* detaljer: datum, butik, förklaringar */
 
   /* ---------- Genomskinliga vita lager ---------- */
-  --glass: rgba(255, 255, 255, .02);        /* kort och rader: nästan inget, ljuset ska synas igenom */
-  --glass-sheen: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .1) 100%);  /* svagt djup nedåt i korten */
+  --glass: rgba(255, 255, 255, .04);        /* kort och rader: lite vitt för läsbarhet, ljuset syns ändå igenom */
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, .02) 0%, rgba(0, 0, 0, .06) 100%);  /* svagt ljus uppe, djup nedåt */
   --glass-hover: rgba(255, 255, 255, .06);  /* kort och rader under muspekaren, fält i fokus */
   --fill: rgba(255, 255, 255, .06);         /* chips, ikonrutor, taggar, sekundära knappar */
   --field: rgba(255, 255, 255, .04);        /* inmatningsfält */
@@ -25,9 +25,9 @@
 
   /* ---------- Glaseffekten ---------- */
   /* brightness lyfter ljuset bakom glaset, så att färgen syns rakt igenom korten och inte bara i kanterna. */
-  --glass-blur: blur(24px) saturate(180%) brightness(1.2);
-  --glass-blur-light: blur(12px) saturate(180%) brightness(1.2);  /* rader och fält: lättare, så att listor scrollar mjukt */
-  --glass-blur-heavy: blur(32px) saturate(160%);  /* paneler som glider in */
+  --glass-blur: blur(24px) saturate(140%) brightness(1.06);
+  --glass-blur-light: blur(12px) saturate(140%) brightness(1.06);  /* rader och fält: lättare, så att listor scrollar mjukt */
+  --glass-blur-heavy: blur(32px) saturate(150%);  /* paneler och menypillret */
   /* Kantljuset: ljust uppe till vänster, nästan osynligt nere till höger. */
   --glass-edge: linear-gradient(135deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, .07) 35%, rgba(255, 255, 255, .02) 65%, rgba(255, 255, 255, 0) 100%);
   --glass-edge-inset: inset 1px 1px 0 rgba(255, 255, 255, .16), inset -1px -1px 0 rgba(255, 255, 255, .03);
@@ -45,26 +45,30 @@
   --accent: #7C5CFF;
   --on-accent: #FFFFFF;
   --accent-glow: #A78BFA;                   /* aktiv text och ikon i menyn */
-  --accent-hi: #9F87FF;                     /* ljusare överkant på Lägg till, ger 3D-känsla */
+  --accent-hi: #9F87FF;                     /* ljusare accent: den skarpa kanten och textglöden på Lägg till */
   --blob-1: #5B21B6;
   --blob-2: #1D4ED8;
   --blob-3: #7C3AED;
+  /* Hur starkt ljusfläckarna lyser: ljuskällor i ett mörkt rum, inte en färgad skärm. */
+  --blob-strength-1: .38;
+  --blob-strength-2: .3;
+  --blob-strength-3: .22;
 
-  /* Lägg till: inre glöd och ljus överkant (3D) plus yttre sken i accentfärgen. */
+  /* Lägg till: halvgenomskinlig accent, skarp 1 px kant i accentens gradient, inre glöd (3D) och ett svagt sken. */
+  --btn-bg: color-mix(in srgb, var(--accent) 20%, transparent);
+  --btn-bg-hover: color-mix(in srgb, var(--accent) 30%, transparent);
+  --btn-edge: linear-gradient(135deg, var(--accent-hi) 0%, color-mix(in srgb, var(--accent) 55%, transparent) 50%, color-mix(in srgb, var(--accent) 20%, transparent) 100%);
   --btn-glow:
-    inset 0 1px 0 rgba(255, 255, 255, .45),
-    inset 0 0 14px rgba(255, 255, 255, .2),
-    inset 0 -3px 8px rgba(0, 0, 0, .18),
-    0 1px 2px rgba(0, 0, 0, .4),
-    0 8px 24px color-mix(in srgb, var(--accent) 50%, transparent),
-    0 0 48px color-mix(in srgb, var(--accent) 32%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, .22),
+    inset 0 0 14px color-mix(in srgb, var(--accent) 40%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent) 22%, transparent);
   --btn-glow-hover:
-    inset 0 1px 0 rgba(255, 255, 255, .5),
-    inset 0 0 18px rgba(255, 255, 255, .28),
-    inset 0 -3px 8px rgba(0, 0, 0, .18),
-    0 1px 2px rgba(0, 0, 0, .4),
-    0 10px 30px color-mix(in srgb, var(--accent) 62%, transparent),
-    0 0 64px color-mix(in srgb, var(--accent) 45%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, .3),
+    inset 0 0 20px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 32px color-mix(in srgb, var(--accent) 34%, transparent);
+
+  /* Menypillret: egen glaskant så att det skiljer sig från ljuset bakom. */
+  --pill-border: rgba(255, 255, 255, .1);
 
   /* ---------- Status ---------- */
   --success: #34D399;
