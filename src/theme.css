@@ -137,7 +137,7 @@
   --card-pad: 24px;      /* inuti kort */
   --row-pad-y: 14px;     /* inuti rader */
   --row-pad-x: 20px;
-  --content-w: 1240px;  /* innehållets största bredd på stora skärmar */
+  --content-w: 1600px;  /* innehållets största bredd: använd skärmen, men inte kant i kant på jätteskärmar */
 
   /* ---------- Rörelse: lugn och mjuk ---------- */
   --ease: cubic-bezier(.65, 0, .35, 1);

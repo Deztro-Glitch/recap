@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { kr } from '../lib/format'
 
@@ -52,13 +52,15 @@ export function Gauge({ share, label, children }: { share: number; label: string
 // ---------------------------------------------------------------------------
 export interface Bar { label: string; amount: number; tone?: 'accent' }
 
-export function MiniBars({ bars }: { bars: Bar[] }) {
+// ghost: platshållare (gråa randiga staplar utan belopp) tills det finns riktig data.
+export function MiniBars({ bars, ghost }: { bars: Bar[]; ghost?: boolean }) {
   const still = useReducedMotion()
   const max = Math.max(...bars.map((b) => b.amount), 1)
   return (
-    <div className="minibars" role="img" aria-label={bars.map((b) => `${b.label} ${kr(b.amount)}`).join(', ')}>
+    <div className={`minibars ${ghost ? 'is-ghost' : ''}`} role="img" aria-label={ghost ? 'Ingen data än' : bars.map((b) => `${b.label} ${kr(b.amount)}`).join(', ')}>
       {bars.map((b, i) => {
-        const h = Math.max(6, (b.amount / max) * 100)
+        // Tomma staplar (t.ex. en månad utan köp) visar bara spåret, utan belopp.
+        const h = b.amount > 0 ? Math.max(6, (b.amount / max) * 100) : 0
         return (
           <div key={b.label} className="minibars__col">
             <div className="minibars__track">
@@ -68,13 +70,51 @@ export function MiniBars({ bars }: { bars: Bar[] }) {
                 animate={{ height: `${h}%` }}
                 transition={{ ...grow, delay: grow.delay + i * 0.07 }}
               >
-                <span className="minibars__value">{kr(b.amount)}</span>
+                {!ghost && b.amount > 0 && <span className="minibars__value">{kr(b.amount)}</span>}
               </motion.div>
             </div>
             <span className="minibars__label" title={b.label}>{b.label}</span>
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Liten ring som visar hur stor del som är betald (t.ex. MC-lånet). Fylls i accent och animeras in.
+// ---------------------------------------------------------------------------
+export function Ring({ share, size = 64, label }: { share: number; size?: number; label: string }) {
+  const still = useReducedMotion()
+  const pct = Math.max(0, Math.min(1, share)) * 100
+  return (
+    <svg className="ring" viewBox="0 0 44 44" width={size} height={size} role="img" aria-label={label}>
+      <circle cx="22" cy="22" r="18" pathLength={100} className="ring__track" />
+      <motion.circle
+        cx="22" cy="22" r="18" pathLength={100} className="ring__fill"
+        initial={still ? false : { strokeDasharray: '0 100' }}
+        animate={{ strokeDasharray: `${pct > 0 ? Math.max(pct, 1.5) : 0} 100` }}
+        transition={grow}
+      />
+      <text x="22" y="22" className="ring__text" dominantBaseline="central" textAnchor="middle">{Math.round(pct)}%</text>
+    </svg>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Flikar ("segmented control"): markeringen glider till det valda. Klick stannar i flikarna,
+// så att de inte öppnar kortet de ligger i.
+// ---------------------------------------------------------------------------
+export function Segmented<T extends string>({ value, onChange, options, label }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[]; label: string }) {
+  const id = useId()
+  return (
+    <div className="segmented" role="tablist" aria-label={label} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      {options.map((o) => (
+        <button key={o.value} type="button" role="tab" aria-selected={o.value === value} className={`segmented__item ${o.value === value ? 'is-active' : ''}`} onClick={() => onChange(o.value)}>
+          {o.value === value && <motion.span layoutId={`seg-${id}`} className="segmented__thumb" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
+          <span className="segmented__label">{o.label}</span>
+        </button>
+      ))}
     </div>
   )
 }

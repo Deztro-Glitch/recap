@@ -1,4 +1,4 @@
-import { CONTRACT_KIND_LABEL, HOME_CONTRACTS, type Contract, type Economy } from '../types'
+import { CONTRACT_KIND_LABEL, HOME_CONTRACTS, type Contract, type Economy, type OtherLoan } from '../types'
 
 export const emptyEconomy: Economy = { loan: 0, rate: 0, amortization: 0, loanStart: null }
 
@@ -29,24 +29,34 @@ export function afterDeduction(monthlyInterest: number) {
   return (year - deduction) / 12
 }
 
-// Allt Boendeläget visar, räknat från dagens datum.
+// Ett lån räknat från dagens datum: skulden = lån − amortering × hela månader sedan start.
+export function loanNumbers(l: Pick<OtherLoan, 'loan' | 'amortization' | 'rate' | 'loanStart'>) {
+  const months = l.loanStart ? monthsSince(l.loanStart) : 0
+  const debt = Math.max(0, l.loan - l.amortization * months)
+  const interest = (debt * l.rate) / 100 / 12
+  const amortization = debt > 0 ? Math.min(l.amortization, debt) : 0
+  return { debt, paidOff: l.loan - debt, interest, amortization, monthly: interest + amortization, paid: l.loan > 0 ? (l.loan - debt) / l.loan : 0 }
+}
+
+// Allt Boendeläget visar, räknat från dagens datum. Ren månadskostnad gäller bara boendet;
+// kassaflödet tar också med andra lån (ränta och amortering), t.ex. MC-lånet.
 export function economyNumbers(e: Economy, contracts: Contract[] = []) {
-  const months = e.loanStart ? monthsSince(e.loanStart) : 0
-  const debt = Math.max(0, e.loan - e.amortization * months)
-  const interest = (debt * e.rate) / 100 / 12
-  const saving = debt > 0 ? Math.min(e.amortization, debt) : 0
+  const home = loanNumbers(e)
   const fixed = fixedCosts(contracts, e)
-  const costs = interest + fixed
+  const costs = home.interest + fixed
+  const others = (e.loans ?? []).map((l) => ({ ...l, ...loanNumbers(l) }))
+  const otherMonthly = others.reduce((s, l) => s + l.monthly, 0)
   return {
-    debt,
-    paidOff: e.loan - debt,
-    interest,
-    interestAfter: afterDeduction(interest),
+    debt: home.debt,
+    paidOff: home.paidOff,
+    interest: home.interest,
+    interestAfter: afterDeduction(home.interest),
     fixed,
     costs,
-    saving,
-    cashflow: costs + saving,
-    share: e.loan > 0 ? debt / e.loan : 0,
+    saving: home.amortization,
+    others,
+    cashflow: costs + home.amortization + otherMonthly,
+    share: e.loan > 0 ? home.debt / e.loan : 0,
   }
 }
 

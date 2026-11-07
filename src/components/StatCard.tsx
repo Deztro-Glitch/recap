@@ -6,11 +6,12 @@ type IconType = React.ComponentType<{ size?: number; stroke?: number }>
 
 // Ett ljust statistikkort: ikon och rubrik, en stor siffra, ibland en märkning och en stapel.
 // Hela kortet går att öppna (detaljvyn); pilen uppe till höger visar det. Ingen förklarande text på kortet.
-export function StatCard({ icon: Icon, label, value, badge, onOpen, className, children }: {
+export function StatCard({ icon: Icon, label, value, badge, top, onOpen, className, children }: {
   icon: IconType
   label: string
   value?: ReactNode   // utelämnas när kortet visar en graf i stället för en enda siffra
   badge?: ReactNode
+  top?: ReactNode     // något mellan rubriken och siffran, t.ex. flikar
   onOpen: () => void
   className?: string
   children?: ReactNode
@@ -23,6 +24,7 @@ export function StatCard({ icon: Icon, label, value, badge, onOpen, className, c
         {badge && <span className="kpi__badge">{badge}</span>}
         <span className="kpi__open" aria-hidden><IconArrowUpRight size={15} stroke={2} /></span>
       </div>
+      {top}
       {value !== undefined && <div className="kpi__value">{value}</div>}
       {children}
     </GlassCard>

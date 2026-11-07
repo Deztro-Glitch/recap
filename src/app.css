@@ -274,18 +274,19 @@
   grid-template-areas:
     "hero hero flow flow"
     "hero hero cost el"
-    "hero hero todo todo";
+    "loans loans todo todo";
   margin-bottom: var(--s-6);
 }
 .eco-dash__hero { grid-area: hero; }
 .eco-dash__flow { grid-area: flow; }
 .eco-dash__cost { grid-area: cost; }
 .eco-dash__todo { grid-area: todo; }
+.eco-dash__loans { grid-area: loans; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .eco-dash__el { grid-area: el; }
 @media (max-width: 1100px) {
   .eco-dash {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "hero hero" "flow flow" "cost el" "todo todo";
+    grid-template-areas: "hero hero" "flow flow" "cost el" "loans loans" "todo todo";
   }
 }
 
@@ -364,6 +365,49 @@
   .minibars__label { padding: 2px 6px; font-size: 10.5px; }
 }
 
+/* Flikarna i Kassaflöde (Segmented i Charts.tsx): markeringen glider mellan valen. */
+.segmented {
+  display: flex; gap: 2px; margin-top: var(--s-3); padding: 4px;
+  border-radius: 999px; background: var(--fill);
+  overflow-x: auto; scrollbar-width: none;
+}
+.segmented__item {
+  position: relative; flex: 1 0 auto;
+  padding: 7px 14px; border: 0; border-radius: 999px; background: none; cursor: pointer;
+  font: 600 var(--fs-meta) var(--font); color: var(--text-2); white-space: nowrap;
+  transition: color var(--t-fast);
+}
+.segmented__item:hover { color: var(--text); }
+.segmented__item.is-active { color: var(--text); }
+.segmented__thumb {
+  position: absolute; inset: 0; border-radius: inherit;
+  background: rgba(255, 255, 255, .75);
+  box-shadow: 0 2px 8px rgba(14, 21, 18, .12), inset 0 1px 0 #FFFFFF;
+}
+.segmented__label { position: relative; z-index: 1; }
+@media (max-width: 760px) { .segmented__item { padding: 6px 10px; font-size: 12px; } }
+
+/* Platshållarstaplar tills det finns köp: randiga och gråa, utan belopp. */
+.minibars.is-ghost .minibars__bar {
+  background: repeating-linear-gradient(135deg, var(--fill) 0 6px, transparent 6px 12px);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* Andra lån (t.ex. MC-lånet): ringen och amorterat bredvid. */
+.loan-mini { display: flex; align-items: center; gap: var(--s-4); margin-top: auto; }
+.loan-mini__text { display: grid; line-height: 1.3; }
+.loan-mini__text b { font-weight: 700; color: var(--text); }
+.ring { flex: none; transform: rotate(-90deg); overflow: visible; }
+.ring__track, .ring__fill { fill: none; stroke-width: 5; stroke-linecap: round; }
+.ring__track { stroke: var(--gauge-track); }
+.ring__fill { stroke: var(--success-2); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--success) 55%, transparent)); }
+.ring__text { transform: rotate(90deg); transform-origin: 22px 22px; font: 700 10px var(--font); fill: var(--text); }
+
+/* Andra lån i Ekonomi-formuläret. */
+.loan-edit { display: grid; gap: var(--s-3); padding: var(--s-3); border-radius: var(--r-row); box-shadow: inset 0 0 0 1px var(--line); }
+.loan-edit__head { display: flex; align-items: flex-end; gap: var(--s-2); }
+.loan-edit__head .field { flex: 1; }
+
 /* Att göra (Todos.tsx): fält och plusknapp överst, listan under med runda bockar. */
 .todo-add { display: flex; gap: var(--s-2); margin-top: var(--s-4); }
 .todo-add .input { padding: 10px 14px; }
@@ -375,7 +419,13 @@
 }
 .todo-add__btn:hover:not(:disabled) { transform: translateY(-1px); }
 .todo-add__btn:disabled { opacity: .3; cursor: default; }
-.todo-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 2px; max-height: 248px; overflow-y: auto; }
+/* Listan har fast maxhöjd och skrollar inuti kortet, så att många uppgifter inte drar ut sidan. */
+.todo-list {
+  list-style: none; margin: var(--s-3) 0 0; padding: 0 4px 0 0;
+  display: grid; align-content: start; gap: 2px;
+  max-height: 12rem; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+}
 .todo {
   display: flex; align-items: center; gap: var(--s-3);
   padding: 8px 6px; border-radius: var(--r-field);
