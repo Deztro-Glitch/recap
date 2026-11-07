@@ -27,7 +27,7 @@ export function EconomyDashboard({ state, open }: ViewProps) {
   return (
     <div className="eco-dash">
       <LoanValueCard state={state} onOpen={detail('Bolån')} onEdit={edit} />
-      <FlowCard state={state} has={has} onOpen={detail('Kassaflöde')} />
+      <FlowCard state={state} has={has} onOpen={() => open({ t: 'budget' })} />
       <StatCard className="eco-dash__cost" icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onOpen={detail('Ren månadskostnad')} />
       {e?.zone && el && (
         <StatCard className="eco-dash__el" icon={IconBolt} label={`Elpris nu, ${e.zone}`} value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'} onOpen={detail(`Elpris nu, ${e.zone}`)} />

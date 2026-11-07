@@ -8,7 +8,8 @@ import { IconCheck, IconChevronDown, IconX } from '@tabler/icons-react'
 export const ease = [0.65, 0, 0.35, 1] as const
 export const isMobile = () => matchMedia('(max-width: 760px)').matches
 
-export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+// wide: bredare panel på dator, för vyer med grafer (t.ex. kassaflödet).
+export function Sheet({ open, onClose, title, wide, children }: { open: boolean; onClose: () => void; title: string; wide?: boolean; children: ReactNode }) {
   const from = isMobile() ? { y: '100%' } : { x: '105%' }
   useEffect(() => {
     if (!open) return
@@ -21,7 +22,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
       {open && (
         <>
           <motion.div className="backdrop" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease }} />
-          <GlassCard className="sheet" lift={false} role="dialog" aria-modal="true" aria-label={title} initial={from} animate={{ x: 0, y: 0 }} exit={from} transition={{ duration: 0.4, ease }}>
+          <GlassCard className={`sheet ${wide ? 'sheet--wide' : ''}`} lift={false} role="dialog" aria-modal="true" aria-label={title} initial={from} animate={{ x: 0, y: 0 }} exit={from} transition={{ duration: 0.4, ease }}>
             <div className="sheet__head">
               <h2>{title}</h2>
               <button className="btn btn--ghost" aria-label="Stäng" onClick={onClose}><IconX size={18} /></button>

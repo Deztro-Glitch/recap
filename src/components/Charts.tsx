@@ -118,3 +118,43 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Munkdiagram: hela ringen är 100 % (t.ex. lönen). Varje del ritas som en båge i sin färg, med en
+// liten glipa emellan, och det som blir över ligger kvar som spår. Texten står i hålet.
+// ---------------------------------------------------------------------------
+export interface Slice { key: string; label: string; amount: number; color: string }
+
+export function Donut({ slices, total, label, children }: { slices: Slice[]; total: number; label: string; children?: ReactNode }) {
+  const still = useReducedMotion()
+  const sum = slices.reduce((s, x) => s + x.amount, 0)
+  const base = Math.max(total, sum, 1)   // går utgifterna över lönen fylls hela ringen
+  const GAP = slices.length > 1 ? 0.8 : 0
+  let at = 0
+  return (
+    <div className="donut" role="img" aria-label={label}>
+      <svg viewBox="0 0 200 200" className="donut__svg">
+        <circle cx="100" cy="100" r="80" pathLength={100} className="donut__track" />
+        {slices.map((s, i) => {
+          const len = (s.amount / base) * 100
+          const start = at
+          at += len
+          const shown = Math.max(0.4, len - GAP)
+          return (
+            <motion.circle
+              key={s.key}
+              cx="100" cy="100" r="80" pathLength={100}
+              className="donut__slice"
+              style={{ stroke: s.color }}
+              strokeDashoffset={-start}
+              initial={still ? false : { strokeDasharray: '0 100' }}
+              animate={{ strokeDasharray: `${shown} ${100 - shown}` }}
+              transition={{ ...grow, delay: grow.delay + i * 0.08 }}
+            />
+          )
+        })}
+      </svg>
+      <div className="donut__center">{children}</div>
+    </div>
+  )
+}

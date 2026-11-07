@@ -42,6 +42,7 @@ export interface Economy {
   sqmAverage?: number     // snittpris i området för normalt skick, kr/kvm
   sqmTop?: number         // toppris i området för nyrenoverat, kr/kvm
   loans?: OtherLoan[]     // övriga lån än bolånet, t.ex. MC-lån och billån. Räknas in i kassaflödet.
+  income?: number         // månadslön efter skatt; 100 % i kassaflödets budget
 }
 
 // Ett övrigt lån (bil, MC, studielån). Man fyller i skulden som den är i dag; den minskar sedan med

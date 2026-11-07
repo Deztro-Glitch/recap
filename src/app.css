@@ -116,7 +116,11 @@
 
 /* ---------- Paneler som glider in (botten på mobil, höger på dator) ---------- */
 
-.backdrop { position: fixed; inset: 0; z-index: 50; background: var(--scrim); }
+/* Resten av sidan dimmas och suddas lite, så att panelen står i fokus. */
+.backdrop {
+  position: fixed; inset: 0; z-index: 50; background: var(--scrim);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
 /* Panelen scrollar, så kantljuset görs med inre skuggor i stället för ::before (som skulle följa med i scrollen). */
 .glass.sheet {
   position: fixed; z-index: 51; top: var(--s-2); right: var(--s-2); bottom: var(--s-2);
@@ -129,6 +133,7 @@
   box-shadow: var(--glass-edge-inset), var(--shadow-float);
 }
 .glass.sheet::before { display: none; }
+.glass.sheet.sheet--wide { width: min(480px, calc(100% - 16px)); }
 .sheet__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s-4); }
 @media (max-width: 760px) {
   .glass.sheet {
@@ -423,6 +428,72 @@
 .calc__rows > div { display: flex; justify-content: space-between; gap: var(--s-3); }
 .calc__rows dd { margin: 0; font-weight: 600; color: var(--text); }
 .calc__sum { border-top: 1px solid var(--line); padding-top: var(--s-2); margin-top: 2px; font-weight: 700; }
+
+/* Kassaflödets budget (Budget.tsx): lönen överst, munkdiagrammet, fördelningen, snabbinmatning och senaste köpen. */
+.budget { display: grid; gap: var(--s-5); }
+.budget__pay { position: relative; }
+.budget__pay .input {
+  padding: 14px 48px 14px 16px;
+  font-size: 24px; font-weight: var(--fw-number); letter-spacing: -.02em;
+}
+.budget__unit { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-2); font-weight: 600; pointer-events: none; }
+
+.donut { position: relative; width: min(260px, 72vw); aspect-ratio: 1; justify-self: center; }
+.donut__svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.donut__track, .donut__slice { fill: none; stroke-width: 20; }
+.donut__track { stroke: var(--gauge-track); }
+.donut__slice { filter: drop-shadow(0 0 6px rgba(0, 0, 0, .25)); }
+.donut__center {
+  position: absolute; inset: 0;
+  display: grid; place-content: center; justify-items: center; gap: 2px; text-align: center;
+}
+.donut__value {
+  font-size: 30px; font-weight: var(--fw-number); letter-spacing: -.02em; line-height: 1.1;
+  background-image: var(--num); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.donut__value.is-negative { background-image: var(--num-negative); }
+
+.budget__legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2) var(--s-4); }
+.budget__legend li { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
+.budget__legend i { flex: none; width: 10px; height: 10px; border-radius: 999px; }
+.budget__legend span:not(.meta) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.budget__legend b { margin-left: auto; font-weight: 600; color: var(--text); white-space: nowrap; }
+.budget__legend .meta { white-space: nowrap; }
+@media (max-width: 760px) { .budget__legend { grid-template-columns: 1fr; } }
+
+/* Snabbinmatningen ser ut som ett chattfält: ett runt glasfält med skicka-knappen inuti. */
+.quick {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 6px 6px 6px 18px; border-radius: 999px;
+  background: var(--field); box-shadow: inset 0 0 0 1px var(--line);
+  transition: box-shadow var(--t-fast), background-color var(--t-fast);
+}
+.quick:focus-within {
+  background: var(--glass-hover);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 75%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.quick__input {
+  flex: 1; min-width: 0; padding: 10px 0; border: 0; outline: none; background: none;
+  font: 500 var(--fs-body) var(--font); color: var(--text);
+}
+.quick__input::placeholder { color: var(--text-2); opacity: .8; }
+.quick__send {
+  flex: none; width: 40px; height: 40px; border: 0; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--text); color: var(--bg);
+  transition: opacity var(--t-fast), transform var(--t-fast) var(--ease-out);
+}
+.quick__send:hover:not(:disabled) { transform: translateY(-1px); }
+.quick__send:disabled { opacity: .25; cursor: default; }
+
+.budget__recent h3 { margin: 0 0 var(--s-2); }
+.tx-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.tx { display: flex; align-items: center; gap: var(--s-3); padding: 10px 8px; border-radius: var(--r-field); }
+.tx:hover { background: var(--fill); }
+.tx__dot { flex: none; width: 10px; height: 10px; border-radius: 999px; }
+.tx__text { display: grid; min-width: 0; line-height: 1.3; }
+.tx__title { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx__amount { margin-left: auto; font-weight: 700; color: var(--text); white-space: nowrap; }
 
 /* Att göra (Todos.tsx): fält och plusknapp överst, listan under med runda bockar. */
 .todo-add { display: flex; gap: var(--s-2); margin-top: var(--s-4); }
