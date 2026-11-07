@@ -8,6 +8,7 @@ import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { StatCard } from '../../components/StatCard'
 import { IconArrowsExchange, IconBolt, IconBuildingBank, IconCreditCard, IconHomeDollar, IconReceipt2 } from '@tabler/icons-react'
 import { TodoCard } from './Todos'
+import { QuickEntryCard } from './QuickEntry'
 import { Counter } from '../../components/Counter'
 import { Gauge, MiniBars, Ring, Segmented, type Bar } from '../../components/Charts'
 import { allItems } from './Items'
@@ -34,6 +35,7 @@ export function EconomyDashboard({ state, open }: ViewProps) {
       )}
       <OtherLoansCard state={state} onOpen={(id) => open({ t: 'loans', id })} />
       <TodoCard state={state} />
+      <QuickEntryCard state={state} />
     </div>
   )
 }

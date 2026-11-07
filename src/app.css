@@ -279,7 +279,8 @@
   grid-template-areas:
     "hero hero flow flow"
     "hero hero cost el"
-    "loans loans todo todo";
+    "loans loans todo todo"
+    "quick quick todo todo";
   margin-bottom: var(--s-6);
 }
 .eco-dash__hero { grid-area: hero; }
@@ -288,10 +289,11 @@
 .eco-dash__todo { grid-area: todo; }
 .eco-dash__loans { grid-area: loans; }
 .eco-dash__el { grid-area: el; }
+.eco-dash__quick { grid-area: quick; }
 @media (max-width: 1100px) {
   .eco-dash {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "hero hero" "flow flow" "cost el" "loans loans" "todo todo";
+    grid-template-areas: "hero hero" "quick quick" "flow flow" "cost el" "loans loans" "todo todo";
   }
 }
 
@@ -461,39 +463,58 @@
 .budget__legend .meta { white-space: nowrap; }
 @media (max-width: 760px) { .budget__legend { grid-template-columns: 1fr; } }
 
-/* Snabbinmatningen ser ut som ett chattfält: ett runt glasfält med skicka-knappen inuti. */
+/* Senaste transaktioner: en stram textlista med tunna linjer. Namnet till vänster med datumet i liten
+   grå text under, beloppet till höger. Ett helt kvitto är en rad. */
+.budget__recent h3 { margin: 0 0 var(--s-2); }
+.tx-list { list-style: none; margin: 0; padding: 0; }
+.tx { display: flex; align-items: baseline; gap: var(--s-4); padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tx:last-child { border-bottom: 0; }
+.tx__text { display: grid; gap: 2px; min-width: 0; }
+.tx__title { color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx__date { font-size: 12px; color: var(--text-2); }
+.tx__amount { margin-left: auto; font-weight: 600; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Snabb inmatning (QuickEntry.tsx): ett kort på dashboarden med ett runt fält och en grön Skicka-knapp inuti. */
+.quick-card { gap: var(--s-4); }
 .quick {
   display: flex; align-items: center; gap: var(--s-2);
-  padding: 6px 6px 6px 18px; border-radius: 999px;
+  margin-top: var(--s-4);
+  padding: 6px 6px 6px 20px; border-radius: 999px;
   background: var(--field); box-shadow: inset 0 0 0 1px var(--line);
   transition: box-shadow var(--t-fast), background-color var(--t-fast);
 }
 .quick:focus-within {
-  background: var(--glass-hover);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 75%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 75%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .quick__input {
-  flex: 1; min-width: 0; padding: 10px 0; border: 0; outline: none; background: none;
-  font: 500 var(--fs-body) var(--font); color: var(--text);
+  flex: 1; min-width: 0; padding: 12px 0; border: 0; outline: none; background: none;
+  font: 500 16px var(--font); color: var(--text);
 }
-.quick__input::placeholder { color: var(--text-2); opacity: .8; }
+.quick__input::placeholder { color: var(--text-2); opacity: .85; }
 .quick__send {
-  flex: none; width: 40px; height: 40px; border: 0; border-radius: 999px; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--text); color: var(--bg);
-  transition: opacity var(--t-fast), transform var(--t-fast) var(--ease-out);
+  flex: none; height: 44px; padding: 0 18px 0 14px; border: 0; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 700 var(--fs-meta) var(--font);
+  background: var(--accent); color: var(--on-accent);
+  box-shadow: 0 6px 18px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, .35);
+  transition: opacity var(--t-fast), transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast);
 }
 .quick__send:hover:not(:disabled) { transform: translateY(-1px); }
-.quick__send:disabled { opacity: .25; cursor: default; }
+.quick__send:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.quick__send[aria-busy="true"] { opacity: 1; }
+.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 
-.budget__recent h3 { margin: 0 0 var(--s-2); }
-.tx-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.tx { display: flex; align-items: center; gap: var(--s-3); padding: 10px 8px; border-radius: var(--r-field); }
-.tx:hover { background: var(--fill); }
-.tx__dot { flex: none; width: 10px; height: 10px; border-radius: 999px; }
-.tx__text { display: grid; min-width: 0; line-height: 1.3; }
-.tx__title { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tx__amount { margin-left: auto; font-weight: 700; color: var(--text); white-space: nowrap; }
+/* Vad som sparades och vilken kategori AI:n valde. */
+.quick__saved { display: flex; align-items: center; gap: var(--s-2); margin: var(--s-3) 0 0; min-width: 0; font-size: var(--fs-meta); }
+.quick__ok { flex: none; color: var(--success-2); }
+.quick__what { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quick__cat {
+  flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px; background: var(--fill); color: var(--text); font-weight: 600;
+}
+.quick__cat i { width: 8px; height: 8px; border-radius: 999px; }
 
 /* Att göra (Todos.tsx): fält och plusknapp överst, listan under med runda bockar. */
 .todo-add { display: flex; gap: var(--s-2); margin-top: var(--s-4); }

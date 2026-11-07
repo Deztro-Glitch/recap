@@ -121,6 +121,9 @@ export const PRIORITY_LABEL: Record<Priority, string> = { 1: 'Hög', 2: 'Normal'
 export interface Detail { label: string; value: string }
 export const DETAIL_SUGGESTIONS = ['Färgkod', 'Kulör', 'Artikelnummer', 'Garanti till', 'Hantverkare', 'Mått']
 
+// Budgetkategori för ett köp (kassaflödets munkdiagram). Väljs av AI:n vid snabb inmatning.
+export type BudgetCategory = 'housing' | 'loans' | 'food' | 'transport' | 'home' | 'fun' | 'saving' | 'other'
+
 export interface Purchase {
   id: string
   project_id: string
@@ -138,6 +141,7 @@ export interface Purchase {
   k6: boolean             // värdehöjande förbättring, dras av vid försäljning
   k6_kind?: K6Kind | null
   scope: Scope | null     // tomt = gissas utifrån namnet
+  category?: BudgetCategory | null   // tomt = gissas utifrån namnet (migration 011)
   receipt_path: string | null
   receipt_id?: string | null   // raden hör till ett kvitto med flera rader
   image_path: string | null
