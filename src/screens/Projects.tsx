@@ -5,6 +5,7 @@ import { api, type User } from '../lib/api'
 import { kr, parseNum } from '../lib/format'
 import { Chips, Field, Loader, More, Primary, Sheet, rowAnim, useToast } from '../components/ui'
 import { NavItem, Shell } from '../components/Shell'
+import { GlassCard } from '../components/GlassCard'
 import { KIND_LABEL, ROOM_PRESETS, type Kind, type Project } from '../types'
 
 const KIND_ICON = { lagenhet: IconBuilding, hus: IconHome, annat: IconHomeEco }
@@ -43,7 +44,7 @@ export function Projects({ user, onOpen }: { user: User; onOpen: (id: string) =>
             {shown!.map((p) => {
               const Icon = KIND_ICON[p.kind]
               return (
-                <motion.div key={p.id} {...rowAnim} className="row" onClick={() => onOpen(p.id)}>
+                <GlassCard key={p.id} {...rowAnim} className="row" onClick={() => onOpen(p.id)}>
                   <div className="row__main">
                     <Icon size={20} />
                     <div className="row__text">
@@ -53,7 +54,7 @@ export function Projects({ user, onOpen }: { user: User; onOpen: (id: string) =>
                   </div>
                   {p.budget > 0 && <span className="row__amount">{kr(p.budget)}</span>}
                   <IconChevronRight size={18} />
-                </motion.div>
+                </GlassCard>
               )
             })}
           </AnimatePresence>

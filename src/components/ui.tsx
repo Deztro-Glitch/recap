@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import { GlassCard } from './GlassCard'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { IconCheck, IconChevronDown, IconX } from '@tabler/icons-react'
@@ -20,13 +21,13 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
       {open && (
         <>
           <motion.div className="backdrop" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease }} />
-          <motion.div className="sheet" role="dialog" aria-label={title} initial={from} animate={{ x: 0, y: 0 }} exit={from} transition={{ duration: 0.4, ease }}>
+          <GlassCard className="sheet" lift={false} role="dialog" aria-modal="true" aria-label={title} initial={from} animate={{ x: 0, y: 0 }} exit={from} transition={{ duration: 0.4, ease }}>
             <div className="sheet__head">
               <h2>{title}</h2>
               <button className="btn btn--ghost" aria-label="Stäng" onClick={onClose}><IconX size={18} /></button>
             </div>
             {children}
-          </motion.div>
+          </GlassCard>
         </>
       )}
     </AnimatePresence>,
