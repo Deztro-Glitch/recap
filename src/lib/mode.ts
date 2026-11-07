@@ -12,6 +12,10 @@ export function applyMode(mode: Mode | null) {
   }
   if (next) root.dataset.mode = next
   else delete root.dataset.mode
+  // Senaste läget minns till nästa start, så att ljuset inte blinkar i fel färg (se index.html).
+  try {
+    if (next) localStorage.setItem('recap-mode', next)
+  } catch {}
   syncThemeColor()
 }
 

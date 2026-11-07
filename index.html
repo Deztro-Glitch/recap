@@ -1,26 +1,33 @@
 <!doctype html>
-<html lang="sv">
+<html lang="sv" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0B0A11" />
+    <meta name="theme-color" content="#0A0A0C" />
+    <meta name="color-scheme" content="dark" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Recap" />
     <link rel="icon" type="image/svg+xml" href="icon.svg" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <title>Recap</title>
     <script>
-      // Mörkt är standard. Ljust bara om man själv har valt det.
-      var light = false
-      try { light = localStorage.getItem('recap-look') === 'light' } catch {}
-      if (!light) document.documentElement.dataset.theme = 'dark'
+      // Öppnas ett hem direkt får ljuset och accenten senaste lägets färg från start.
+      try { if (location.hash.indexOf('#/p/') === 0) { var m = localStorage.getItem('recap-mode'); if (m) document.documentElement.dataset.mode = m } } catch {}
     </script>
   </head>
   <body>
+    <!-- Ljuset bakom glaset: stora suddiga färgfläckar, färgen följer läget (app.css, .mesh). -->
+    <div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>
+    <!-- Planritningen: det vita blir genomskinligt och linjerna ljusa (används i app.css, .plan img). -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <filter id="plan-ink" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="0 0 0 0 0.93  0 0 0 0 0.93  0 0 0 0 0.96  -0.2126 -0.7152 -0.0722 0 1" />
+      </filter>
+    </svg>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,22 +1,7 @@
-import { useState, type ReactNode } from 'react'
-import { IconChevronDown, IconMoon, IconPlus, IconSun } from '@tabler/icons-react'
+import type { ReactNode } from 'react'
+import { IconChevronDown, IconPlus } from '@tabler/icons-react'
 import type { User } from '../lib/api'
 import { Primary } from './ui'
-import { syncThemeColor } from '../lib/mode'
-
-export function useTheme() {
-  const [dark, setDark] = useState(() => document.documentElement.dataset.theme === 'dark')
-  const toggle = () => {
-    const next = !dark
-    setDark(next)
-    document.documentElement.dataset.theme = next ? 'dark' : ''
-    syncThemeColor()
-    try {
-      localStorage.setItem('recap-look', next ? 'dark' : 'light')
-    } catch {}
-  }
-  return { dark, toggle }
-}
 
 export const initials = (email: string) => email.split('@')[0].replace(/[^a-zåäö]/gi, '').slice(0, 2).toUpperCase() || '?'
 
@@ -40,7 +25,6 @@ interface Props {
 }
 
 export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvatar, children }: Props) {
-  const theme = useTheme()
   const half = tabs ? Math.ceil(tabs.length / 2) : 0
   const tab = (t: Tab) => (
     <button key={t.id} className={`tabbar__item ${t.active ? 'is-active' : ''}`} onClick={t.onClick}>
@@ -51,7 +35,7 @@ export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvata
 
   return (
     <div className={`app app--no-process ${tabs ? 'app--tabs' : ''}`}>
-      <nav className="sidebar">
+      <nav className="sidebar glass">
         <Wordmark />
         {nav}
         {navFoot && <div className="sidebar__foot">{navFoot}</div>}
@@ -68,9 +52,6 @@ export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvata
             <div style={{ marginRight: 'auto' }} />
           )}
           {onAdd && <span className="topbar__add"><Primary onClick={onAdd}>Lägg till</Primary></span>}
-          <button className="btn btn--ghost" onClick={theme.toggle} aria-label="Byt ljust och mörkt läge">
-            {theme.dark ? <IconSun size={18} /> : <IconMoon size={18} />}
-          </button>
           <button className="avatar" style={{ border: 0, cursor: onAvatar ? 'pointer' : 'default' }} onClick={onAvatar} aria-label="Konto">
             {initials(user.email)}
           </button>
@@ -79,7 +60,7 @@ export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvata
       </main>
 
       {tabs && (
-        <nav className="tabbar">
+        <nav className="tabbar glass">
           {tabs.slice(0, half).map(tab)}
           {onAdd && (
             <button className="tabbar__add" onClick={onTabAdd ?? onAdd} aria-label="Lägg till">
