@@ -7,7 +7,7 @@ import {
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
 import { applyMode } from '../lib/mode'
-import { NavItem, Shell, type Tab } from '../components/Shell'
+import { Shell, type Tab } from '../components/Shell'
 import { Field, Loader, Sheet, ease, useToast } from '../components/ui'
 import { modeScope, type Contract, type PhotoKind, type Purchase, type Room, type Task } from '../types'
 import { AddRoomSheet } from './tabs/Rooms'
@@ -20,14 +20,6 @@ import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
 
 type ViewId = 'overview' | 'log' | 'purchases' | 'contracts' | 'settings'
-const VIEWS: { id: ViewId; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
-  { id: 'overview', label: 'Översikt', icon: IconLayoutGrid },
-  { id: 'log', label: 'Logg', icon: IconList },
-  { id: 'purchases', label: 'Inköp', icon: IconShoppingCart },
-  { id: 'contracts', label: 'Avtal och dokument', icon: IconFileText },
-  { id: 'settings', label: 'Inställningar', icon: IconSettings },
-]
-
 export type ProjectState = ReturnType<typeof useProject>
 
 // Alla formulär och paneler öppnas härifrån, så att de kan nås från vilken vy som helst.
@@ -217,6 +209,14 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     { id: 'more', label: 'Mer', icon: IconDots, active: moreViews.includes(view), onClick: () => open({ t: 'more' }) },
   ]
 
+  // Menypillret på dator: huvudvyerna, Avtal och Bostads-CV. Ekonomi och Inställningar ligger under Mer.
+  const nav: Tab[] = [
+    tabs[0], tabs[1], tabs[2],
+    { id: 'contracts', label: 'Avtal', icon: IconFileText, active: view === 'contracts' && contractTab === 'contracts', onClick: () => showContracts('contracts') },
+    { id: 'cv', label: 'Bostads-CV', icon: IconHomeCheck, active: view === 'contracts' && contractTab === 'cv', onClick: () => showContracts('cv') },
+    { ...tabs[3], active: view === 'settings' },
+  ]
+
   const addRows = [
     { icon: IconCamera, title: 'Fota kvitto eller bild', on: () => cameraInput.current?.click() },
     { icon: IconPhoto, title: 'Välj från bilder eller filer', on: () => photoInput.current?.click() },
@@ -233,16 +233,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       onAdd={() => open({ t: 'add' })}
       onAvatar={() => go('settings')}
       tabs={tabs}
-      nav={
-        <>
-          <NavItem icon={IconArrowLeft} label="Mina hem" onClick={onBack} />
-          {VIEWS.filter((v) => !moreViews.includes(v.id)).map((v) => <NavItem key={v.id} icon={v.icon} label={v.label} active={view === v.id} onClick={() => go(v.id)} />)}
-          <div className="nav-label meta">Mer</div>
-          {moreRows.map((r) => (
-            <NavItem key={r.id} icon={r.icon} label={r.label} active={r.id === 'settings' ? view === 'settings' : r.id !== 'economy' && view === 'contracts' && contractTab === r.id} onClick={r.on} />
-          ))}
-        </>
-      }
+      nav={nav}
     >
       <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPicked(e.target.files)} />
       <input ref={photoInput} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => onPicked(e.target.files)} />
@@ -257,7 +248,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
         <Loader />
       ) : (
         <AnimatePresence mode="wait">
-          <motion.div key={view} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease }}>
+          <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3, ease }}>
             {view === 'overview' && <Overview {...props} place={place} setPlace={setPlace} />}
             {view === 'log' && <Log {...props} />}
             {view === 'purchases' && <Purchases {...props} />}

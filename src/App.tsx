@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { api, type User } from './lib/api'
 import { Login } from './screens/Login'
 import { Projects } from './screens/Projects'
@@ -28,6 +29,12 @@ export function App() {
 
   if (user === undefined) return null
   if (!user) return <Login />
-  if (pid) return <ProjectView key={pid} pid={pid} user={user} onBack={() => open(null)} />
-  return <Projects user={user} onOpen={open} />
+  // Byte mellan Mina hem och ett hem tonar in och glider upp, som flikarna inne i ett hem.
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div key={pid ?? 'homes'} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}>
+        {pid ? <ProjectView pid={pid} user={user} onBack={() => open(null)} /> : <Projects user={user} onOpen={open} />}
+      </motion.div>
+    </AnimatePresence>
+  )
 }

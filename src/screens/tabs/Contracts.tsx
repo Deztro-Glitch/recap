@@ -6,6 +6,7 @@ import { daysLeft, kr, parseNum } from '../../lib/format'
 import { FileField } from '../../components/FileField'
 import { SwipeRow } from '../../components/SwipeRow'
 import { GlassCard } from '../../components/GlassCard'
+import { Counter } from '../../components/Counter'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { COMMON_CONTRACTS, CONTRACT_KIND_LABEL, HOME_CONTRACTS, K6_LABEL, PROVIDERS, type Contract, type ContractKind } from '../../types'
 import { contractScope, homeContracts } from '../../lib/economy'
@@ -57,8 +58,8 @@ function ContractList({ state, open }: ViewProps) {
     <>
       {list.length > 0 && (
         <div className="kpis section">
-          <GlassCard className="kpi"><div className="meta">Boendeavtal</div><div className="kpi__value">{kr(monthly(counted))}/mån</div><div className="meta">Räknas i Ren månadskostnad</div></GlassCard>
-          <GlassCard className="kpi"><div className="meta">Privata abonnemang</div><div className="kpi__value">{kr(monthly(subs))}/mån</div><div className="meta">{kr(monthly(list) * 12)} per år totalt</div></GlassCard>
+          <GlassCard className="kpi"><div className="meta">Boendeavtal</div><div className="kpi__value"><Counter value={monthly(counted)} format={(v) => `${kr(v)}/mån`} /></div><div className="meta">Räknas i Ren månadskostnad</div></GlassCard>
+          <GlassCard className="kpi"><div className="meta">Privata abonnemang</div><div className="kpi__value"><Counter value={monthly(subs)} format={(v) => `${kr(v)}/mån`} /></div><div className="meta">{kr(monthly(list) * 12)} per år totalt</div></GlassCard>
         </div>
       )}
       <ContractGroup title="Boendeavtal" list={home} state={state} open={open} sum={monthly(home)} />

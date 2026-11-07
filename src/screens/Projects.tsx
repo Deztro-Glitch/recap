@@ -4,7 +4,7 @@ import { IconBuilding, IconChevronRight, IconHome, IconHomeEco, IconLogout } fro
 import { api, type User } from '../lib/api'
 import { kr, parseNum } from '../lib/format'
 import { Chips, Field, Loader, More, Primary, Sheet, rowAnim, useToast } from '../components/ui'
-import { NavItem, Shell } from '../components/Shell'
+import { Shell } from '../components/Shell'
 import { GlassCard } from '../components/GlassCard'
 import { KIND_LABEL, ROOM_PRESETS, type Kind, type Project } from '../types'
 
@@ -23,8 +23,10 @@ export function Projects({ user, onOpen }: { user: User; onOpen: (id: string) =>
   return (
     <Shell
       user={user}
-      nav={<NavItem icon={IconHome} label="Mina hem" active onClick={() => {}} />}
-      navFoot={<NavItem icon={IconLogout} label="Logga ut" onClick={() => api.signOut()} />}
+      nav={[
+        { id: 'homes', label: 'Mina hem', icon: IconHome, active: true, onClick: () => {} },
+        { id: 'logout', label: 'Logga ut', icon: IconLogout, active: false, onClick: () => api.signOut() },
+      ]}
     >
       <div className="section-head">
         <h1>Mina hem</h1>

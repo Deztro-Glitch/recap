@@ -33,7 +33,7 @@
   --glass-edge-inset: inset 1px 1px 0 rgba(255, 255, 255, .16), inset -1px -1px 0 rgba(255, 255, 255, .03);
   --shadow: 0 8px 32px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .05);
   --shadow-hover: 0 16px 44px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08);
-  /* Menyval under muspekaren: en mjuk glasyta med kantljus. */
+  /* Menyval under muspekaren (menypillret): en mjuk glasyta med kantljus. */
   --nav-hover: inset 1px 1px 0 rgba(255, 255, 255, .12), inset -1px -1px 0 rgba(255, 255, 255, .02), 0 4px 16px rgba(0, 0, 0, .2);
   --shadow-float: 0 24px 70px rgba(0, 0, 0, .6);
   --sheet-bg: rgba(12, 12, 16, .55);        /* paneler och notiser */
@@ -77,6 +77,7 @@
   --num-positive: linear-gradient(180deg, #6EE7B7 0%, var(--success-2) 100%);
   --num-negative: linear-gradient(180deg, #FCA5A5 0%, var(--danger) 100%);
   --bar-track: rgba(255, 255, 255, .07);
+  --bar-h: 14px;
   --bar-loan: linear-gradient(90deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, .75));
 
   /* ---------- Innehållsfärger för rum (ikon, planritning). Par: färg + mörk text ---------- */
@@ -117,7 +118,7 @@
   --card-pad: 24px;      /* inuti kort */
   --row-pad-y: 14px;     /* inuti rader */
   --row-pad-x: 20px;
-  --sidebar-w: 216px;
+  --content-w: 1240px;  /* innehållets största bredd på stora skärmar */
 
   /* ---------- Rörelse: lugn och mjuk ---------- */
   --ease: cubic-bezier(.65, 0, .35, 1);

@@ -4,15 +4,13 @@
    ========================================================================== */
 
 
-/* ---------- Appskalet: fyller skärmen, sidomeny på dator, meny längst ner på mobil ---------- */
+/* ---------- Appskalet: fyller skärmen, menypillret uppe på dator, meny längst ner på mobil ---------- */
 
 .app {
   height: 100dvh;
   min-height: 0;
-  padding: calc(env(safe-area-inset-top, 0px) + var(--gutter)) var(--gutter) calc(env(safe-area-inset-bottom, 0px) + var(--gutter));
+  padding: calc(env(safe-area-inset-top, 0px) + var(--s-2)) var(--gutter) 0;
 }
-.sidebar__foot { margin-top: auto; }
-.nav-label { padding: var(--s-5) 14px var(--s-2); }
 
 .topbar__home {
   display: flex; align-items: center; gap: var(--s-1);
@@ -46,11 +44,9 @@
 }
 
 @media (max-width: 760px) {
-  .app { gap: var(--s-2); grid-template-rows: auto minmax(0, 1fr); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--s-2)); }
+  .app { gap: var(--s-2); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--s-2)); }
   .app--tabs { grid-template-rows: minmax(0, 1fr) auto; }
-  .app--tabs .sidebar { display: none; }
   .app--tabs .topbar__add { display: none; }
-  .sidebar { flex: none; scrollbar-width: none; }
   .tabbar { display: flex; align-items: stretch; }
 }
 
@@ -285,7 +281,8 @@
 .loan__ends > div:last-child { text-align: right; }
 
 /* Staplarna: runda, neutral vit för lånet, smaragdgrönt med glöd för din del. */
-.budget-track, .split-track { height: 10px; border-radius: 999px; overflow: hidden; background: var(--bar-track); }
+/* Tjocka spår med runda ändar. Fyllningen glider ut från noll (framer-motion i Economy.tsx). */
+.budget-track, .split-track { height: var(--bar-h); border-radius: 999px; overflow: hidden; background: var(--bar-track); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35); }
 .budget-track { position: relative; }
 .budget-track > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; transition: width var(--t-base) var(--ease); }
 .budget-track .is-spent { background: var(--bar-loan); }
@@ -339,7 +336,7 @@
 /* ---------- Utskrift (Bostads-CV) utan menyer, glas och ljus ---------- */
 
 @media print {
-  .sidebar, .topbar, .tabbar, .no-print, .section-head .chips, .mesh, .glass::before { display: none !important; }
+  .topbar, .tabbar, .no-print, .section-head .chips, .mesh, .glass::before { display: none !important; }
   .app, .main { display: block; padding: 0; }
   .glass { -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border: 1px solid var(--line); }
   .row { break-inside: avoid; }

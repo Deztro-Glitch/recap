@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
 import { IconChevronDown, IconPlus } from '@tabler/icons-react'
 import type { User } from '../lib/api'
 import { Primary } from './ui'
+import { GlassCard } from './GlassCard'
 
 export const initials = (email: string) => email.split('@')[0].replace(/[^a-zåäö]/gi, '').slice(0, 2).toUpperCase() || '?'
 
@@ -14,8 +16,7 @@ export interface Tab { id: string; label: string; icon: IconType; active: boolea
 
 interface Props {
   user: User
-  nav: ReactNode
-  navFoot?: ReactNode
+  nav: Tab[]                                     // menypillret uppe i mitten
   home?: { name: string; onClick: () => void }  // hemmets namn uppe till vänster
   onAdd?: () => void                             // "Lägg till" (uppe på dator, plus i bottenmenyn på mobil)
   tabs?: Tab[]                                   // bottenmenyn på mobil, plusknappen hamnar i mitten
@@ -24,7 +25,7 @@ interface Props {
   children: ReactNode
 }
 
-export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvatar, children }: Props) {
+export function Shell({ user, nav, home, onAdd, onTabAdd, tabs, onAvatar, children }: Props) {
   const half = tabs ? Math.ceil(tabs.length / 2) : 0
   const tab = (t: Tab) => (
     <button key={t.id} className={`tabbar__item ${t.active ? 'is-active' : ''}`} onClick={t.onClick}>
@@ -35,27 +36,26 @@ export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvata
 
   return (
     <div className={`app ${tabs ? 'app--tabs' : ''}`}>
-      <nav className="sidebar">
-        <Wordmark />
-        {nav}
-        {navFoot && <div className="sidebar__foot">{navFoot}</div>}
-      </nav>
-
       <main className="main">
-        <div className="topbar">
-          {home ? (
-            <button className="topbar__home" onClick={home.onClick}>
-              <span>{home.name}</span>
-              <IconChevronDown size={16} />
+        {/* Svävar högst upp över innehållet: hemmet till vänster, menypillret i mitten, Lägg till till höger. */}
+        <header className="topbar">
+          <GlassCard className="topbar__brand" lift={false}>
+            <Wordmark />
+            {home && (
+              <button className="topbar__home" onClick={home.onClick}>
+                <span>{home.name}</span>
+                <IconChevronDown size={16} />
+              </button>
+            )}
+          </GlassCard>
+          <NavPill items={nav} />
+          <div className="topbar__end">
+            {onAdd && <span className="topbar__add"><Primary onClick={onAdd}>Lägg till</Primary></span>}
+            <button className="avatar" style={{ border: 0, cursor: onAvatar ? 'pointer' : 'default' }} onClick={onAvatar} aria-label="Konto">
+              {initials(user.email)}
             </button>
-          ) : (
-            <div style={{ marginRight: 'auto' }} />
-          )}
-          {onAdd && <span className="topbar__add"><Primary onClick={onAdd}>Lägg till</Primary></span>}
-          <button className="avatar" style={{ border: 0, cursor: onAvatar ? 'pointer' : 'default' }} onClick={onAvatar} aria-label="Konto">
-            {initials(user.email)}
-          </button>
-        </div>
+          </div>
+        </header>
         {children}
       </main>
 
@@ -74,11 +74,30 @@ export function Shell({ user, nav, navFoot, home, onAdd, onTabAdd, tabs, onAvata
   )
 }
 
-export function NavItem({ icon: Icon, label, active, onClick }: { icon: IconType; label: string; active?: boolean; onClick: () => void }) {
+// Menypillret: markeringen för det valda glider till nästa val, och en glasyta följer muspekaren.
+const glide = { type: 'spring', stiffness: 520, damping: 42, mass: 0.8 } as const
+
+function NavPill({ items }: { items: Tab[] }) {
+  const [hover, setHover] = useState<string | null>(null)
   return (
-    <a className={`nav-item ${active ? 'is-active' : ''}`} onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onClick()}>
-      <Icon size={18} />
-      {label}
-    </a>
+    <GlassCard className="pill" lift={false} role="navigation" aria-label="Meny" onMouseLeave={() => setHover(null)}>
+      {items.map((t) => (
+        <button
+          key={t.id}
+          className={`pill__item ${t.active ? 'is-active' : ''}`}
+          onClick={t.onClick}
+          onMouseEnter={() => setHover(t.id)}
+          onFocus={() => setHover(t.id)}
+          onBlur={() => setHover(null)}
+          aria-current={t.active ? 'page' : undefined}
+          title={t.label}
+        >
+          {t.active && <motion.span layoutId="pill-active" className="pill__active" transition={glide} />}
+          {hover === t.id && <motion.span layoutId="pill-hover" className="pill__hover" transition={glide} />}
+          <t.icon size={17} />
+          <span className="pill__label">{t.label}</span>
+        </button>
+      ))}
+    </GlassCard>
   )
 }

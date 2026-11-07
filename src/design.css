@@ -78,65 +78,61 @@ p { margin: 0; }
 
 
 /* --------------------------------------------------------------------------
-   3. Appskal — sidomeny | huvudyta
+   3. Appskal — en flytande dashboard: toppraden svävar över innehållet
    -------------------------------------------------------------------------- */
-.app {
-  display: grid;
-  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
-  gap: var(--gutter);
-}
+.app { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
 
-.sidebar { position: relative; display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-5) 0; }
-/* Ingen vägg mot innehållet: bara en svagt upplyst linje som tonas ut uppåt och nedåt. */
-@media (min-width: 761px) {
-  .sidebar::after {
-    content: ""; position: absolute; top: 12%; bottom: 12%; right: calc(var(--gutter) / -2); width: 1px;
-    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, .1) 30%, rgba(255, 255, 255, .1) 70%, transparent);
-    pointer-events: none;
-  }
-}
-.sidebar .wordmark { padding: var(--s-1) var(--s-3) var(--s-4); }
-
-.nav-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px;
-  border-radius: var(--r-field);
-  font-size: var(--fs-body); font-weight: 500;
-  color: var(--text-2);
-  text-decoration: none; cursor: pointer;
-  transition: color var(--t-fast), background-color var(--t-fast), box-shadow var(--t-fast), text-shadow var(--t-fast);
-}
-.nav-item svg { flex: none; transition: filter var(--t-fast); }
-/* Under muspekaren eller i fokus: en mjuk glasyta, texten lyser upp. */
-.nav-item:hover, .nav-item:focus-visible {
-  outline: none;
-  color: #FFFFFF;
-  background-color: var(--glass-hover);
-  box-shadow: var(--nav-hover);
-  -webkit-backdrop-filter: var(--glass-blur-light); backdrop-filter: var(--glass-blur-light);
-  text-shadow: 0 0 12px rgba(255, 255, 255, .35);
-}
-.nav-item:hover svg, .nav-item:focus-visible svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, .35)); }
-.nav-item.is-active {
-  font-weight: 600;
-  background-color: color-mix(in srgb, var(--accent) 14%, transparent);
-  box-shadow: var(--nav-hover);
-  color: var(--accent-glow);
-  text-shadow: 0 0 14px color-mix(in srgb, var(--accent-glow) 55%, transparent);
-}
-.nav-item.is-active svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-glow) 70%, transparent)); }
-
-/* Huvudytan har bara lite inre marginal, så att korten kan lyfta och skugga utan att klippas. Luften runt kommer från .app. */
+/* Huvudytan scrollar. Innehållet hålls centrerat i en bekväm bredd, med luft på sidorna. */
 .main {
   position: relative;
-  border-radius: var(--r-card);
-  padding: var(--s-2) var(--s-3) var(--gutter);
   min-width: 0;
   overflow: auto;
+  scrollbar-gutter: stable;   /* pillret står still även när en sida är för kort för att scrolla */
+  padding: 0 max(var(--s-3), calc((100% - var(--content-w)) / 2)) var(--gutter);
 }
 
-.topbar { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-6); }
+/* Toppraden: hemmet till vänster, menypillret i mitten, Lägg till till höger. Följer med när man scrollar. */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s-3);
+  padding: var(--s-3) 0;
+  margin-bottom: var(--s-5);
+}
+.glass.topbar__brand {
+  justify-self: start;
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: 8px 18px; border-radius: 999px;
+}
+.topbar__end { justify-self: end; display: flex; align-items: center; gap: var(--s-3); }
+
+/* Menypillret. Markeringen för det valda (.pill__active) och glasytan under muspekaren (.pill__hover)
+   glider mellan valen med framer-motion (layoutId i Shell.tsx). */
+.glass.pill { display: flex; gap: 2px; padding: 5px; border-radius: 999px; }
+.pill__item {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  border: 0; border-radius: 999px; background: none;
+  font: 500 var(--fs-body) var(--font); color: var(--text-2); white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--t-fast), text-shadow var(--t-fast);
+}
+.pill__item > svg, .pill__label { position: relative; z-index: 1; }
+.pill__item > svg { flex: none; transition: filter var(--t-fast); }
+.pill__item:hover, .pill__item:focus-visible { outline: none; color: #FFFFFF; text-shadow: 0 0 12px rgba(255, 255, 255, .35); }
+.pill__hover, .pill__active { position: absolute; inset: 0; border-radius: inherit; }
+.pill__hover { background: var(--glass-hover); box-shadow: var(--nav-hover); }
+.pill__active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.pill__item.is-active { color: var(--accent-glow); font-weight: 600; text-shadow: 0 0 14px color-mix(in srgb, var(--accent-glow) 55%, transparent); }
+.pill__item.is-active > svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-glow) 70%, transparent)); }
+/* Smalare skärmar: bara ikonerna i pillret (namnet finns som title). */
+@media (max-width: 1180px) {
+  .pill__label { display: none; }
+  .pill__item { padding: 9px 13px; }
+}
 
 .avatar {
   width: 32px; height: 32px; border-radius: 50%;
@@ -420,12 +416,11 @@ p { margin: 0; }
    16. Mobil
    -------------------------------------------------------------------------- */
 @media (max-width: 760px) {
-  .app { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { flex-direction: row; overflow-x: auto; padding: var(--s-1) 0; }
-  .sidebar .wordmark { display: none; }
-  .nav-item { white-space: nowrap; }
-  .main { padding: var(--s-2) 0 var(--gutter); }
-  .topbar { margin-bottom: var(--s-5); }
+  .main { padding: 0 0 var(--gutter); }
+  /* Mobilen: toppraden ligger still, menyn finns i bottenmenyn. */
+  .topbar { position: static; display: flex; justify-content: space-between; padding: var(--s-2) 0 0; margin-bottom: var(--s-5); }
+  .app--tabs .pill { display: none; }
+  .glass.topbar__brand { padding: 7px 14px; }
   .tiles, .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .glass.kpi { padding: 14px 16px; }   /* två kort i bredd: lite mindre inre luft */
   .kpi__value { font-size: var(--fs-number-mobile); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

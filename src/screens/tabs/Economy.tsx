@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { api } from '../../lib/api'
 import { emptyEconomy, economyNumbers } from '../../lib/economy'
 import { ore, useElPrice } from '../../lib/elpris'
@@ -6,9 +7,13 @@ import { kr, parseNum } from '../../lib/format'
 import { valuation } from '../../lib/valuation'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { GlassCard } from '../../components/GlassCard'
+import { Counter } from '../../components/Counter'
 import { EL_ZONE_LABEL, type Economy, type ElZone } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { fmtDate } from './Items'
+
+// Staplarna glider ut från noll när kortet visas.
+const grow = { duration: 1.1, ease: [0.2, 0.8, 0.2, 1] as const, delay: 0.15 }
 
 // Toppkorten och bolånemätaren i Boendeläget.
 export function EconomyDashboard({ state, open }: ViewProps) {
@@ -24,19 +29,19 @@ export function EconomyDashboard({ state, open }: ViewProps) {
         <GlassCard className="kpi" onClick={edit}>
           <div className="kpi__label">Ren månadskostnad</div>
           <div className="meta">(Ränta och boendeavtal)</div>
-          <div className="kpi__value">{has ? kr(n.costs) : '–'}</div>
+          <div className="kpi__value">{has ? <Counter value={n.costs} /> : '–'}</div>
           <div className="meta">Pengar ut</div>
         </GlassCard>
         <GlassCard className="kpi" onClick={edit}>
           <div className="kpi__label">Ditt sparande</div>
           <div className="meta">(Amortering)</div>
-          <div className="kpi__value">{e ? kr(n.saving) : '–'}</div>
+          <div className="kpi__value">{e ? <Counter value={n.saving} /> : '–'}</div>
           <div className="meta">Pengar in i bostaden</div>
         </GlassCard>
         <GlassCard className="kpi" onClick={edit}>
           <div className="kpi__label">Totalt kassaflöde</div>
           <div className="meta">(Kostnad och amortering)</div>
-          <div className="kpi__value">{has ? kr(n.cashflow) : '–'}</div>
+          <div className="kpi__value">{has ? <Counter value={n.cashflow} /> : '–'}</div>
           <div className="meta">Varje månad</div>
         </GlassCard>
       </div>
@@ -45,7 +50,7 @@ export function EconomyDashboard({ state, open }: ViewProps) {
         <GlassCard className="el-price" onClick={edit} lift={false}>
           <div>
             <div className="kpi__label">Elpris nu, {e.zone}</div>
-            <div className="kpi__value">{el.now != null ? `${ore(el.now)}/kWh` : '–'}</div>
+            <div className="kpi__value">{el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'}</div>
           </div>
           <div className="meta">
             Snitt i dag {ore(el.avg)}, lägst {ore(el.min)}, högst {ore(el.max)}
@@ -63,11 +68,11 @@ export function EconomyDashboard({ state, open }: ViewProps) {
           {e?.loan ? (
             <>
               <div className="budget-track" aria-hidden>
-                <span className="is-spent" style={{ width: `${n.share * 100}%` }} />
+                <motion.span className="is-spent" initial={{ width: 0 }} animate={{ width: `${n.share * 100}%` }} transition={grow} />
               </div>
               <div className="loan__ends">
-                <div><div className="meta">Ursprungslån</div><div className="kpi__value">{kr(e.loan)}</div></div>
-                <div><div className="meta">Skuld i dag</div><div className="kpi__value">{kr(n.debt)}</div></div>
+                <div><div className="meta">Ursprungslån</div><div className="kpi__value"><Counter value={e.loan} /></div></div>
+                <div><div className="meta">Skuld i dag</div><div className="kpi__value"><Counter value={n.debt} /></div></div>
               </div>
               <p className="meta" style={{ margin: 'var(--s-3) 0 0' }}>
                 Ränta {kr(n.interest)}/mån, {kr(n.interestAfter)} efter ränteavdrag
@@ -98,7 +103,7 @@ function ValueCard({ state, debt, onClick }: { state: ProjectState; debt: number
         </>
       ) : (
         <>
-          <div className="kpi__value">{kr(v.value)}</div>
+          <div className="kpi__value"><Counter value={v.value} /></div>
           <p className="meta" style={{ margin: '2px 0 var(--s-4)' }}>
             Baserat på {v.area.toLocaleString('sv-SE')} kvm och rummens nuvarande skick ({v.renovated} av {v.rooms} rum nyrenoverade)
           </p>
@@ -117,14 +122,14 @@ function Margin({ value, debt }: { value: number; debt: number }) {
     <>
       <div className="kpi__label">Din totala vinst/marginal</div>
       <div className="split-track" aria-hidden>
-        <span className="split-track__debt" style={{ width: `${(Math.min(debt, value) / whole) * 100}%` }} />
-        {margin > 0 && <span className="split-track__own" style={{ width: `${(margin / whole) * 100}%` }} />}
+        <motion.span className="split-track__debt" initial={{ width: 0 }} animate={{ width: `${(Math.min(debt, value) / whole) * 100}%` }} transition={grow} />
+        {margin > 0 && <motion.span className="split-track__own" initial={{ width: 0 }} animate={{ width: `${(margin / whole) * 100}%` }} transition={{ ...grow, delay: grow.delay + 0.35 }} />}
       </div>
       <div className="loan__ends">
-        <div><div className="meta">Bolån</div><div className="kpi__value">{kr(debt)}</div></div>
+        <div><div className="meta">Bolån</div><div className="kpi__value"><Counter value={debt} /></div></div>
         <div>
           <div className="meta">Din del</div>
-          <div className={`kpi__value ${margin < 0 ? 'is-negative' : 'is-positive'}`}>{kr(margin)}</div>
+          <div className={`kpi__value ${margin < 0 ? 'is-negative' : 'is-positive'}`}><Counter value={margin} /></div>
         </div>
       </div>
     </>
