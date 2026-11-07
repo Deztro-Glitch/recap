@@ -18,6 +18,7 @@ import { EconomySheet } from './tabs/Economy'
 import { StatDetail } from './tabs/StatDetail'
 import { LoansSheet } from './tabs/Loans'
 import { BudgetSheet } from './tabs/Budget'
+import { MortgageSheet } from './tabs/Mortgage'
 import { ReceiptReview } from './tabs/ReceiptReview'
 import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
@@ -36,6 +37,7 @@ export type SheetState =
   | { t: 'economy' }
   | { t: 'stat'; title: string; economy?: boolean }   // detaljvyn för ett statistikkort
   | { t: 'loans'; id: string | null }                 // övriga lån: redigera det valda eller lägg till (null)
+  | { t: 'mortgage' }                                 // bolånet: skulden i dag, uppgifterna och räntekalkylatorn
   | { t: 'budget' }                                   // kassaflödet: lönen, fördelningen och snabbinmatning
   | { t: 'roomInfo'; room: Room }
   | { t: 'add' }
@@ -278,6 +280,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           <StatDetail stat={sheet?.t === 'stat' ? sheet : null} onClose={close} onEdit={() => open({ t: 'economy' })} />
           <LoansSheet open={sheet?.t === 'loans'} id={sheet?.t === 'loans' ? sheet.id : null} state={state} onClose={close} />
           <BudgetSheet open={sheet?.t === 'budget'} state={state} onClose={close} />
+          <MortgageSheet open={sheet?.t === 'mortgage'} state={state} onClose={close} />
           <ReceiptReview file={reviewFile} defaultRoom={receiptDefaults.current.room_id ?? null} state={state} onClose={() => setReviewFile(null)} />
 
           <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">

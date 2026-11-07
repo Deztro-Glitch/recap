@@ -96,8 +96,6 @@
   --bar-slot: rgba(255, 255, 255, .03);
   --bar-cost: rgba(255, 255, 255, .35);
   --bar-cost-top: rgba(255, 255, 255, .6);
-  --estimate-bg: rgba(255, 255, 255, .04);
-  --estimate-line: rgba(255, 255, 255, .2);
 
   /* ---------- Innehållsfärger för rum (ikon, planritning). Par: färg + mörk text ---------- */
   --c-sand-bg: #E9CBA3;  --c-sand-fg: #4A2E0F;

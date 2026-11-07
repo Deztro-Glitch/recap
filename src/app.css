@@ -298,7 +298,9 @@
 }
 
 /* Det stora kortet: mätaren för lånet i mitten, förklaringen under, uppskattningen längst ner. */
-.eco-dash__hero .gauge { margin-top: auto; padding-top: var(--s-4); }   /* mätaren mitt i kortets lediga höjd */
+/* Mätaren och förklaringen står mitt i kortets lediga höjd, mätaren lite större i det stora kortet. */
+.eco-dash__hero .gauge { margin-top: auto; padding-top: var(--s-4); max-width: 460px; }
+.eco-dash__hero .hero__legend { margin-bottom: auto; }
 .hero__empty { margin: var(--s-5) 0; }
 .hero__legend { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--s-2) var(--s-6); margin: var(--s-2) 0 var(--s-5); }
 .hero__legend > div { display: flex; align-items: center; gap: var(--s-2); }
@@ -317,26 +319,6 @@
 .glass.kpi .gauge__center .kpi__value { margin: 0; font-size: clamp(22px, 4.2vw, 34px); }
 
 /* Marknadsvärdet: en egen ruta med streckad kant och "≈", så att det inte blandas ihop med lånets fakta. */
-.estimate {
-  margin-top: auto;
-  padding: var(--s-3) var(--s-4);
-  border-radius: var(--r-row);
-  background: var(--estimate-bg);
-  border: 1px dashed var(--estimate-line);
-}
-.eco-dash__hero .estimate { margin-top: auto; }   /* längst ner i det stora kortet */
-.estimate__head { display: flex; align-items: center; gap: var(--s-2); color: var(--text-2); font-size: var(--fs-meta); font-weight: 600; }
-.estimate__tag {
-  margin-left: auto;
-  padding: 2px 8px; border-radius: 999px;
-  font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--text-2); box-shadow: inset 0 0 0 1px var(--estimate-line);
-}
-.estimate__row { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-top: var(--s-2); }
-.estimate__value { font-size: 20px; font-weight: 600; letter-spacing: -.01em; color: var(--text); opacity: .85; }
-.estimate__own { font-size: var(--fs-meta); font-weight: 700; color: var(--positive-ink, var(--success)); }
-.estimate__own.is-negative { color: var(--danger); }
-.estimate__sub { margin-top: 2px; font-size: var(--fs-small); color: var(--text-2); }
 
 /* Stapeldiagrammet (Charts.tsx): breda staplar med ett svagt spår till full höjd, beloppet ovanför och etiketten under. */
 .minibars { display: flex; align-items: stretch; gap: 10px; margin-top: auto; padding-top: 34px; }   /* plats för beloppet över den högsta stapeln */
@@ -430,6 +412,18 @@
 .calc__rows > div { display: flex; justify-content: space-between; gap: var(--s-3); }
 .calc__rows dd { margin: 0; font-weight: 600; color: var(--text); }
 .calc__sum { border-top: 1px solid var(--line); padding-top: var(--s-2); margin-top: 2px; font-weight: 700; }
+
+/* Bolånepanelen (Mortgage.tsx): skulden i dag stort överst, med en tunn stapel för hur mycket som är amorterat. */
+.mortgage__debt { display: grid; gap: var(--s-2); padding: var(--s-2) 0 var(--s-3); }
+.mortgage__big {
+  font-size: clamp(34px, 9vw, 44px); font-weight: var(--fw-number); letter-spacing: -.03em; line-height: 1.05;
+  background-image: var(--num); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.mortgage__bar { height: 8px; border-radius: 999px; background: var(--gauge-track); overflow: hidden; }
+.mortgage__bar span {
+  display: block; height: 100%; border-radius: inherit; background: var(--success-2);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--success) 55%, transparent);
+}
 
 /* Kassaflödets budget (Budget.tsx): lönen överst, munkdiagrammet, fördelningen, snabbinmatning och senaste köpen. */
 .budget { display: grid; gap: var(--s-5); }
@@ -607,8 +601,6 @@
 .cv__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); margin-top: var(--s-4); }
 .cv__head .btn { margin-left: auto; }
 .cv__rooms { display: grid; gap: var(--s-4); }
-.gain__row { display: flex; justify-content: space-between; gap: var(--s-3); padding: 2px 0; }
-.gain__sum { font-weight: 600; border-top: 1px solid var(--line); margin-top: var(--s-1); padding-top: var(--s-2); }
 
 
 /* ---------- Inloggning ---------- */

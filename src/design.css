@@ -488,8 +488,6 @@ p { margin: 0; }
   --line: rgba(14, 21, 18, .12);
   --bar-cost: rgba(14, 21, 18, .55);     /* kostnadsstaplarna */
   --bar-cost-top: rgba(14, 21, 18, .38);
-  --estimate-bg: rgba(255, 255, 255, .35);
-  --estimate-line: rgba(14, 21, 18, .2);
   /* Glas: genomskinligt ljust, ett skimmer uppe till vänster och kraftig blur, så att ljuset bakom anas. */
   background:
     radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, .55), transparent 55%),

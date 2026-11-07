@@ -10,8 +10,7 @@ import { Counter } from '../../components/Counter'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { COMMON_CONTRACTS, CONTRACT_KIND_LABEL, HOME_CONTRACTS, K6_LABEL, PROVIDERS, type Contract, type ContractKind } from '../../types'
 import { contractScope, homeContracts } from '../../lib/economy'
-import { GAIN_TAX, K6_MIN_PER_YEAR, k6Deductions, lastSaleYear } from '../../lib/k6'
-import { valuation } from '../../lib/valuation'
+import { K6_MIN_PER_YEAR, k6Deductions, lastSaleYear } from '../../lib/k6'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { allItems, byDate, fmtDate, removeRow, roomFacts, sheetFor, sum, type Item } from './Items'
 
@@ -119,8 +118,6 @@ function HomeCv({ state, open }: ViewProps) {
   const stays = items.filter((i) => i.stays).sort(byDate)
   const rooms = state.rooms.map((r) => ({ room: r, facts: roomFacts(all.filter((i) => i.room_id === r.id)) })).filter((r) => r.facts.length)
   const roomName = (id: string | null) => state.rooms.find((r) => r.id === id)?.name
-  const e = state.project?.economy
-  const value = valuation(e, state.rooms).value
   const thisYear = new Date().getFullYear()
 
   const list = (rows: Item[], empty: string, extra?: (i: Item) => React.ReactNode) =>
@@ -148,8 +145,6 @@ function HomeCv({ state, open }: ViewProps) {
         {state.project!.address && <span className="meta">{state.project!.address}</span>}
         <button className="btn btn--secondary no-print" onClick={() => print()}><IconPrinter size={16} /> Skriv ut eller spara som PDF</button>
       </div>
-
-      <GainCalc value={value} purchasePrice={e?.purchasePrice} deductible={k6.deductible} />
 
       <div className="section">
         <div className="section-head"><h2>Värdehöjande förbättringar (K6)</h2></div>
@@ -191,24 +186,6 @@ function HomeCv({ state, open }: ViewProps) {
           <p className="meta">Inga färgkoder eller mått än</p>
         )}
       </div>
-    </div>
-  )
-}
-
-// Vinst vid försäljning i dag: marknadsvärde minus inköpspris minus avdragsgilla K6-förbättringar.
-function GainCalc({ value, purchasePrice, deductible }: { value: number | null; purchasePrice?: number; deductible: number }) {
-  if (value == null || !purchasePrice) {
-    return <p className="meta section">Fyll i bostaden under Ekonomi för att se den beräknade vinsten vid försäljning.</p>
-  }
-  const gain = value - purchasePrice - deductible
-  return (
-    <div className="section glass">
-      <div className="gain__row"><span>Estimerat marknadsvärde</span><span>{kr(value)}</span></div>
-      <div className="gain__row"><span>− Inköpspris</span><span>{kr(purchasePrice)}</span></div>
-      <div className="gain__row"><span>− Avdragsgilla K6-förbättringar</span><span>{kr(deductible)}</span></div>
-      <div className="gain__row gain__sum"><span>{gain >= 0 ? 'Beräknad skattepliktig vinst' : 'Beräknad förlust'}</span><span>{kr(gain)}</span></div>
-      <div className="gain__row"><span>Vinstskatt 22 %</span><span>{kr(Math.max(0, gain) * GAIN_TAX)}</span></div>
-      <p className="meta" style={{ margin: 'var(--s-2) 0 0' }}>Uppskattning vid försäljning i år, utan mäklararvode och andra försäljningskostnader.</p>
     </div>
   )
 }
