@@ -436,7 +436,7 @@ p { margin: 0; }
 
 /* Rubriken: en liten rund ikon, namnet och ibland en märkning till höger. */
 .kpi__head { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.kpi__head .kpi__label { min-width: 0; line-height: 1.25; }   /* långa rubriker bryts hellre än klipps */
+.kpi__head .kpi__label { min-width: 0; line-height: 1.25; hyphens: auto; }   /* långa rubriker bryts hellre än klipps */
 .kpi__icon {
   width: 30px; height: 30px; flex: none; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
@@ -449,6 +449,21 @@ p { margin: 0; }
   font-size: 12px; font-weight: 700; white-space: nowrap; color: var(--text);
 }
 .kpi__badge .is-positive { color: var(--positive-ink, var(--success)); }
+/* Pilen uppe till höger visar att kortet går att öppna. Den rör sig lite när man håller över eller trycker. */
+.kpi__open {
+  margin-left: auto; flex: none;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--fill); color: var(--text-2);
+  transition: transform var(--t-fast) var(--ease-out), background-color var(--t-fast), color var(--t-fast);
+}
+.kpi__badge + .kpi__open { margin-left: 8px; }
+.glass.kpi { -webkit-tap-highlight-color: transparent; }
+.glass.kpi:hover .kpi__open, .glass.kpi:focus-visible .kpi__open, .glass.kpi:active .kpi__open {
+  transform: translate(2px, -2px);
+  background: var(--text); color: #FFFFFF;
+}
+.glass.kpi:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .kpi__badge .is-negative { color: var(--danger); }
 .glass.kpi .budget-track, .glass.kpi .split-track { flex: none; margin-top: auto; }   /* staplar och knappar längst ner */
 .glass.kpi > .btn { align-self: flex-start; margin-top: auto; }
@@ -486,6 +501,10 @@ p { margin: 0; }
   .glass.topbar__brand { padding: 7px 14px; }
   .tiles, .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .glass.kpi { padding: 14px 16px; }   /* två kort i bredd: lite mindre inre luft */
+  /* Smala kort: ikon och pil på första raden, rubriken under i full bredd. */
+  .kpi__head { flex-wrap: wrap; gap: 8px; }
+  .kpi__head .kpi__label { order: 3; flex-basis: 100%; }
+  .kpi__icon, .kpi__open { width: 26px; height: 26px; }
   .kpi__value { font-size: var(--fs-number-mobile); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 

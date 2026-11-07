@@ -54,7 +54,7 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
       ) : (
         <div className="kpis">
           {kpis.map((k) => (
-            <StatCard key={k.label} icon={k.icon} label={k.label} value={<Counter value={k.value} />} />
+            <StatCard key={k.label} icon={k.icon} label={k.label} value={<Counter value={k.value} />} onOpen={() => open({ t: 'stat', title: k.label })} />
           ))}
         </div>
       )}

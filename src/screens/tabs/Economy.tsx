@@ -20,22 +20,24 @@ export function EconomyDashboard({ state, open }: ViewProps) {
   const e = state.project?.economy
   const n = economyNumbers(e ?? emptyEconomy, state.contracts)
   const edit = () => open({ t: 'economy' })
+  // Korten öppnar sin detaljvy. Därifrån når man Ekonomi-formuläret.
+  const detail = (title: string) => () => open({ t: 'stat', title, economy: true })
   const el = useElPrice(e?.zone)
   const has = !!e || n.fixed > 0
 
   return (
     <>
       <div className="kpis kpis--three">
-        <StatCard icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onClick={edit} />
-        <StatCard icon={IconPigMoney} label="Ditt sparande" value={e ? <Counter value={n.saving} /> : '–'} onClick={edit} />
-        <StatCard icon={IconArrowsExchange} label="Totalt kassaflöde" value={has ? <Counter value={n.cashflow} /> : '–'} onClick={edit} />
+        <StatCard icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onOpen={detail('Ren månadskostnad')} />
+        <StatCard icon={IconPigMoney} label="Ditt sparande" value={e ? <Counter value={n.saving} /> : '–'} onOpen={detail('Ditt sparande')} />
+        <StatCard icon={IconArrowsExchange} label="Totalt kassaflöde" value={has ? <Counter value={n.cashflow} /> : '–'} onOpen={detail('Totalt kassaflöde')} />
       </div>
 
       <div className="eco-grid">
         {e?.zone && el && (
-          <StatCard icon={IconBolt} label={`Elpris nu, ${e.zone}`} value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'} onClick={edit} lift={false} />
+          <StatCard icon={IconBolt} label={`Elpris nu, ${e.zone}`} value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'} onOpen={detail(`Elpris nu, ${e.zone}`)} />
         )}
-        <StatCard icon={IconBuildingBank} label="Bolån" value={e?.loan ? <Counter value={n.debt} /> : '–'} onClick={edit} lift={false}>
+        <StatCard icon={IconBuildingBank} label="Bolån" value={e?.loan ? <Counter value={n.debt} /> : '–'} onOpen={detail('Bolån')}>
           {e?.loan ? (
             <div className="budget-track" aria-label={`${Math.round(n.share * 100)} % av lånet kvar`}>
               <motion.span className="is-spent" initial={{ width: 0 }} animate={{ width: `${n.share * 100}%` }} transition={grow} />
@@ -44,19 +46,19 @@ export function EconomyDashboard({ state, open }: ViewProps) {
             <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); edit() }}>Lägg in bolånet</button>
           )}
         </StatCard>
-        <ValueCard state={state} debt={n.debt} onClick={edit} />
+        <ValueCard state={state} debt={n.debt} onOpen={detail('Estimerat marknadsvärde')} onEdit={edit} />
       </div>
     </>
   )
 }
 
 // Estimerat marknadsvärde. Märkningen och stapeln visar din del: värdet minus bolånet.
-function ValueCard({ state, debt, onClick }: { state: ProjectState; debt: number; onClick: () => void }) {
+function ValueCard({ state, debt, onOpen, onEdit }: { state: ProjectState; debt: number; onOpen: () => void; onEdit: () => void }) {
   const v = valuation(state.project?.economy, state.rooms)
   if (v.value == null) {
     return (
-      <StatCard icon={IconHomeDollar} label="Estimerat marknadsvärde" value="–" onClick={onClick} lift={false}>
-        <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); onClick() }}>Lägg in bostaden</button>
+      <StatCard icon={IconHomeDollar} label="Estimerat marknadsvärde" value="–" onOpen={onOpen}>
+        <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); onEdit() }}>Lägg in bostaden</button>
       </StatCard>
     )
   }
@@ -68,8 +70,7 @@ function ValueCard({ state, debt, onClick }: { state: ProjectState; debt: number
       label="Estimerat marknadsvärde"
       value={<Counter value={v.value} />}
       badge={<span className={margin < 0 ? 'is-negative' : 'is-positive'} title="Din del: värdet minus bolånet">{margin > 0 ? '+' : ''}<Counter value={margin} /></span>}
-      onClick={onClick}
-      lift={false}
+      onOpen={onOpen}
     >
       <div className="split-track" aria-label="Bolån och din del av värdet">
         <motion.span className="split-track__debt" initial={{ width: 0 }} animate={{ width: `${(Math.min(debt, v.value) / whole) * 100}%` }} transition={grow} />

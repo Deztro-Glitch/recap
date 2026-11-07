@@ -15,6 +15,7 @@ import { ItemSheet, Purchases, fmtDate, today } from './tabs/Items'
 import { ContractSheet, Contracts, type ContractTab } from './tabs/Contracts'
 import { Overview } from './tabs/Overview'
 import { EconomySheet } from './tabs/Economy'
+import { StatDetail } from './tabs/StatDetail'
 import { ReceiptReview } from './tabs/ReceiptReview'
 import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
@@ -31,6 +32,7 @@ export type SheetState =
   | { t: 'pick'; room_id?: string | null }   // kameran, med ett rum förvalt
   | { t: 'room' }
   | { t: 'economy' }
+  | { t: 'stat'; title: string; economy?: boolean }   // detaljvyn för ett statistikkort
   | { t: 'roomInfo'; room: Room }
   | { t: 'add' }
   | { t: 'picked' }
@@ -269,6 +271,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           <ContractSheet item={sheet?.t === 'contract' ? sheet.item : null} state={state} onClose={close} />
           <AddRoomSheet open={sheet?.t === 'room'} onClose={close} state={state} />
           <EconomySheet open={sheet?.t === 'economy'} onClose={close} state={state} />
+          <StatDetail stat={sheet?.t === 'stat' ? sheet : null} onClose={close} onEdit={() => open({ t: 'economy' })} />
           <ReceiptReview file={reviewFile} defaultRoom={receiptDefaults.current.room_id ?? null} state={state} onClose={() => setReviewFile(null)} />
 
           <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">
