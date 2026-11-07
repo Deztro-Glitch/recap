@@ -12,7 +12,7 @@ export function useTheme() {
     document.documentElement.dataset.theme = next ? 'dark' : ''
     syncThemeColor()
     try {
-      localStorage.setItem('recap-theme', next ? 'dark' : 'light')
+      localStorage.setItem('recap-look', next ? 'dark' : 'light')
     } catch {}
   }
   return { dark, toggle }
