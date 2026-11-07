@@ -158,3 +158,69 @@ export function Donut({ slices, total, label, children }: { slices: Slice[]; tot
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Prismätare: en smal linje från grönt (billigt) via gult till rött (dyrt), med en prick där priset är nu.
+// share 0 = dagens lägsta, 1 = dagens högsta.
+// ---------------------------------------------------------------------------
+export function PriceMeter({ share, label }: { share: number; label: string }) {
+  const still = useReducedMotion()
+  const at = `${Math.max(0, Math.min(1, share)) * 100}%`
+  return (
+    <div className="pricemeter" role="img" aria-label={label}>
+      <motion.span
+        className="pricemeter__dot"
+        initial={still ? false : { left: '0%', opacity: 0 }}
+        animate={{ left: at, opacity: 1 }}
+        transition={grow}
+      />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Ytdiagram för ett dygn: kurvan genom periodernas mitt, en mjuk yta under, och en lodrät linje med en
+// glödande punkt där vi är just nu. Klockslagen står under, i HTML så att texten blir skarp.
+// ---------------------------------------------------------------------------
+const AW = 320, AH = 140, A_TOP = 14, A_BOTTOM = 4
+
+export function AreaChart({ values, at, ticks, label }: { values: number[]; at: number | null; ticks: { i: number; label: string }[]; label: string }) {
+  const still = useReducedMotion()
+  const gid = useId()
+  const n = values.length
+  const lo = Math.min(0, ...values)
+  const hi = Math.max(...values) * 1.12 || lo + 1
+  const x = (i: number) => (i / n) * AW
+  const y = (v: number) => A_TOP + (1 - (v - lo) / (hi - lo)) * (AH - A_TOP - A_BOTTOM)
+  const pts = values.map((v, i) => [x(i + 0.5), y(v)] as const)
+  const line = `M0,${pts[0][1]} ` + pts.map(([px, py]) => `L${px.toFixed(1)},${py.toFixed(1)}`).join(' ') + ` L${AW},${pts[n - 1][1]}`
+  const area = `${line} L${AW},${AH} L0,${AH} Z`
+  const nowX = at != null ? x(at) : null
+  const nowY = at != null ? y(values[Math.min(n - 1, Math.floor(at))]) : null
+
+  return (
+    <div className="areachart" role="img" aria-label={label}>
+      <svg viewBox={`0 0 ${AW} ${AH}`} className="areachart__svg">
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" className="areachart__stop-top" />
+            <stop offset="100%" className="areachart__stop-bottom" />
+          </linearGradient>
+        </defs>
+        {lo < 0 && <line x1="0" x2={AW} y1={y(0)} y2={y(0)} className="areachart__zero" />}
+        <motion.path d={area} fill={`url(#${gid})`} initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.4 }} />
+        <motion.path d={line} className="areachart__line" initial={still ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ ...grow, duration: 1.4 }} />
+        {nowX != null && nowY != null && (
+          <motion.g initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 0.4 }}>
+            <line x1={nowX} x2={nowX} y1={A_TOP - 6} y2={AH} className="areachart__now" />
+            <circle cx={nowX} cy={nowY} r="9" className="areachart__halo" />
+            <circle cx={nowX} cy={nowY} r="4.5" className="areachart__dot" />
+          </motion.g>
+        )}
+      </svg>
+      <div className="areachart__ticks" aria-hidden>
+        {ticks.map((t) => <span key={t.i} style={{ left: `${(t.i / n) * 100}%` }}>{t.label}</span>)}
+      </div>
+    </div>
+  )
+}

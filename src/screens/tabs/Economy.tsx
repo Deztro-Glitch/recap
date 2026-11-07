@@ -9,7 +9,7 @@ import { IconArrowsExchange, IconBolt, IconBuildingBank, IconCreditCard, IconRec
 import { TodoCard } from './Todos'
 import { QuickEntryCard } from './QuickEntry'
 import { Counter } from '../../components/Counter'
-import { Gauge, MiniBars, Ring, Segmented, type Bar } from '../../components/Charts'
+import { Gauge, MiniBars, PriceMeter, Ring, Segmented, type Bar } from '../../components/Charts'
 import { allItems } from './Items'
 import { EL_ZONE_LABEL, type ElZone, type Scope } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
@@ -29,7 +29,16 @@ export function EconomyDashboard({ state, open }: ViewProps) {
       <FlowCard state={state} has={has} onOpen={() => open({ t: 'budget' })} />
       <StatCard className="eco-dash__cost" icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onOpen={detail('Ren månadskostnad')} />
       {e?.zone && el && (
-        <StatCard className="eco-dash__el" icon={IconBolt} label={`Elpris nu, ${e.zone}`} value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'} onOpen={detail(`Elpris nu, ${e.zone}`)} />
+        <StatCard
+          className="eco-dash__el"
+          icon={IconBolt}
+          label={`Elpris nu, ${e.zone}`}
+          badge={el.share != null ? (el.share < 1 / 3 ? 'Billigt' : el.share > 2 / 3 ? 'Dyrt' : 'Normalt') : undefined}
+          value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'}
+          onOpen={() => open({ t: 'el' })}
+        >
+          {el.share != null && <PriceMeter share={el.share} label={`${ore(el.now!)} nu, dagens lägsta ${ore(el.min)} och högsta ${ore(el.max)}`} />}
+        </StatCard>
       )}
       <OtherLoansCard state={state} onOpen={(id) => open({ t: 'loans', id })} />
       <TodoCard state={state} />

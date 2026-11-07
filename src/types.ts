@@ -36,6 +36,7 @@ export interface Economy {
   electricity?: number
   insurance?: number
   zone?: ElZone | null    // elområde för dagens spotpris
+  el?: { grid?: number; tax?: number; markup?: number }   // elnätsavgift, energiskatt och påslag i öre/kWh utan moms
   // Bostaden, för det estimerade marknadsvärdet
   purchasePrice?: number  // vad man betalade
   area?: number           // boarea i kvm
