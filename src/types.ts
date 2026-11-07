@@ -195,6 +195,15 @@ export interface Contract {
 }
 
 // Ett kvitto med flera rader. Raderna är vanliga inköp med receipt_id.
+// En sak att göra i hemmet (kortet "Att göra" i Boende). Migration 010.
+export interface Todo {
+  id: string
+  project_id: string
+  title: string
+  done: boolean
+  created_at: string
+}
+
 export interface Receipt {
   id: string
   project_id: string

@@ -47,8 +47,8 @@ export function Gauge({ share, label, children }: { share: number; label: string
 }
 
 // ---------------------------------------------------------------------------
-// Stapeldiagram: ett svagt spår till full höjd bakom varje stapel, beloppet ovanför (eller inuti
-// om stapeln är hög), och etiketten under. Staplar med tone "accent" lyser i accentfärgen.
+// Stapeldiagram: ett nästan osynligt spår till full höjd bakom varje stapel, beloppet ovanför stapeln
+// och etiketten under. Staplar med tone "accent" lyser i accentfärgen.
 // ---------------------------------------------------------------------------
 export interface Bar { label: string; amount: number; tone?: 'accent' }
 
@@ -68,7 +68,7 @@ export function MiniBars({ bars }: { bars: Bar[] }) {
                 animate={{ height: `${h}%` }}
                 transition={{ ...grow, delay: grow.delay + i * 0.07 }}
               >
-                <span className={`minibars__value ${h > 72 ? 'is-inside' : ''}`}>{kr(b.amount)}</span>
+                <span className="minibars__value">{kr(b.amount)}</span>
               </motion.div>
             </div>
             <span className="minibars__label" title={b.label}>{b.label}</span>

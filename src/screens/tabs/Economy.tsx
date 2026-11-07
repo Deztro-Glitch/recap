@@ -6,14 +6,15 @@ import { kr, parseNum } from '../../lib/format'
 import { valuation } from '../../lib/valuation'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { StatCard } from '../../components/StatCard'
-import { IconArrowsExchange, IconBolt, IconBuildingBank, IconHomeDollar, IconPigMoney, IconReceipt2 } from '@tabler/icons-react'
+import { IconArrowsExchange, IconBolt, IconBuildingBank, IconHomeDollar, IconReceipt2 } from '@tabler/icons-react'
+import { TodoCard } from './Todos'
 import { Counter } from '../../components/Counter'
 import { Gauge, MiniBars, type Bar } from '../../components/Charts'
 import { EL_ZONE_LABEL, type Economy, type ElZone } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 
-// Boendeläget: ett stort kort för bolånet med en halvcirkelmätare (och marknadsvärdet som uppskattning), kassaflödet med ett stapeldiagram
-// och tre mindre kort. Varje kort öppnar sin detaljvy; därifrån når man Ekonomi-formuläret.
+// Boendeläget: ett stort kort för bolånet med en halvcirkelmätare (och marknadsvärdet som uppskattning), kassaflödet med ett stapeldiagram,
+// två mindre kort och Att göra. Varje kort öppnar sin detaljvy; därifrån når man Ekonomi-formuläret.
 export function EconomyDashboard({ state, open }: ViewProps) {
   const e = state.project?.economy
   const n = economyNumbers(e ?? emptyEconomy, state.contracts)
@@ -34,10 +35,10 @@ export function EconomyDashboard({ state, open }: ViewProps) {
         {bars.length > 0 && <MiniBars bars={bars} />}
       </StatCard>
       <StatCard className="eco-dash__cost" icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onOpen={detail('Ren månadskostnad')} />
-      <StatCard className="eco-dash__save" icon={IconPigMoney} label="Ditt sparande" value={e ? <Counter value={n.saving} /> : '–'} onOpen={detail('Ditt sparande')} />
       {e?.zone && el && (
         <StatCard className="eco-dash__el" icon={IconBolt} label={`Elpris nu, ${e.zone}`} value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'} onOpen={detail(`Elpris nu, ${e.zone}`)} />
       )}
+      <TodoCard state={state} />
     </div>
   )
 }

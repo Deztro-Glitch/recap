@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type Table } from './api'
-import type { Contract, Photo, Project, Purchase, Receipt, Room, Task } from '../types'
+import type { Contract, Photo, Project, Purchase, Receipt, Room, Task, Todo } from '../types'
 
 export interface ProjectData {
   project: Project | null
@@ -10,6 +10,7 @@ export interface ProjectData {
   photos: Photo[]
   contracts: Contract[]
   receipts: Receipt[]
+  todos: Todo[]
   urls: Record<string, string>   // filsökväg → visningsbar adress (kvitton, planritning, bilder, avtal)
   loading: boolean
 }
@@ -19,11 +20,11 @@ const byPriority = <T extends { priority?: number }>(a: T, b: T) => (a.priority 
 
 // Laddar allt för ett projekt och håller det uppdaterat (även när någon annan ändrar).
 export function useProject(pid: string) {
-  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], contracts: [], receipts: [], urls: {}, loading: true })
+  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], contracts: [], receipts: [], todos: [], urls: {}, loading: true })
   const urlCache = useRef(new Map<string, string>())
 
   const reload = useCallback(async () => {
-    const [projects, rooms, purchases, tasks, rawPhotos, contracts, receipts] = await Promise.all([
+    const [projects, rooms, purchases, tasks, rawPhotos, contracts, receipts, todos] = await Promise.all([
       api.listProjects(),
       api.list<Room>('rooms', pid),
       api.list<Purchase>('purchases', pid),
@@ -31,6 +32,7 @@ export function useProject(pid: string) {
       api.list<Photo>('photos', pid),
       api.list<Contract>('contracts', pid).catch(() => [] as Contract[]),
       api.list<Receipt>('receipts', pid).catch(() => [] as Receipt[]),
+      api.list<Todo>('todos', pid).catch(() => [] as Todo[]),
     ])
     const project = projects.find((p) => p.id === pid) ?? null
 
@@ -49,6 +51,7 @@ export function useProject(pid: string) {
       photos: rawPhotos.map((p) => ({ ...p, url: urlCache.current.get(p.path) })),
       contracts,
       receipts,
+      todos: todos.sort((a, b) => a.created_at.localeCompare(b.created_at)),
       urls: Object.fromEntries(urlCache.current),
       loading: false,
     })

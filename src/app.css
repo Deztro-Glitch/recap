@@ -273,19 +273,19 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-areas:
     "hero hero flow flow"
-    "hero hero cost save"
-    "hero hero el   el";
+    "hero hero cost el"
+    "hero hero todo todo";
   margin-bottom: var(--s-6);
 }
 .eco-dash__hero { grid-area: hero; }
 .eco-dash__flow { grid-area: flow; }
 .eco-dash__cost { grid-area: cost; }
-.eco-dash__save { grid-area: save; }
+.eco-dash__todo { grid-area: todo; }
 .eco-dash__el { grid-area: el; }
 @media (max-width: 1100px) {
   .eco-dash {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "hero hero" "flow flow" "cost save" "el el";
+    grid-template-areas: "hero hero" "flow flow" "cost el" "todo todo";
   }
 }
 
@@ -330,16 +330,15 @@
 .estimate__own.is-negative { color: var(--danger); }
 
 /* Stapeldiagrammet (Charts.tsx): breda staplar med ett svagt spår till full höjd, beloppet ovanför och etiketten under. */
-.minibars { display: flex; align-items: stretch; gap: 10px; margin-top: auto; padding-top: var(--s-5); }
+.minibars { display: flex; align-items: stretch; gap: 10px; margin-top: auto; padding-top: 34px; }   /* plats för beloppet över den högsta stapeln */
 .minibars__col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
 .minibars__track {
-  position: relative; width: 100%; max-width: 64px; height: 120px;
+  position: relative; width: 100%; max-width: 46px; height: 120px;
   display: flex; align-items: flex-end;
-  border-radius: 14px; background: var(--bar-track);
-  box-shadow: inset 0 1px 2px rgba(14, 21, 18, .08);
+  border-radius: 999px; background: var(--bar-slot);
 }
 .minibars__bar {
-  position: relative; width: 100%; border-radius: 14px;
+  position: relative; width: 100%; border-radius: 999px;
   background: linear-gradient(180deg, var(--bar-cost-top), var(--bar-cost));
 }
 .minibars__bar.is-accent {
@@ -350,8 +349,6 @@
   position: absolute; left: 50%; bottom: calc(100% + 5px); transform: translateX(-50%);
   font-size: 11.5px; font-weight: 700; white-space: nowrap; color: var(--text);
 }
-.minibars__value.is-inside { bottom: auto; top: 8px; color: #FFFFFF; }
-.minibars__bar.is-accent .minibars__value.is-inside { color: var(--on-accent); }
 .minibars__label {
   max-width: 100%;
   padding: 3px 9px; border-radius: 999px;
@@ -361,11 +358,65 @@
 }
 @media (max-width: 760px) {
   .minibars { gap: 6px; }
-  .minibars__track { height: 96px; border-radius: 12px; }
-  .minibars__bar { border-radius: 12px; }
+  .minibars { padding-top: 28px; }
+  .minibars__track { height: 96px; }
   .minibars__value { font-size: 10.5px; }
   .minibars__label { padding: 2px 6px; font-size: 10.5px; }
 }
+
+/* Att göra (Todos.tsx): fält och plusknapp överst, listan under med runda bockar. */
+.todo-add { display: flex; gap: var(--s-2); margin-top: var(--s-4); }
+.todo-add .input { padding: 10px 14px; }
+.todo-add__btn {
+  flex: none; width: 42px; border: 0; border-radius: var(--r-field); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--text); color: #FFFFFF;
+  transition: opacity var(--t-fast), transform var(--t-fast) var(--ease-out);
+}
+.todo-add__btn:hover:not(:disabled) { transform: translateY(-1px); }
+.todo-add__btn:disabled { opacity: .3; cursor: default; }
+.todo-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 2px; max-height: 248px; overflow-y: auto; }
+.todo {
+  display: flex; align-items: center; gap: var(--s-3);
+  padding: 8px 6px; border-radius: var(--r-field);
+  transition: background-color var(--t-fast), opacity var(--t-base);
+}
+.todo:hover { background: var(--fill); }
+.todo__check {
+  flex: none; width: 22px; height: 22px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--text-2); background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background-color var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.todo__check:hover { border-color: var(--success-2); }
+.todo__check svg { width: 16px; height: 16px; }
+.todo__check path { fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20; stroke-dashoffset: 20; transition: stroke-dashoffset .35s ease .1s; }
+.todo.is-done .todo__check { background: var(--success-2); border-color: var(--success-2); box-shadow: 0 0 10px color-mix(in srgb, var(--success) 45%, transparent); }
+.todo.is-done .todo__check path { stroke-dashoffset: 0; }
+/* Strecket dras över texten från vänster när uppgiften bockas av. */
+.todo__title {
+  position: relative; min-width: 0; flex: 0 1 auto;   /* bara så bred som texten, så att strecket följer texten */
+  font-weight: 500; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: color var(--t-base);
+}
+.todo__title::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 52%; height: 1.5px;
+  background: currentColor; transform: scaleX(0); transform-origin: left;
+  transition: transform .4s var(--ease-out);
+}
+.todo.is-done { opacity: .55; }
+.todo.is-done .todo__title { color: var(--text-2); }
+.todo.is-done .todo__title::after { transform: scaleX(1); }
+.todo__remove {
+  flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; margin-left: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--text-2); opacity: 0;
+  transition: opacity var(--t-fast), background-color var(--t-fast);
+}
+.todo:hover .todo__remove, .todo__remove:focus-visible { opacity: 1; }
+.todo__remove:hover { background: var(--fill); color: var(--text); }
+@media (hover: none) { .todo__remove { opacity: .6; } }
 
 /* Staplar: tjocka spår med runda ändar. Fyllningen glider ut från noll (framer-motion). */
 .budget-track { position: relative; height: var(--bar-h); border-radius: 999px; overflow: hidden; background: var(--bar-track); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35); }

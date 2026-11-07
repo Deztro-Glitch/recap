@@ -482,7 +482,10 @@ p { margin: 0; }
   --danger: #C2362F;
   --bar-track: var(--card-ink-fill);
   --gauge-debt: rgba(14, 21, 18, .42);   /* skulden i förklaringen */
-  --gauge-track: rgba(14, 21, 18, .12);  /* omålade streck i mätaren */
+  --gauge-track: rgba(14, 21, 18, .05);  /* omålade streck i mätaren: smälter in, bara det amorterade lyser */
+  --bar-slot: rgba(14, 21, 18, .035);    /* spåret bakom staplarna: knappt synligt */
+  --field: rgba(255, 255, 255, .5);      /* fält på ljusa kort */
+  --line: rgba(14, 21, 18, .12);
   --bar-cost: rgba(14, 21, 18, .55);     /* kostnadsstaplarna */
   --bar-cost-top: rgba(14, 21, 18, .38);
   --estimate-bg: rgba(255, 255, 255, .35);

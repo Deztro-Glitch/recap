@@ -92,7 +92,8 @@
   --bar-track: rgba(255, 255, 255, .07);
   --bar-h: 14px;
   --gauge-debt: rgba(255, 255, 255, .45);  /* skulden i förklaringen (mörka ytor) */
-  --gauge-track: rgba(255, 255, 255, .14);
+  --gauge-track: rgba(255, 255, 255, .06);
+  --bar-slot: rgba(255, 255, 255, .03);
   --bar-cost: rgba(255, 255, 255, .35);
   --bar-cost-top: rgba(255, 255, 255, .6);
   --estimate-bg: rgba(255, 255, 255, .04);
