@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
-import { IconFileText, IconX } from '@tabler/icons-react'
+import { IconClipboardList, IconCreditCard, IconFileText, IconX } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan } from '../../components/FloorPlan'
@@ -15,6 +15,7 @@ import { RoomEditSheet } from './Rooms'
 import { EconomyDashboard } from './Economy'
 import { GlassCard } from '../../components/GlassCard'
 import { Counter } from '../../components/Counter'
+import { StatCard } from '../../components/StatCard'
 
 // Översikt: nyckeltal, planritningen och en panel som visar hemmet eller det rum man tryckt på.
 export function Overview({ state, open, place, setPlace }: ViewProps & { place: string | null; setPlace: (id: string | null) => void }) {
@@ -37,8 +38,8 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
 
   // I Boende visas ekonomin i stället, se EconomyDashboard.
   const kpis = [
-    { label: 'Spenderat', value: sum(items.filter((i) => i.done)) },
-    { label: 'Planerat', value: sum(items.filter((i) => !i.done)) },
+    { label: 'Spenderat', icon: IconCreditCard, value: sum(items.filter((i) => i.done)) },
+    { label: 'Planerat', icon: IconClipboardList, value: sum(items.filter((i) => !i.done)) },
   ]
 
   return (
@@ -53,7 +54,7 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
       ) : (
         <div className="kpis">
           {kpis.map((k) => (
-            <GlassCard key={k.label} className="kpi"><div className="meta">{k.label}</div><div className="kpi__value"><Counter value={k.value} /></div></GlassCard>
+            <StatCard key={k.label} icon={k.icon} label={k.label} value={<Counter value={k.value} />} />
           ))}
         </div>
       )}

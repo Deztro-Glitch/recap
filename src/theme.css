@@ -67,6 +67,15 @@
     inset 0 0 20px color-mix(in srgb, var(--accent) 55%, transparent),
     0 0 32px color-mix(in srgb, var(--accent) 34%, transparent);
 
+  /* Ljusa statistikkort: ljust frostat glas med mörk text, svagt tonat av lägets accent. */
+  --card-light: color-mix(in srgb, color-mix(in srgb, var(--accent) 6%, #F4F7F5) 92%, transparent);
+  --card-light-2: color-mix(in srgb, color-mix(in srgb, var(--accent) 14%, #E2EBE6) 86%, transparent);
+  --card-ink: #0E1512;                      /* rubriker och siffror på ljusa kort */
+  --card-ink-2: rgba(14, 21, 18, .58);      /* detaljer på ljusa kort */
+  --card-ink-fill: rgba(14, 21, 18, .07);   /* ikonrutor, märkningar och spår på ljusa kort */
+  --card-light-shadow: 0 14px 44px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .85);
+  --card-light-shadow-hover: 0 20px 54px rgba(0, 0, 0, .6), inset 0 1px 0 #FFFFFF;
+
   /* Menypillret: egen glaskant så att det skiljer sig från ljuset bakom. */
   --pill-border: rgba(255, 255, 255, .1);
 

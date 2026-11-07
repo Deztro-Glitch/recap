@@ -266,22 +266,11 @@
 
 /* ---------- Ekonomi i Boendeläget ---------- */
 
-.eco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); margin: var(--gap) 0 var(--s-6); align-items: stretch; }
-@media (max-width: 1024px) { .eco-grid { grid-template-columns: minmax(0, 1fr); } }
+.eco-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--gap); margin: var(--gap) 0 var(--s-6); align-items: stretch; }
 @media (max-width: 760px) { .kpis--three .kpi:nth-child(3) { grid-column: 1 / -1; } }
 
-.glass.el-price {
-  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-2) var(--s-4);
-  margin-top: var(--gap);
-}
-.el-price > .meta { text-align: right; }
-@media (max-width: 760px) { .el-price > .meta { text-align: left; } }
-
-.loan__ends { display: flex; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-3); }
-.loan__ends > div:last-child { text-align: right; }
-
-/* Staplarna: runda, neutral vit för lånet, smaragdgrönt med glöd för din del. */
-/* Tjocka spår med runda ändar. Fyllningen glider ut från noll (framer-motion i Economy.tsx). */
+/* Staplarna: tjocka spår med runda ändar, neutral fyllning för lånet, smaragdgrönt med glöd för din del.
+   Fyllningen glider ut från noll (framer-motion i Economy.tsx). */
 .budget-track, .split-track { height: var(--bar-h); border-radius: 999px; overflow: hidden; background: var(--bar-track); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35); }
 .budget-track { position: relative; }
 .budget-track > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; transition: width var(--t-base) var(--ease); }

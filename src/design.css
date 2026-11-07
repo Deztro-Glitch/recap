@@ -430,9 +430,49 @@ p { margin: 0; }
   -webkit-background-clip: text; background-clip: text;
   color: transparent;
 }
-.glass.kpi .kpi__value { margin-top: auto; padding-top: var(--s-1); }
+.glass.kpi .kpi__value { margin: var(--s-4) 0 var(--s-3); }   /* siffrorna på samma höjd i alla kort */
 .kpi__value.is-positive { background-image: var(--num-positive); }
 .kpi__value.is-negative { background-image: var(--num-negative); }
+
+/* Rubriken: en liten rund ikon, namnet och ibland en märkning till höger. */
+.kpi__head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.kpi__head .kpi__label { min-width: 0; line-height: 1.25; }   /* långa rubriker bryts hellre än klipps */
+.kpi__icon {
+  width: 30px; height: 30px; flex: none; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--fill); color: var(--text);
+}
+.kpi__badge {
+  margin-left: auto; flex: none;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--fill);
+  font-size: 12px; font-weight: 700; white-space: nowrap; color: var(--text);
+}
+.kpi__badge .is-positive { color: var(--positive-ink, var(--success)); }
+.kpi__badge .is-negative { color: var(--danger); }
+.glass.kpi .budget-track, .glass.kpi .split-track { flex: none; margin-top: auto; }   /* staplar och knappar längst ner */
+.glass.kpi > .btn { align-self: flex-start; margin-top: auto; }
+
+/* Ljusa kort (statistiken): ljust frostat glas med mörk text, som tydliga skivor mot den mörka botten.
+   Färgvariablerna byts inuti kortet, så att allt innehåll (text, siffror, staplar, knappar) följer med. */
+.glass--light {
+  --text: var(--card-ink);
+  --text-2: var(--card-ink-2);
+  --fill: var(--card-ink-fill);
+  --glass-hover: rgba(14, 21, 18, .12);
+  --num: linear-gradient(180deg, #0B1210 30%, #34463D 100%);
+  --num-positive: linear-gradient(180deg, #059669 0%, #047857 100%);
+  --num-negative: linear-gradient(180deg, #DC2626 0%, #B91C1C 100%);
+  --positive-ink: #047857;
+  --danger: #C2362F;
+  --bar-track: var(--card-ink-fill);
+  --bar-loan: linear-gradient(90deg, rgba(14, 21, 18, .3), rgba(14, 21, 18, .65));
+  background: linear-gradient(160deg, var(--card-light) 0%, var(--card-light-2) 100%);
+  box-shadow: var(--card-light-shadow);
+  color: var(--text);
+}
+.glass--light.glass--interactive:hover { box-shadow: var(--card-light-shadow-hover); }
+.glass--light .budget-track, .glass--light .split-track { box-shadow: inset 0 1px 2px rgba(14, 21, 18, .15); }
 
 
 /* --------------------------------------------------------------------------

@@ -3,19 +3,19 @@ import { motion } from 'framer-motion'
 import { api } from '../../lib/api'
 import { emptyEconomy, economyNumbers } from '../../lib/economy'
 import { ore, useElPrice } from '../../lib/elpris'
-import { kr, parseNum } from '../../lib/format'
+import { parseNum } from '../../lib/format'
 import { valuation } from '../../lib/valuation'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
-import { GlassCard } from '../../components/GlassCard'
+import { StatCard } from '../../components/StatCard'
+import { IconArrowsExchange, IconBolt, IconBuildingBank, IconHomeDollar, IconPigMoney, IconReceipt2 } from '@tabler/icons-react'
 import { Counter } from '../../components/Counter'
 import { EL_ZONE_LABEL, type Economy, type ElZone } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
-import { fmtDate } from './Items'
 
 // Staplarna glider ut från noll när kortet visas.
 const grow = { duration: 1.1, ease: [0.2, 0.8, 0.2, 1] as const, delay: 0.15 }
 
-// Toppkorten och bolånemätaren i Boendeläget.
+// Statistikkorten i Boendeläget: rubrik med ikon och en siffra. Detaljerna finns i Ekonomi (tryck på ett kort).
 export function EconomyDashboard({ state, open }: ViewProps) {
   const e = state.project?.economy
   const n = economyNumbers(e ?? emptyEconomy, state.contracts)
@@ -26,113 +26,56 @@ export function EconomyDashboard({ state, open }: ViewProps) {
   return (
     <>
       <div className="kpis kpis--three">
-        <GlassCard className="kpi" onClick={edit}>
-          <div className="kpi__label">Ren månadskostnad</div>
-          <div className="meta">(Ränta och boendeavtal)</div>
-          <div className="kpi__value">{has ? <Counter value={n.costs} /> : '–'}</div>
-          <div className="meta">Pengar ut</div>
-        </GlassCard>
-        <GlassCard className="kpi" onClick={edit}>
-          <div className="kpi__label">Ditt sparande</div>
-          <div className="meta">(Amortering)</div>
-          <div className="kpi__value">{e ? <Counter value={n.saving} /> : '–'}</div>
-          <div className="meta">Pengar in i bostaden</div>
-        </GlassCard>
-        <GlassCard className="kpi" onClick={edit}>
-          <div className="kpi__label">Totalt kassaflöde</div>
-          <div className="meta">(Kostnad och amortering)</div>
-          <div className="kpi__value">{has ? <Counter value={n.cashflow} /> : '–'}</div>
-          <div className="meta">Varje månad</div>
-        </GlassCard>
+        <StatCard icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onClick={edit} />
+        <StatCard icon={IconPigMoney} label="Ditt sparande" value={e ? <Counter value={n.saving} /> : '–'} onClick={edit} />
+        <StatCard icon={IconArrowsExchange} label="Totalt kassaflöde" value={has ? <Counter value={n.cashflow} /> : '–'} onClick={edit} />
       </div>
 
-      {e?.zone && el && (
-        <GlassCard className="el-price" onClick={edit} lift={false}>
-          <div>
-            <div className="kpi__label">Elpris nu, {e.zone}</div>
-            <div className="kpi__value">{el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'}</div>
-          </div>
-          <div className="meta">
-            Snitt i dag {ore(el.avg)}, lägst {ore(el.min)}, högst {ore(el.max)}
-            <br />Spotpris utan moms och avgifter
-          </div>
-        </GlassCard>
-      )}
-
       <div className="eco-grid">
-        <GlassCard onClick={edit} lift={false}>
-          <div className="section-head">
-            <h2>Bolån</h2>
-            {e?.loan ? <span className="meta">{kr(n.paidOff)} amorterat</span> : null}
-          </div>
+        {e?.zone && el && (
+          <StatCard icon={IconBolt} label={`Elpris nu, ${e.zone}`} value={el.now != null ? <Counter value={el.now} format={(v) => `${ore(v)}/kWh`} /> : '–'} onClick={edit} lift={false} />
+        )}
+        <StatCard icon={IconBuildingBank} label="Bolån" value={e?.loan ? <Counter value={n.debt} /> : '–'} onClick={edit} lift={false}>
           {e?.loan ? (
-            <>
-              <div className="budget-track" aria-hidden>
-                <motion.span className="is-spent" initial={{ width: 0 }} animate={{ width: `${n.share * 100}%` }} transition={grow} />
-              </div>
-              <div className="loan__ends">
-                <div><div className="meta">Ursprungslån</div><div className="kpi__value"><Counter value={e.loan} /></div></div>
-                <div><div className="meta">Skuld i dag</div><div className="kpi__value"><Counter value={n.debt} /></div></div>
-              </div>
-              <p className="meta" style={{ margin: 'var(--s-3) 0 0' }}>
-                Ränta {kr(n.interest)}/mån, {kr(n.interestAfter)} efter ränteavdrag
-                {e.loanStart ? ` · lånet startade ${fmtDate(e.loanStart)}` : ''}
-              </p>
-            </>
+            <div className="budget-track" aria-label={`${Math.round(n.share * 100)} % av lånet kvar`}>
+              <motion.span className="is-spent" initial={{ width: 0 }} animate={{ width: `${n.share * 100}%` }} transition={grow} />
+            </div>
           ) : (
             <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); edit() }}>Lägg in bolånet</button>
           )}
-        </GlassCard>
+        </StatCard>
         <ValueCard state={state} debt={n.debt} onClick={edit} />
       </div>
     </>
   )
 }
 
-// Estimerat marknadsvärde och hur mycket av bostaden som är ens egen.
+// Estimerat marknadsvärde. Märkningen och stapeln visar din del: värdet minus bolånet.
 function ValueCard({ state, debt, onClick }: { state: ProjectState; debt: number; onClick: () => void }) {
   const v = valuation(state.project?.economy, state.rooms)
-
+  if (v.value == null) {
+    return (
+      <StatCard icon={IconHomeDollar} label="Estimerat marknadsvärde" value="–" onClick={onClick} lift={false}>
+        <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); onClick() }}>Lägg in bostaden</button>
+      </StatCard>
+    )
+  }
+  const margin = v.value - debt
+  const whole = Math.max(v.value, debt, 1)
   return (
-    <GlassCard onClick={onClick} lift={false}>
-      <div className="section-head"><h2>Estimerat marknadsvärde</h2></div>
-      {v.value == null ? (
-        <>
-          <p className="meta" style={{ margin: '0 0 var(--s-3)' }}>Fyll i {v.missing.join(', ')} under Bostaden.</p>
-          <button className="btn btn--secondary" onClick={(ev) => { ev.stopPropagation(); onClick() }}>Lägg in bostaden</button>
-        </>
-      ) : (
-        <>
-          <div className="kpi__value"><Counter value={v.value} /></div>
-          <p className="meta" style={{ margin: '2px 0 var(--s-4)' }}>
-            Baserat på {v.area.toLocaleString('sv-SE')} kvm och rummens nuvarande skick ({v.renovated} av {v.rooms} rum nyrenoverade)
-          </p>
-          <Margin value={v.value} debt={debt} />
-        </>
-      )}
-    </GlassCard>
-  )
-}
-
-// Stapeln: bolånet i neutral färg till vänster och din del (övervärdet) i grönt till höger.
-function Margin({ value, debt }: { value: number; debt: number }) {
-  const margin = value - debt
-  const whole = Math.max(value, debt, 1)
-  return (
-    <>
-      <div className="kpi__label">Din totala vinst/marginal</div>
-      <div className="split-track" aria-hidden>
-        <motion.span className="split-track__debt" initial={{ width: 0 }} animate={{ width: `${(Math.min(debt, value) / whole) * 100}%` }} transition={grow} />
+    <StatCard
+      icon={IconHomeDollar}
+      label="Estimerat marknadsvärde"
+      value={<Counter value={v.value} />}
+      badge={<span className={margin < 0 ? 'is-negative' : 'is-positive'} title="Din del: värdet minus bolånet">{margin > 0 ? '+' : ''}<Counter value={margin} /></span>}
+      onClick={onClick}
+      lift={false}
+    >
+      <div className="split-track" aria-label="Bolån och din del av värdet">
+        <motion.span className="split-track__debt" initial={{ width: 0 }} animate={{ width: `${(Math.min(debt, v.value) / whole) * 100}%` }} transition={grow} />
         {margin > 0 && <motion.span className="split-track__own" initial={{ width: 0 }} animate={{ width: `${(margin / whole) * 100}%` }} transition={{ ...grow, delay: grow.delay + 0.35 }} />}
       </div>
-      <div className="loan__ends">
-        <div><div className="meta">Bolån</div><div className="kpi__value"><Counter value={debt} /></div></div>
-        <div>
-          <div className="meta">Din del</div>
-          <div className={`kpi__value ${margin < 0 ? 'is-negative' : 'is-positive'}`}><Counter value={margin} /></div>
-        </div>
-      </div>
-    </>
+    </StatCard>
   )
 }
 
