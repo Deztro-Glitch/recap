@@ -60,7 +60,7 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
       <div className="overview section">
         <div>
           {!project.floorplan_path && state.rooms.length > 0 && (
-            <div className="tiles" style={{ marginBottom: 'var(--s-5)' }}>
+            <div className="tiles">
               {state.rooms.map((r, i) => {
                 const Icon = iconFor(r.icon)
                 return (

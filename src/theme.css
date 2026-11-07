@@ -14,7 +14,8 @@
   --text-2: rgba(255, 255, 255, .7);        /* detaljer: datum, butik, förklaringar */
 
   /* ---------- Genomskinliga vita lager ---------- */
-  --glass: rgba(255, 255, 255, .03);        /* kort och rader */
+  --glass: rgba(255, 255, 255, .02);        /* kort och rader: nästan inget, ljuset ska synas igenom */
+  --glass-sheen: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .1) 100%);  /* svagt djup nedåt i korten */
   --glass-hover: rgba(255, 255, 255, .06);  /* kort och rader under muspekaren, fält i fokus */
   --fill: rgba(255, 255, 255, .06);         /* chips, ikonrutor, taggar, sekundära knappar */
   --field: rgba(255, 255, 255, .04);        /* inmatningsfält */
@@ -23,14 +24,17 @@
   --label-bg: rgba(8, 8, 12, .55);          /* etiketter ovanpå bilder och planritning */
 
   /* ---------- Glaseffekten ---------- */
-  --glass-blur: blur(24px) saturate(150%);
-  --glass-blur-light: blur(12px) saturate(150%);  /* rader och fält: lättare, så att listor scrollar mjukt */
+  /* brightness lyfter ljuset bakom glaset, så att färgen syns rakt igenom korten och inte bara i kanterna. */
+  --glass-blur: blur(24px) saturate(180%) brightness(1.2);
+  --glass-blur-light: blur(12px) saturate(180%) brightness(1.2);  /* rader och fält: lättare, så att listor scrollar mjukt */
   --glass-blur-heavy: blur(32px) saturate(160%);  /* paneler som glider in */
   /* Kantljuset: ljust uppe till vänster, nästan osynligt nere till höger. */
   --glass-edge: linear-gradient(135deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, .07) 35%, rgba(255, 255, 255, .02) 65%, rgba(255, 255, 255, 0) 100%);
   --glass-edge-inset: inset 1px 1px 0 rgba(255, 255, 255, .16), inset -1px -1px 0 rgba(255, 255, 255, .03);
-  --shadow: 0 10px 40px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .04);
-  --shadow-hover: 0 18px 50px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .06);
+  --shadow: 0 8px 32px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .05);
+  --shadow-hover: 0 16px 44px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .08);
+  /* Menyval under muspekaren: en mjuk glasyta med kantljus. */
+  --nav-hover: inset 1px 1px 0 rgba(255, 255, 255, .12), inset -1px -1px 0 rgba(255, 255, 255, .02), 0 4px 16px rgba(0, 0, 0, .2);
   --shadow-float: 0 24px 70px rgba(0, 0, 0, .6);
   --sheet-bg: rgba(12, 12, 16, .55);        /* paneler och notiser */
   --scrim: rgba(0, 0, 0, .45);              /* mörkret bakom en panel */
@@ -41,9 +45,26 @@
   --accent: #7C5CFF;
   --on-accent: #FFFFFF;
   --accent-glow: #A78BFA;                   /* aktiv text och ikon i menyn */
+  --accent-hi: #9F87FF;                     /* ljusare överkant på Lägg till, ger 3D-känsla */
   --blob-1: #5B21B6;
   --blob-2: #1D4ED8;
   --blob-3: #7C3AED;
+
+  /* Lägg till: inre glöd och ljus överkant (3D) plus yttre sken i accentfärgen. */
+  --btn-glow:
+    inset 0 1px 0 rgba(255, 255, 255, .45),
+    inset 0 0 14px rgba(255, 255, 255, .2),
+    inset 0 -3px 8px rgba(0, 0, 0, .18),
+    0 1px 2px rgba(0, 0, 0, .4),
+    0 8px 24px color-mix(in srgb, var(--accent) 50%, transparent),
+    0 0 48px color-mix(in srgb, var(--accent) 32%, transparent);
+  --btn-glow-hover:
+    inset 0 1px 0 rgba(255, 255, 255, .5),
+    inset 0 0 18px rgba(255, 255, 255, .28),
+    inset 0 -3px 8px rgba(0, 0, 0, .18),
+    0 1px 2px rgba(0, 0, 0, .4),
+    0 10px 30px color-mix(in srgb, var(--accent) 62%, transparent),
+    0 0 64px color-mix(in srgb, var(--accent) 45%, transparent);
 
   /* ---------- Status ---------- */
   --success: #34D399;
@@ -90,6 +111,13 @@
 
   /* ---------- Avstånd ---------- */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px;
+  /* Luft: en flytande dashboard. Mobilen får mindre värden längst ner i filen. */
+  --gutter: 32px;        /* runt hela appen och mellan sidomeny och innehåll */
+  --gap: 20px;           /* mellan kort */
+  --card-pad: 24px;      /* inuti kort */
+  --row-pad-y: 14px;     /* inuti rader */
+  --row-pad-x: 20px;
+  --sidebar-w: 216px;
 
   /* ---------- Rörelse: lugn och mjuk ---------- */
   --ease: cubic-bezier(.65, 0, .35, 1);
@@ -103,9 +131,21 @@
   --accent: #34D399;
   --on-accent: #03140D;
   --accent-glow: #6EE7B7;
+  --accent-hi: #7EEBC0;
   --blob-1: #065F46;
   --blob-2: #92400E;
   --blob-3: #047857;
+}
+
+/* Mobilen: mindre luft, samma känsla. */
+@media (max-width: 760px) {
+  :root {
+    --gutter: 12px;
+    --gap: 12px;
+    --card-pad: 18px;
+    --row-pad-y: 13px;
+    --row-pad-x: 16px;
+  }
 }
 
 /* Utskrift (Bostads-CV): alltid mörk text på vitt papper. */

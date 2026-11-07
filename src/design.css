@@ -39,9 +39,10 @@ p { margin: 0; }
 /* Ljuset bakom glaset: stora suddiga färgfläckar (markup i index.html). */
 .mesh { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .mesh i { position: absolute; border-radius: 50%; filter: blur(150px); transition: background-color 600ms ease; }
-.mesh i:nth-child(1) { width: 62vmax; height: 62vmax; left: -22vmax; top: -26vmax; background: var(--blob-1); opacity: .6; }
-.mesh i:nth-child(2) { width: 48vmax; height: 48vmax; right: -22vmax; top: 18vh; background: var(--blob-2); opacity: .42; }
-.mesh i:nth-child(3) { width: 38vmax; height: 38vmax; left: 30vw; bottom: -26vmax; background: var(--blob-3); opacity: .3; }
+.mesh i:nth-child(1) { width: 60vmax; height: 60vmax; left: -20vmax; top: -24vmax; background: var(--blob-1); opacity: .65; }
+.mesh i:nth-child(2) { width: 50vmax; height: 50vmax; right: -18vmax; top: 10vh; background: var(--blob-2); opacity: .5; }
+/* Mitt på skärmen, så att ljuset syns genom korten i mitten och inte bara i kanterna. */
+.mesh i:nth-child(3) { width: 52vmax; height: 40vmax; left: 22vw; top: 38vh; background: var(--blob-3); opacity: .4; }
 
 
 /* --------------------------------------------------------------------------
@@ -49,9 +50,10 @@ p { margin: 0; }
    -------------------------------------------------------------------------- */
 .glass {
   position: relative;
-  padding: var(--s-4);
+  padding: var(--card-pad);
   border-radius: var(--r-card);
-  background: var(--glass);
+  background-color: var(--glass);
+  background-image: var(--glass-sheen);
   color: var(--text);
   box-shadow: var(--shadow);
   -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
@@ -80,42 +82,61 @@ p { margin: 0; }
    -------------------------------------------------------------------------- */
 .app {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
-  gap: var(--s-2);
+  gap: var(--gutter);
 }
 
-.sidebar { display: flex; flex-direction: column; gap: 2px; padding: var(--s-3) var(--s-2); }
+.sidebar { position: relative; display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-5) 0; }
+/* Ingen vägg mot innehållet: bara en svagt upplyst linje som tonas ut uppåt och nedåt. */
+@media (min-width: 761px) {
+  .sidebar::after {
+    content: ""; position: absolute; top: 12%; bottom: 12%; right: calc(var(--gutter) / -2); width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, .1) 30%, rgba(255, 255, 255, .1) 70%, transparent);
+    pointer-events: none;
+  }
+}
 .sidebar .wordmark { padding: var(--s-1) var(--s-3) var(--s-4); }
 
 .nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px var(--s-3);
-  border-radius: var(--r-sm);
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--r-field);
   font-size: var(--fs-body); font-weight: 500;
   color: var(--text-2);
   text-decoration: none; cursor: pointer;
-  transition: color var(--t-fast), background var(--t-fast);
+  transition: color var(--t-fast), background-color var(--t-fast), box-shadow var(--t-fast), text-shadow var(--t-fast);
 }
-.nav-item svg { flex: none; }
-.nav-item:hover { color: var(--text); background: var(--fill); }
+.nav-item svg { flex: none; transition: filter var(--t-fast); }
+/* Under muspekaren eller i fokus: en mjuk glasyta, texten lyser upp. */
+.nav-item:hover, .nav-item:focus-visible {
+  outline: none;
+  color: #FFFFFF;
+  background-color: var(--glass-hover);
+  box-shadow: var(--nav-hover);
+  -webkit-backdrop-filter: var(--glass-blur-light); backdrop-filter: var(--glass-blur-light);
+  text-shadow: 0 0 12px rgba(255, 255, 255, .35);
+}
+.nav-item:hover svg, .nav-item:focus-visible svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, .35)); }
 .nav-item.is-active {
   font-weight: 600;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: var(--nav-hover);
   color: var(--accent-glow);
   text-shadow: 0 0 14px color-mix(in srgb, var(--accent-glow) 55%, transparent);
 }
 .nav-item.is-active svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-glow) 70%, transparent)); }
 
+/* Huvudytan har bara lite inre marginal, så att korten kan lyfta och skugga utan att klippas. Luften runt kommer från .app. */
 .main {
   position: relative;
   border-radius: var(--r-card);
-  padding: var(--s-4) var(--s-5) var(--s-5);
+  padding: var(--s-2) var(--s-3) var(--gutter);
   min-width: 0;
   overflow: auto;
 }
 
-.topbar { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-5); }
+.topbar { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-6); }
 
 .avatar {
   width: 32px; height: 32px; border-radius: 50%;
@@ -155,18 +176,13 @@ p { margin: 0; }
 
 /* Primär: versaler, glöd och krusning vid hover. Samma glöd på plusknappen i bottenmenyn. */
 .btn--primary, .tabbar__add {
-  background: var(--accent); color: var(--on-accent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .28),
-    0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent),
-    0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
+  background: linear-gradient(180deg, var(--accent-hi) 0%, var(--accent) 100%);
+  color: var(--on-accent);
+  box-shadow: var(--btn-glow);
+  transition: box-shadow var(--t-fast), transform var(--t-fast) var(--ease-out);
 }
-.btn--primary:hover, .tabbar__add:hover {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .32),
-    0 8px 26px color-mix(in srgb, var(--accent) 60%, transparent),
-    0 0 56px color-mix(in srgb, var(--accent) 42%, transparent);
-}
+.btn--primary:hover, .tabbar__add:hover { box-shadow: var(--btn-glow-hover); transform: translateY(-1px); }
+.btn--primary:active, .tabbar__add:active { transform: translateY(0) scale(.99); }
 .btn--primary {
   justify-content: space-between; gap: 24px;
   min-width: 160px;
@@ -204,12 +220,12 @@ p { margin: 0; }
    6. Rumsrutor — glas med rummets färg i ikonen och ett svagt sken
    Användning: <button class="glass tile" style="--tile: var(--c-sand-bg)">
    -------------------------------------------------------------------------- */
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--s-2); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap); }
 .glass.tile {
   --tile: var(--c-lilac-bg);
   overflow: hidden;
-  min-height: 110px;
-  padding: var(--s-3) var(--s-4);
+  min-height: 120px;
+  padding: var(--card-pad);
   border: 0; font: inherit; text-align: left;
   background: radial-gradient(120% 120% at 100% 100%, color-mix(in srgb, var(--tile) 20%, transparent), transparent 62%), var(--glass);
   cursor: pointer;
@@ -223,10 +239,10 @@ p { margin: 0; }
 /* --------------------------------------------------------------------------
    7. Listor och rader — varje rad är ett eget glaskort
    -------------------------------------------------------------------------- */
-.rows { display: flex; flex-direction: column; gap: var(--s-2); }
+.rows { display: flex; flex-direction: column; gap: 10px; }
 .row {
   display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
-  padding: 12px var(--s-4);
+  padding: var(--row-pad-y) var(--row-pad-x);
   border-radius: var(--r-row);
   cursor: pointer;
   transition: background var(--t-fast);
@@ -385,11 +401,11 @@ p { margin: 0; }
 /* --------------------------------------------------------------------------
    15. Nyckeltal — stora summor i vit gradient
    -------------------------------------------------------------------------- */
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--s-2); }
-.glass.kpi { padding: var(--s-3) var(--s-4); display: flex; flex-direction: column; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--gap); }
+.glass.kpi { display: flex; flex-direction: column; }
 .kpi__label { font-size: var(--fs-meta); font-weight: 600; color: var(--text); }
 .kpi__value {
-  font-size: var(--fs-number); font-weight: var(--fw-number); line-height: 1.2; letter-spacing: -.025em;
+  font-size: var(--fs-number); font-weight: var(--fw-number); line-height: 1.2; letter-spacing: -.02em;
   margin-top: 2px;
   background: var(--num);
   -webkit-background-clip: text; background-clip: text;
@@ -405,13 +421,13 @@ p { margin: 0; }
    -------------------------------------------------------------------------- */
 @media (max-width: 760px) {
   .app { grid-template-columns: minmax(0, 1fr); }
-  .sidebar { flex-direction: row; overflow-x: auto; padding: var(--s-1); }
+  .sidebar { flex-direction: row; overflow-x: auto; padding: var(--s-1) 0; }
   .sidebar .wordmark { display: none; }
   .nav-item { white-space: nowrap; }
-  .main { padding: var(--s-4) var(--s-3); }
-  .topbar { margin-bottom: var(--s-4); }
+  .main { padding: var(--s-2) 0 var(--gutter); }
+  .topbar { margin-bottom: var(--s-5); }
   .tiles, .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .glass.kpi { padding: var(--s-2) var(--s-3); }
+  .glass.kpi { padding: 14px 16px; }   /* två kort i bredd: lite mindre inre luft */
   .kpi__value { font-size: var(--fs-number-mobile); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 

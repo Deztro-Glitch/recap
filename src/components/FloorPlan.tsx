@@ -342,7 +342,7 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
                 key={id}
                 className={`plan__room ${id === selected ? 'is-selected' : ''}`}
                 points={p.map((q) => `${q.x * W},${q.y * H}`).join(' ')}
-                style={{ fill: `var(--c-${r.color}-bg)` }}
+                style={{ fill: `var(--c-${r.color}-bg)`, stroke: `var(--c-${r.color}-bg)` }}
                 onClick={() => !editing && onRoom(r)}
               />
             )

@@ -9,10 +9,10 @@
 .app {
   height: 100dvh;
   min-height: 0;
-  padding: calc(env(safe-area-inset-top, 0px) + var(--s-2)) var(--s-2) calc(env(safe-area-inset-bottom, 0px) + var(--s-2));
+  padding: calc(env(safe-area-inset-top, 0px) + var(--gutter)) var(--gutter) calc(env(safe-area-inset-bottom, 0px) + var(--gutter));
 }
 .sidebar__foot { margin-top: auto; }
-.nav-label { padding: var(--s-4) var(--s-3) var(--s-1); }
+.nav-label { padding: var(--s-5) 14px var(--s-2); }
 
 .topbar__home {
   display: flex; align-items: center; gap: var(--s-1);
@@ -46,7 +46,7 @@
 }
 
 @media (max-width: 760px) {
-  .app { gap: var(--s-1); grid-template-rows: auto minmax(0, 1fr); }
+  .app { gap: var(--s-2); grid-template-rows: auto minmax(0, 1fr); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--s-2)); }
   .app--tabs { grid-template-rows: minmax(0, 1fr) auto; }
   .app--tabs .sidebar { display: none; }
   .app--tabs .topbar__add { display: none; }
@@ -83,7 +83,7 @@
   overflow: hidden; white-space: nowrap;
   background: var(--danger); color: #FFFFFF; font-weight: 600;
 }
-.swipe__front { position: relative; padding: 12px var(--s-4); touch-action: pan-y; }
+.swipe__front { position: relative; padding: var(--row-pad-y) var(--row-pad-x); touch-action: pan-y; }
 
 
 /* ---------- Sektioner som fälls ihop (Klart) ---------- */
@@ -114,7 +114,7 @@
 }
 
 .toggles { display: grid; gap: var(--s-2); }
-.columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); align-items: start; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: start; }
 .other-mode { display: block; margin-top: var(--s-5); }
 
 
@@ -126,7 +126,7 @@
   position: fixed; z-index: 51; top: var(--s-2); right: var(--s-2); bottom: var(--s-2);
   width: min(420px, calc(100% - 16px));
   overflow-y: auto;
-  padding: var(--s-4) var(--s-5) var(--s-5);
+  padding: var(--card-pad);
   border-radius: var(--r-sheet);
   background: var(--sheet-bg);
   -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
@@ -139,7 +139,7 @@
     top: auto; left: 0; right: 0; bottom: 0; width: 100%;
     max-height: 90dvh;
     border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-    padding: var(--s-4) var(--s-4) calc(env(safe-area-inset-bottom, 0px) + var(--s-5));
+    padding: var(--card-pad) var(--card-pad) calc(env(safe-area-inset-bottom, 0px) + var(--s-5));
   }
 }
 
@@ -233,10 +233,11 @@
 .plan img { display: block; width: 100%; height: auto; pointer-events: none; filter: url(#plan-ink); }
 .plan__layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .plan.is-editing .plan__layer { touch-action: none; }
-.plan__room { fill-opacity: .32; cursor: pointer; stroke: none; transition: fill-opacity var(--t-fast); }
-.plan__room:hover { fill-opacity: .48; }
-.plan.is-editing .plan__room { fill-opacity: .28; }
-.plan .plan__room.is-selected { fill-opacity: .5; stroke: var(--accent); stroke-width: 2.5; vector-effect: non-scaling-stroke; cursor: move; }
+/* Rummen: genomskinlig färg och en tunn kant i samma färg (fill och stroke sätts per rum i FloorPlan). */
+.plan__room { fill-opacity: .18; stroke-opacity: .7; stroke-width: 1.5; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill-opacity var(--t-fast), stroke-opacity var(--t-fast); }
+.plan__room:hover { fill-opacity: .3; stroke-opacity: 1; }
+.plan.is-editing .plan__room { fill-opacity: .14; }
+.plan .plan__room.is-selected { fill-opacity: .32; stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.5; cursor: move; }
 .plan__vertex { fill: #FFFFFF; stroke: var(--accent); stroke-width: 3; vector-effect: non-scaling-stroke; cursor: grab; pointer-events: none; }
 .plan__vertex.is-active { fill: var(--accent); }
 .plan__mid { fill: var(--accent); fill-opacity: .6; pointer-events: none; }
@@ -252,9 +253,8 @@
 
 /* ---------- Översikt: planritningen till vänster, panelen för hemmet eller rummet till höger ---------- */
 
-.overview { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--s-5); align-items: start; }
-.kpis + .overview { margin-top: var(--s-4); }
-.plan-card { padding: var(--s-4); }
+.overview { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--gap); align-items: start; }
+.kpis + .overview, .tiles + .glass { margin-top: var(--gap); }
 .panel { scroll-margin-top: var(--s-4); }
 .panel .section { margin-top: var(--s-4); }
 .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s-2) var(--s-4); margin: 0; }
@@ -270,13 +270,13 @@
 
 /* ---------- Ekonomi i Boendeläget ---------- */
 
-.eco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin: var(--s-2) 0 var(--s-5); align-items: stretch; }
+.eco-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); margin: var(--gap) 0 var(--s-6); align-items: stretch; }
 @media (max-width: 1024px) { .eco-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) { .kpis--three .kpi:nth-child(3) { grid-column: 1 / -1; } }
 
 .glass.el-price {
   display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-2) var(--s-4);
-  margin-top: var(--s-2); padding: var(--s-3) var(--s-4);
+  margin-top: var(--gap);
 }
 .el-price > .meta { text-align: right; }
 @media (max-width: 760px) { .el-price > .meta { text-align: left; } }
