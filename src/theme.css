@@ -105,6 +105,11 @@
   --care-due: #F0716A;
   --demolish: #F0716A;   /* väggar markerade för rivning */
 
+  /* Arbetsytan i Projekt: ett mörkare glas med ett svagt punktrutnät, som i ett ritprogram. */
+  --stage-bg: rgba(0, 0, 0, .22);
+  --stage-dot: rgba(255, 255, 255, .075);
+  --stage-dot-gap: 20px;
+
   /* ---------- Siffror och staplar ---------- */
   --num: linear-gradient(180deg, #FFFFFF 35%, rgba(255, 255, 255, .62) 100%);
   --num-positive: linear-gradient(180deg, #6EE7B7 0%, var(--success-2) 100%);

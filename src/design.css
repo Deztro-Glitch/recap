@@ -506,6 +506,10 @@ p { margin: 0; }
   color: var(--text);
 }
 .glass--light.glass--interactive:hover { box-shadow: var(--card-light-shadow-hover); }
+
+/* Mörka statistikkort (Projekt): samma mörka glas som resten, pilen blir vit med mörk ikon vid hover. */
+.glass--dark.glass--interactive:hover { background-color: var(--glass-hover); }
+.glass--dark.kpi:hover .kpi__open, .glass--dark.kpi:focus-visible .kpi__open, .glass--dark.kpi:active .kpi__open { background: var(--text); color: var(--bg); }
 .glass--light .budget-track { box-shadow: inset 0 1px 2px rgba(14, 21, 18, .15); }
 
 /* Accentkort (Bolån i Boende): mättad accent som glas, vit text, vita siffror och vita detaljer i grafen. */

@@ -8,6 +8,7 @@ import { presetFor, readRoomNames } from '../lib/readplan'
 import type { PlanMap, Pt, Room } from '../types'
 import type { ProjectState } from '../screens/ProjectView'
 import { Loader, useToast } from './ui'
+import { Copilot } from './Copilot'
 
 type Polys = Record<string, Pt[]>
 const W = 1000 // bredden i SVG:ns koordinater; höjden följer bildens proportioner
@@ -35,7 +36,8 @@ const loadGone = (pid: string): string[] => {
 // Planritningen. Tryck på ett rum för att öppna det. Under "Justera" drar man i rummens hörn,
 // ungefär som när man beskär en bild, och plustecknen mitt på kanterna ger nya hörn.
 // Med ett verktyg valt blir väggarna klickbara (mät, markera för rivning) eller rummen (kalkylera yta).
-export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: ProjectState; onRoom: (room: Room) => void; onAddRoom: () => void; tool?: PlanTool | null }) {
+// copilot: AI-raden längst ner i kortet (Projektläget), som kan riva väggar på begäran.
+export function FloorPlan({ state, onRoom, onAddRoom, tool = null, copilot = false }: { state: ProjectState; onRoom: (room: Room) => void; onAddRoom: () => void; tool?: PlanTool | null; copilot?: boolean }) {
   const toast = useToast()
   const project = state.project!
   const url = project.floorplan_path ? state.urls[project.floorplan_path] : undefined
@@ -62,6 +64,7 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
   const [measured, setMeasured] = useState<string | null>(null)
   const [areaRoom, setAreaRoom] = useState<string | null>(null)
   const [hover, setHover] = useState<string | null>(null)
+  const [flash, setFlash] = useState<string | null>(null)   // väggen AI:n ska riva blinkar först
   useEffect(() => {
     setMeasured(null)
     setAreaRoom(null)
@@ -297,6 +300,39 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
       if (wall) setAreaRoom(wall.rooms[0])   // visa den sammanslagna ytan direkt
     }
   }
+  // AI-raden (mockad tills den kopplas till AI:n): förstår "riv väggen (mellan X och Y)" och "återställ".
+  // Väggen blinkar i rött och orange, tonas sedan bort och rummen slås ihop som när man river själv.
+  const ask = async (text: string): Promise<string> => {
+    const t = text.toLowerCase()
+    if (/återställ|bygg upp|ångra allt/.test(t)) {
+      setGone([])
+      setAreaRoom(null)
+      return gone.length ? 'Klart, alla väggar är tillbaka.' : 'Det finns inga rivna väggar att återställa.'
+    }
+    if (!/riv|ta bort|öppna upp|slå ihop/.test(t)) return 'Jag kan riva väggar mellan rum, t.ex. ”Riv väggen mellan kök och matsal”.'
+    const name = (id: string) => roomById(id)?.name ?? ''
+    const named = shown.map(([id]) => id).filter((id) => name(id) && t.includes(name(id).toLowerCase()))
+    const standing = shared.filter((w) => !gone.includes(w.id))
+    const between = (a: string, b: string) => standing.find((w) => w.rooms.includes(a) && w.rooms.includes(b))
+    const byName = (a: string, b: string) => standing.find((w) => w.rooms.some((x) => name(x).toLowerCase().includes(a)) && w.rooms.some((x) => name(x).toLowerCase().includes(b)))
+    const wall =
+      named.length >= 2 ? between(named[0], named[1])
+      : named.length === 1 ? standing.find((w) => w.rooms.includes(named[0]))
+      : byName('kök', 'matsal') ?? standing[0]
+    if (!wall) return named.length >= 2 ? `${name(named[0])} och ${name(named[1])} har ingen gemensam vägg som står kvar.` : 'Jag hittar ingen vägg att riva.'
+
+    setFlash(wall.id)
+    await new Promise((r) => setTimeout(r, still ? 0 : 950))
+    setFlash(null)
+    setGone((g) => (g.includes(wall.id) ? g : [...g, wall.id]))
+    setAreaRoom(wall.rooms[0])
+    const after = mergeGroups(shown.map(([id]) => id), shared, [...gone, wall.id]).get(wall.rooms[0]) ?? wall.rooms
+    const sum = after.reduce((s, x) => s + polyArea(polys[x]), 0)
+    const size = m2PerUnit ? `≈ ${dec(sum * m2PerUnit)} m²` : `${Math.round((sum / drawnArea) * 100)} % av ytan`
+    return `Rev väggen mellan ${name(wall.rooms[0])} och ${name(wall.rooms[1])}. Den nya ytan blir ${size}.`
+  }
+  const flashWall = flash ? shared.find((w) => w.id === flash) : null
+
   const wallTool = !editing && (tool === 'measure' || tool === 'demolish')
   const m = walls.find((w) => w.key === measured)
   const shownArea = !editing ? areaRoom ?? (tool !== 'measure' && tool !== 'demolish' ? hover : null) : null
@@ -431,7 +467,7 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
             return (
               <motion.polygon
                 key={id}
-                className={`plan__room ${id === selected ? 'is-selected' : ''} ${shownArea && groupOf(shownArea).includes(id) ? 'is-lit' : ''}`}
+                className={`plan__room ${id === selected ? 'is-selected' : ''} ${shownArea && groupOf(shownArea).includes(id) ? 'is-lit' : ''} ${groupOf(id).length > 1 ? 'is-merged' : ''}`}
                 points={p.map((q) => `${q.x * W},${q.y * H}`).join(' ')}
                 initial={false}
                 animate={{ fill: c, stroke: c }}
@@ -461,6 +497,18 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
               />
             ))}
           </AnimatePresence>
+          {/* Väggen AI:n ska riva blinkar till i rött och orange innan den tonas bort. */}
+          {flashWall && (
+            <motion.line
+              key={`flash${flashWall.id}`}
+              className="plan__wall-flash"
+              x1={flashWall.a.x} y1={flashWall.a.y} x2={flashWall.b.x} y2={flashWall.b.y}
+              strokeWidth={flashWall.gap + 10}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 0.25, 1, 0.35, 1] }}
+              transition={{ duration: 0.95, ease: 'easeInOut' }}
+            />
+          )}
           {m && <line className="plan__wall-measure" x1={m.a.x * W} y1={m.a.y * H} x2={m.b.x * W} y2={m.b.y * H} />}
           {!editing && tool === 'measure' && walls.map((w) => (
             <line
@@ -552,6 +600,7 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
           )}
         </AnimatePresence>
       </div>
+      {copilot && !editing && <Copilot onAsk={ask} />}
       {fileInput}
     </div>
   )

@@ -77,7 +77,7 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
       ) : (
         <div className="kpis">
           {kpis.map((k) => (
-            <StatCard key={k.label} icon={k.icon} label={k.label} value={<Counter value={k.value} />} onOpen={() => open({ t: 'stat', title: k.label })} />
+            <StatCard key={k.label} tone="dark" icon={k.icon} label={k.label} value={<Counter value={k.value} />} onOpen={() => open({ t: 'stat', title: k.label })} />
           ))}
         </div>
       )}
@@ -85,11 +85,12 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
       {mode === 'full' ? (
         <>
           <div className="workspace section">
-            {project.floorplan_path && <PlanToolbox tool={tool} onTool={setTool} />}
             <div className="workspace__stage">
               {roomTiles}
-              <GlassCard className="plan-card plan-card--stage" lift={false}>
-                <FloorPlan state={state} tool={tool} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
+              {/* Arbetsytan: punktrutnät, verktygslådan uppe till vänster och AI-raden svävande längst ner. */}
+              <GlassCard className={`plan-card plan-card--stage ${project.floorplan_path ? 'has-tools' : ''}`} lift={false}>
+                {project.floorplan_path && <PlanToolbox tool={tool} onTool={setTool} />}
+                <FloorPlan state={state} tool={tool} copilot={!!project.floorplan_path} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
               </GlassCard>
             </div>
             {sidePanel}

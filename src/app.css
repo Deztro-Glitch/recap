@@ -241,6 +241,7 @@
 .plan__room:hover, .plan__room.is-lit { fill-opacity: .3; stroke-opacity: 1; }
 /* Glipan där en vägg har rivits: samma färg och genomskinlighet som rummen, så att de blir en yta. */
 .plan__gap { fill-opacity: .3; pointer-events: none; }
+.plan__room.is-merged { stroke-opacity: .15; transition: fill-opacity var(--t-fast), stroke-opacity var(--t-base); }
 .plan.is-editing .plan__room { fill-opacity: .14; }
 .plan .plan__room.is-selected { fill-opacity: .32; stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.5; cursor: move; }
 .plan__vertex { fill: #FFFFFF; stroke: var(--accent); stroke-width: 3; vector-effect: non-scaling-stroke; cursor: grab; pointer-events: none; }
@@ -282,7 +283,7 @@
 .plan__measure--area b { font-size: 15px; }
 .plan__measure--area small { font-size: 11px; font-weight: 600; opacity: .85; }
 .plan__chip {
-  position: absolute; left: var(--s-3); bottom: var(--s-3);
+  position: absolute; right: var(--s-3); top: var(--s-3);
   display: flex; align-items: center; gap: var(--s-2);
   padding: 6px 6px 6px 12px; border-radius: 999px;
   font-size: var(--fs-meta); font-weight: 600; color: var(--text);
@@ -294,21 +295,32 @@
 .plan__measure--area { pointer-events: none; }
 .plan__measure--area.is-pinned { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent), 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent); }
 
-/* ---------- Projekt: arbetsytan. Verktygslådan, ritningen stor i mitten och panelen till höger ---------- */
-.workspace { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(300px, 380px); gap: var(--gap); align-items: start; }
+/* ---------- Projekt: arbetsytan. Ritningen stor till vänster, panelen till höger ---------- */
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: var(--gap); align-items: start; }
 .kpis + .workspace { margin-top: var(--gap); }
 .workspace__stage { min-width: 0; }
-.plan-card--stage { padding: var(--s-5); }
+/* Kortet är arbetsytan: mörkare glas med punktrutnät, plats för verktygslådan till vänster och AI-raden nederst. */
+.glass.plan-card--stage {
+  padding: var(--s-5) var(--s-5) 104px;
+  background-color: var(--stage-bg);
+  background-image: radial-gradient(circle, var(--stage-dot) 1px, transparent 1.6px), var(--glass-sheen);
+  background-size: var(--stage-dot-gap) var(--stage-dot-gap), auto;
+}
+.glass.plan-card--stage.has-tools { padding-left: calc(var(--s-5) + 64px); }
 .plan-card--stage .plan { max-width: none; }
 
-.toolbox {
-  position: sticky; top: 96px; z-index: 2;
-  display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-2);
+/* Verktygslådan: ett litet vertikalt glaspiller fäst uppe till vänster i kortet. */
+.glass.toolbox {
+  position: absolute; top: var(--s-5); left: var(--s-4); z-index: 3;
+  display: flex; flex-direction: column; gap: 6px; padding: 6px;
   border-radius: 999px;
+  background: var(--sheet-bg); -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: var(--glass-edge-inset), 0 10px 30px rgba(0, 0, 0, .35);
 }
+.glass.toolbox::before { display: none; }
 .toolbox__slot { position: relative; }
 .toolbox__btn {
-  position: relative; width: 48px; height: 48px; border: 0; border-radius: 999px; cursor: pointer;
+  position: relative; width: 42px; height: 42px; border: 0; border-radius: 999px; cursor: pointer;
   display: grid; place-items: center; background: transparent; color: var(--text-2);
   transition: color var(--t-fast), background-color var(--t-fast);
 }
@@ -320,12 +332,62 @@
   box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35);
 }
 .toolbox__tip {
-  position: absolute; left: calc(100% + 14px); top: 50%; translate: 0 -50%; z-index: 5;
+  position: absolute; left: calc(100% + 12px); top: 50%; translate: 0 -50%; z-index: 5;
   padding: 6px 12px; border-radius: 999px; white-space: nowrap; pointer-events: none;
   font-size: var(--fs-meta); font-weight: 600; color: var(--text);
   background: var(--sheet-bg); -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
   box-shadow: var(--glass-edge-inset), var(--shadow-float);
 }
+
+/* AI-raden: ett pillerformat glas som svävar centrerat längst ner i arbetsytan. */
+.copilot-wrap {
+  position: absolute; left: 50%; bottom: var(--s-5); translate: -50% 0; z-index: 4;
+  width: min(560px, calc(100% - 2 * var(--s-5)));
+  display: grid; justify-items: center; gap: var(--s-2);
+}
+.copilot {
+  width: 100%; display: flex; align-items: center; gap: var(--s-3);
+  padding: 6px 6px 6px 8px; border-radius: 999px;
+  background: var(--sheet-bg); -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: var(--glass-edge-inset), 0 14px 40px rgba(0, 0, 0, .45);
+  transition: box-shadow var(--t-fast);
+}
+.copilot:focus-within, .copilot.is-busy {
+  box-shadow: var(--glass-edge-inset), inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent), 0 14px 40px rgba(0, 0, 0, .45);
+}
+.copilot__spark {
+  flex: none; width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center;
+  color: var(--accent-glow);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 35%, transparent), transparent 70%);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.copilot.is-busy .copilot__spark { box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 70%, transparent); }
+.copilot__spark-icon { display: grid; place-items: center; }
+.copilot__input {
+  flex: 1; min-width: 0; padding: 10px 0; border: 0; outline: none; background: none;
+  font: 500 15px var(--font); color: var(--text);
+}
+.copilot__input::placeholder { color: var(--text-2); opacity: .8; }
+.copilot__send {
+  flex: none; width: 38px; height: 38px; border: 0; border-radius: 999px; cursor: pointer;
+  display: grid; place-items: center; background: var(--accent); color: var(--on-accent);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 40%, transparent);
+  transition: opacity var(--t-fast), transform var(--t-fast) var(--ease-out);
+}
+.copilot__send:hover:not(:disabled) { transform: translateY(-1px); }
+.copilot__send:disabled { opacity: .35; box-shadow: none; cursor: default; }
+.copilot__answer {
+  display: flex; align-items: flex-start; gap: var(--s-2); max-width: 100%;
+  padding: 9px 14px; border-radius: var(--r-row);
+  font-size: var(--fs-meta); font-weight: 500; color: var(--text);
+  background: var(--sheet-bg); -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: var(--glass-edge-inset), var(--shadow-float);
+}
+.copilot__answer svg { flex: none; margin-top: 2px; color: var(--accent-glow); }
+
+/* Väggen AI:n river blinkar mellan rött och orange innan den tonas bort. */
+.plan__wall-flash { stroke-linecap: round; pointer-events: none; animation: wall-flash .95s ease-in-out; stroke: var(--demolish); filter: drop-shadow(0 0 6px var(--care-soon)); }
+@keyframes wall-flash { 0%, 50% { stroke: var(--demolish); } 25%, 75% { stroke: var(--care-soon); } }
 
 /* Smart underhåll och vitvaror: skanningsytan och en ring per sak, med luft emellan. */
 .care__grid { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr); gap: var(--gap); }
@@ -372,15 +434,16 @@
 
 @media (max-width: 1100px) {
   .care__grid { grid-template-columns: minmax(0, 1fr); }
-  .workspace { grid-template-columns: auto minmax(0, 1fr); }
-  .workspace > .panel { grid-column: 1 / -1; }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 760px) {
-  /* Mobilen: verktygslådan blir en rad ovanför ritningen. */
-  .workspace { grid-template-columns: minmax(0, 1fr); }
-  .toolbox { position: static; flex-direction: row; justify-self: center; }
+  /* Mobilen: verktygslådan blir ett liggande piller uppe till höger, bredvid rubriken. */
+  .glass.plan-card--stage, .glass.plan-card--stage.has-tools { padding: var(--card-pad) var(--card-pad) 92px; }
+  .glass.toolbox { top: 12px; left: auto; right: 54px; flex-direction: row; padding: 4px; gap: 2px; }
+  .toolbox__btn { width: 36px; height: 36px; }
   .toolbox__tip { left: 50%; top: calc(100% + 10px); translate: -50% 0; }
-  .plan-card--stage { padding: var(--card-pad); }
+  .copilot-wrap { bottom: var(--card-pad); width: calc(100% - 2 * var(--card-pad)); }
+  .copilot__input { font-size: 16px; }
   .scan { min-height: 170px; }
 }
 
