@@ -9,6 +9,8 @@ import type { PlanMap, Pt, Room } from '../types'
 import type { ProjectState } from '../screens/ProjectView'
 import { Loader, useToast } from './ui'
 import { Copilot } from './Copilot'
+import { allItems } from '../screens/tabs/Items'
+import { kr } from '../lib/format'
 
 type Polys = Record<string, Pt[]>
 const W = 1000 // bredden i SVG:ns koordinater; höjden följer bildens proportioner
@@ -16,7 +18,7 @@ const W = 1000 // bredden i SVG:ns koordinater; höjden följer bildens proporti
 const toPolys = (m: PlanMap | null): Polys => (!m ? {} : 'v' in m ? { ...m.rooms } : fromV1(m))
 
 // Verktygen i Projektläget (verktygslådan bredvid ritningen). Rummens kanter är väggarna.
-export type PlanTool = 'measure' | 'demolish' | 'area'
+export type PlanTool = 'measure' | 'demolish' | 'area' | 'cost'
 
 const dec = (n: number, d = 1) => n.toLocaleString('sv-SE', { minimumFractionDigits: d, maximumFractionDigits: d })
 
@@ -337,7 +339,21 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null, stage = false
 
   const wallTool = !editing && (tool === 'measure' || tool === 'demolish')
   const m = walls.find((w) => w.key === measured)
-  const shownArea = !editing ? areaRoom ?? (tool !== 'measure' && tool !== 'demolish' ? hover : null) : null
+  const shownArea = !editing ? areaRoom ?? (tool !== 'measure' && tool !== 'demolish' && tool !== 'cost' ? hover : null) : null
+
+  // Kostnadskartan: allt som är klart i ett rum (köp, jobb och kvittorader), summerat per grupp av sammanslagna rum.
+  // Rummen fylls i accentfärgen, starkare ju mer de har kostat jämfört med det dyraste.
+  const costMode = tool === 'cost' && !editing
+  const spentByRoom = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const it of allItems(state)) if (it.done && it.room_id) m.set(it.room_id, (m.get(it.room_id) ?? 0) + it.amount)
+    return m
+  }, [state.purchases, state.tasks])
+  const groupSpent = (id: string) => groupOf(id).reduce((s, x) => s + (spentByRoom.get(x) ?? 0), 0)
+  const maxSpent = Math.max(1, ...shown.map(([id]) => groupSpent(id)))
+  const totalSpent = shown.filter(([id]) => lead(id) === id).reduce((s, [id]) => s + groupSpent(id), 0)
+  const accent = costMode ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#7C5CFF' : ''
+  const heat = (id: string) => 0.06 + 0.64 * (groupSpent(id) / maxSpent)
   const areaPoly = shownArea ? polys[lead(shownArea)] : null
 
   const fileInput = <input ref={input} type="file" accept="image/*" hidden onChange={(e) => upload(e.target.files?.[0])} />
@@ -470,21 +486,21 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null, stage = false
 
           {shown.map(([id, p]) => {
             const r = roomById(id)!
-            const c = paint(roomById(lead(id))!.color)
+            const c = costMode ? accent : paint(roomById(lead(id))!.color)
             return (
               <motion.polygon
                 key={id}
                 className={`plan__room ${id === selected ? 'is-selected' : ''} ${shownArea && groupOf(shownArea).includes(id) ? 'is-lit' : ''} ${groupOf(id).length > 1 ? 'is-merged' : ''}`}
                 points={p.map((q) => `${q.x * W},${q.y * H}`).join(' ')}
                 initial={false}
-                animate={{ fill: c, stroke: c }}
+                animate={costMode ? { fill: c, stroke: c, fillOpacity: heat(id) } : { fill: c, stroke: c, fillOpacity: 0.18 }}
                 transition={{ duration: 0.8, ease: [0.65, 0, 0.35, 1] }}
                 onPointerEnter={() => setHover(id)}
                 onPointerLeave={() => setHover((h) => (h === id ? null : h))}
                 onClick={() => {
                   if (editing) return
                   if (tool === 'area') setAreaRoom(id === areaRoom ? null : id)
-                  else if (!tool) onRoom(r)
+                  else if (!tool || tool === 'cost') onRoom(r)
                 }}
               />
             )
@@ -496,7 +512,7 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null, stage = false
                 key={`gap${w.id}`}
                 className="plan__gap"
                 points={w.quad.map((q) => `${q.x},${q.y}`).join(' ')}
-                style={{ fill: paint(roomById(lead(w.rooms[0]))!.color) }}
+                style={costMode ? { fill: accent, fillOpacity: heat(w.rooms[0]) * 0.6 } :{ fill: paint(roomById(lead(w.rooms[0]))!.color) }}
                 initial={still ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -559,6 +575,29 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null, stage = false
             </g>
           )}
         </svg>
+        {/* Kostnadskartan: vad varje rum (eller sammanslagen yta) har kostat, och totalen uppe till vänster. */}
+        <AnimatePresence>
+          {costMode && labels.filter((l) => lead(l.id) === l.id && groupSpent(l.id) > 0).map((l, i) => (
+            <motion.span
+              key={`cost${l.id}${groupOf(l.id).length}`}
+              className="plan__measure plan__measure--area plan__cost"
+              style={{ left: `${l.at.x * 100}%`, top: `${l.at.y * 100}%` }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 30, delay: still ? 0 : i * 0.04 }}
+            >
+              <b>{kr(groupSpent(l.id))}</b>
+              <small>{groupName(l.id)}</small>
+            </motion.span>
+          ))}
+          {costMode && (
+            <motion.div key="cost-legend" className="plan__legend" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <span className="plan__legend-scale" aria-hidden />
+              <span>{totalSpent > 0 ? `${kr(totalSpent)} i rummen` : 'Inget klart i rummen än'}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Ett namn per grupp: sammanslagna rum får ett gemensamt namn på det största rummets plats. */}
         <AnimatePresence initial={false}>
           {labels.filter((l) => lead(l.id) === l.id).map((l) => (
@@ -568,7 +607,7 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null, stage = false
               style={{ left: `${l.at.x * 100}%`, top: `${l.at.y * 100}%` }}
               initial={{ opacity: 0 }}
               // På arbetsytan står namnet redan i ritningen; appens namn kommer med ytan när man håller över.
-              animate={{ opacity: (stage ? !editing : shownArea && lead(shownArea) === l.id) ? 0 : 1 }}
+              animate={{ opacity: (stage ? !editing : costMode || (shownArea && lead(shownArea) === l.id)) ? 0 : 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.35 }}
             >

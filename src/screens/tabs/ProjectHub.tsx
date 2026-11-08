@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  IconCheck, IconDimensions, IconFilter, IconFridge, IconRulerMeasure, IconToolsKitchen2, IconWallOff, IconWashMachine,
+  IconCheck, IconCoins, IconDimensions, IconFilter, IconFridge, IconRulerMeasure, IconToolsKitchen2, IconWallOff, IconWashMachine,
 } from '@tabler/icons-react'
 import { GlassCard } from '../../components/GlassCard'
 import { ActivityRing } from '../../components/Charts'
@@ -15,6 +15,7 @@ const TOOLS: { id: PlanTool; label: string; icon: typeof IconRulerMeasure }[] = 
   { id: 'measure', label: 'Mät dimensioner', icon: IconRulerMeasure },
   { id: 'demolish', label: 'Markera vägg för rivning', icon: IconWallOff },
   { id: 'area', label: 'Kalkylera yta', icon: IconDimensions },
+  { id: 'cost', label: 'Kostnadskarta', icon: IconCoins },
 ]
 
 export function PlanToolbox({ tool, onTool }: { tool: PlanTool | null; onTool: (t: PlanTool | null) => void }) {

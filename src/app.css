@@ -302,7 +302,16 @@
 .cockpit__cell > .glass { flex: 1; min-height: 220px; }
 
 /* Aktivt projekt: rummet stort, en tunn stapel som lyser i accentfärgen och nästa steg på en rad. */
-.focus__body { display: grid; gap: 2px; margin: var(--s-5) 0 var(--s-4); }
+.focus__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; margin: var(--s-5) 0 var(--s-4); }
+.focus__body { display: grid; gap: 2px; min-width: 0; }
+/* Projektbudgeten uppe till höger: använt av budgeten och en tunn stapel. Över budget blir siffran och stapeln röda. */
+.focus__budget { display: grid; gap: 4px; justify-items: end; text-align: right; min-width: 160px; }
+.focus__budget-num { font-size: var(--fs-meta); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.focus__budget-num b { color: var(--text); font-weight: 700; }
+.focus__budget-track { width: 160px; height: 5px; border-radius: 999px; background: var(--fill); overflow: hidden; }
+.focus__budget-bar { height: 100%; border-radius: inherit; background: var(--accent-hi); }
+.focus__budget.is-over .focus__budget-num b { color: var(--care-due); }
+.focus__budget.is-over .focus__budget-bar { background: var(--care-due); }
 .focus__name { font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; background: var(--num); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .focus__progress { display: flex; align-items: center; gap: var(--s-3); margin-top: auto; }
 .focus__track { flex: 1; height: 8px; border-radius: 999px; background: var(--fill); overflow: hidden; }
@@ -451,6 +460,18 @@
   box-shadow: var(--glass-edge-inset), var(--shadow-float);
 }
 .copilot__answer svg { flex: none; margin-top: 2px; color: var(--accent-glow); }
+
+/* Kostnadskartan: beloppet per rum och en liten skala med totalen nere till vänster i ritningen (uppe ligger rivningschippet). */
+.plan__cost { pointer-events: none; }
+.plan__legend {
+  position: absolute; left: 10px; bottom: 10px; z-index: 2;
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  padding: 5px 12px 5px 8px; border-radius: 999px;
+  font-size: var(--fs-small); font-weight: 600; color: var(--text);
+  background: var(--sheet-bg); -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: var(--glass-edge-inset), var(--shadow-float);
+}
+.plan__legend-scale { width: 42px; height: 8px; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 12%, transparent), var(--accent)); }
 
 /* Väggen AI:n river blinkar mellan rött och orange innan den tonas bort. */
 .plan__wall-flash { stroke-linecap: round; pointer-events: none; animation: wall-flash .95s ease-in-out; stroke: var(--demolish); filter: drop-shadow(0 0 6px var(--care-soon)); }

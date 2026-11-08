@@ -3,6 +3,7 @@ import { IconAlertTriangle, IconArrowRight, IconChartBar, IconHammer, IconSmartH
 import { StatCard } from '../../components/StatCard'
 import { MiniBars, grow } from '../../components/Charts'
 import { emptyEconomy, economyNumbers } from '../../lib/economy'
+import { kr } from '../../lib/format'
 import type { ProjectState, ViewProps } from '../ProjectView'
 import { byImportance, modeItems, sum, type Item } from './Items'
 import { careWarnings, type Care } from './ProjectHub'
@@ -52,12 +53,27 @@ function ActiveProject({ state, items, open, onRoom }: { state: ProjectState; it
   const total = f ? sum(f.mine) : 0
   const share = !f ? 0 : total > 0 ? sum(f.mine.filter((i) => i.done)) / total : f.mine.filter((i) => i.done).length / f.mine.length
   const next = f ? [...f.planned].sort(byImportance)[0] : null
+  // Projektbudgeten (Budget i kr under Inställningar) mot allt som är klart i Projekt.
+  const budget = Number(state.project?.budget) || 0
+  const spent = sum(items.filter((i) => i.done))
+  const used = budget > 0 ? spent / budget : 0
 
   return (
     <StatCard tone="dark" className="focus" icon={IconHammer} label="Aktivt projekt" onOpen={() => (f ? onRoom(f.room.id) : open({ t: 'stat', title: 'Planerat' }))}>
-      <div className="focus__body">
-        <span className="meta">Fokusområde</span>
-        <span className="focus__name">{f ? f.room.name : 'Inget på gång'}</span>
+      <div className="focus__top">
+        <div className="focus__body">
+          <span className="meta">Fokusområde</span>
+          <span className="focus__name">{f ? f.room.name : 'Inget på gång'}</span>
+        </div>
+        {budget > 0 && (
+          <div className={`focus__budget ${used > 1 ? 'is-over' : ''}`}>
+            <span className="meta">Projektbudget</span>
+            <span className="focus__budget-num"><b>{kr(spent)}</b> av {kr(budget)}</span>
+            <div className="focus__budget-track" role="progressbar" aria-label="Hur mycket av budgeten som är använd" aria-valuenow={Math.round(used * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <motion.div className="focus__budget-bar" initial={still ? false : { width: 0 }} animate={{ width: `${Math.min(100, Math.max(used > 0 ? 3 : 0, used * 100))}%` }} transition={{ ...grow, delay: grow.delay + 0.1 }} />
+            </div>
+          </div>
+        )}
       </div>
       {f && (
         <>
