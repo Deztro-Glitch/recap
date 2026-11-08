@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  IconCheck, IconDimensions, IconFilter, IconFridge, IconRulerMeasure, IconScan, IconToolsKitchen2, IconWallOff, IconWashMachine,
+  IconCheck, IconDimensions, IconFilter, IconFridge, IconRulerMeasure, IconToolsKitchen2, IconWallOff, IconWashMachine,
 } from '@tabler/icons-react'
 import { GlassCard } from '../../components/GlassCard'
 import { ActivityRing } from '../../components/Charts'
@@ -70,9 +70,8 @@ export function PlanToolbox({ tool, onTool }: { tool: PlanTool | null; onTool: (
 }
 
 // ---------------------------------------------------------------------------
-// Smart underhåll & vitvaror: en yta för att skanna kvitto eller vitvara, och en ring per sak som behöver
-// skötas. Ringen visar hur stor del av intervallet som har gått och byter färg från blå/grön till orange/röd
-// ju närmare det är. Bocken ("gjort") nollställer ringen.
+// Underhåll: en ring per sak som behöver skötas. Ringen visar hur stor del av intervallet som har gått och byter
+// färg från blå/grön till orange/röd ju närmare det är. Bocken ("gjort") nollställer ringen.
 // ---------------------------------------------------------------------------
 // thing och todo är den korta varningen på Översikten, t.ex. "Köksfläkt: Dags att byta filter".
 export type Care = { id: string; thing: string; todo: string; name: string; icon: typeof IconFilter; every: number; doneDaysAgo: number }
@@ -99,62 +98,33 @@ export function useCare() {
 // Det som snart är dags (minst 80 % av intervallet har gått), det mest bråttom först.
 export const careWarnings = (items: Care[]) => items.filter((c) => c.doneDaysAgo / c.every >= 0.8).sort((a, b) => b.doneDaysAgo / b.every - a.doneDaysAgo / a.every)
 
-export function CareSection({ items, done, onFiles }: { items: Care[]; done: (id: string) => void; onFiles: (files: FileList) => void }) {
+// Underhållet som en kompakt lista i panelen bredvid ritningen: en liten ring per sak, när det är dags och en bock.
+export function CareList({ items, done }: { items: Care[]; done: (id: string) => void }) {
+  // Det som är närmast på tur först.
+  const sorted = [...items].sort((a, b) => b.doneDaysAgo / b.every - a.doneDaysAgo / a.every)
   return (
-    <section className="care section" id="care">
-      <div className="section-head"><h2>Smart underhåll & vitvaror</h2></div>
-      <div className="care__grid">
-        <ScanDrop onFiles={onFiles} />
-        <div className="care__cards">
-        {items.map((c, i) => {
+    <div className="section care-list" id="care">
+      <div className="section-head"><h3>Underhåll</h3></div>
+      <div className="rows">
+        {sorted.map((c, i) => {
           const share = c.doneDaysAgo / c.every
           const tone = toneFor(share)
           return (
-            <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 + i * 0.06 }}>
-              <GlassCard className="care-card">
-                <ActivityRing share={share} color={tone} label={`${c.name}: ${Math.round(share * 100)} % av intervallet har gått`}>
-                  <c.icon size={22} stroke={1.8} />
-                </ActivityRing>
-                <div className="care-card__text">
-                  <span className="care-card__name">{c.name}</span>
-                  <span className="care-card__when" style={share >= 0.65 ? { color: tone } : undefined}>{whenText(c.every - c.doneDaysAgo)}</span>
-                  <span className="meta">Var {days(c.every)}</span>
-                </div>
-                <button type="button" className="care-card__done" onClick={() => done(c.id)} disabled={c.doneDaysAgo === 0} aria-label={`${c.name}: gjort`}>
-                  <IconCheck size={16} stroke={2.4} />
-                </button>
-              </GlassCard>
+            <motion.div key={c.id} layout className="care-row" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 + i * 0.05 }}>
+              <ActivityRing share={share} color={tone} size={40} label={`${c.name}: ${Math.round(share * 100)} % av intervallet har gått`}>
+                <c.icon size={16} stroke={1.9} />
+              </ActivityRing>
+              <div className="care-row__text">
+                <span className="care-row__name">{c.name}</span>
+                <span className="care-row__when" style={share >= 0.65 ? { color: tone } : undefined}>{whenText(c.every - c.doneDaysAgo)}</span>
+              </div>
+              <button type="button" className="care-card__done" onClick={() => done(c.id)} disabled={c.doneDaysAgo === 0} aria-label={`${c.name}: gjort`}>
+                <IconCheck size={15} stroke={2.4} />
+              </button>
             </motion.div>
           )
         })}
-        </div>
       </div>
-    </section>
-  )
-}
-
-// Dra och släpp eller tryck: bilden går vidare till appens vanliga fråga "Vad är bilden?" (kvitto, foto …).
-function ScanDrop({ onFiles }: { onFiles: (files: FileList) => void }) {
-  const input = useRef<HTMLInputElement>(null)
-  const [over, setOver] = useState(false)
-  return (
-    <motion.div className="scan-wrap" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-      <GlassCard
-        className={`scan ${over ? 'is-over' : ''}`}
-        onClick={() => input.current?.click()}
-        onDragOver={(e: React.DragEvent) => { e.preventDefault(); setOver(true) }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e: React.DragEvent) => {
-          e.preventDefault()
-          setOver(false)
-          if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files)
-        }}
-      >
-        <span className="scan__icon"><IconScan size={26} stroke={1.7} /></span>
-        <span className="scan__title">Skanna kvitto eller vitvara</span>
-        <span className="meta">{over ? 'Släpp här' : 'Dra hit en bild eller tryck'}</span>
-        <input ref={input} type="file" accept="image/*,application/pdf" hidden onClick={(e) => e.stopPropagation()} onChange={(e) => { if (e.target.files?.length) onFiles(e.target.files); e.target.value = '' }} />
-      </GlassCard>
-    </motion.div>
+    </div>
   )
 }

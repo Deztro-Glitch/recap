@@ -109,6 +109,7 @@
   --stage-bg: rgba(0, 0, 0, .22);
   --stage-dot: rgba(255, 255, 255, .075);
   --stage-dot-gap: 20px;
+  --stage-plan-h: min(58vh, 620px);   /* ritningens maxhöjd på arbetsytan, så att sidan inte blir en lång rulle */
 
   /* ---------- Siffror och staplar ---------- */
   --num: linear-gradient(180deg, #FFFFFF 35%, rgba(255, 255, 255, .62) 100%);

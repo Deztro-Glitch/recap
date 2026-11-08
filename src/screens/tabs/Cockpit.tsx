@@ -12,7 +12,7 @@ import { careWarnings, type Care } from './ProjectHub'
 // Aktivt projekt (rummet som renoveras och nästa steg), Månadens kassaflöde (två staplar) och Hemmets status.
 // Korten tonar in och glider upp ett i taget.
 // ---------------------------------------------------------------------------
-export function Cockpit({ state, open, onRoom, care }: { state: ProjectState; open: ViewProps['open']; onRoom: (id: string) => void; care: Care[] }) {
+export function Cockpit({ state, open, onRoom, care, onCare }: { state: ProjectState; open: ViewProps['open']; onRoom: (id: string) => void; care: Care[]; onCare: () => void }) {
   const still = useReducedMotion()
   const items = modeItems(state)
   const cell = (i: number) => ({
@@ -26,7 +26,7 @@ export function Cockpit({ state, open, onRoom, care }: { state: ProjectState; op
     <div className="cockpit">
       <motion.div {...cell(0)}><ActiveProject state={state} items={items} open={open} onRoom={onRoom} /></motion.div>
       <motion.div {...cell(1)}><MonthFlow state={state} items={items} open={open} /></motion.div>
-      <motion.div {...cell(2)}><HomeStatus care={care} /></motion.div>
+      <motion.div {...cell(2)}><HomeStatus care={care} onCare={onCare} /></motion.div>
     </div>
   )
 }
@@ -92,11 +92,11 @@ function MonthFlow({ state, items, open }: { state: ProjectState; items: Item[];
 }
 
 // Smarta hemmet: det som snart behöver skötas med en orange ikon, och en grön pulserande prick för resten.
-function HomeStatus({ care }: { care: Care[] }) {
+function HomeStatus({ care, onCare }: { care: Care[]; onCare: () => void }) {
   const warn = careWarnings(care).slice(0, 2)
   const calm = care.length - careWarnings(care).length
   return (
-    <StatCard tone="dark" className="homestatus" icon={IconSmartHome} label="Hemmets status" onOpen={() => document.getElementById('care')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+    <StatCard tone="dark" className="homestatus" icon={IconSmartHome} label="Hemmets status" onOpen={() => { onCare(); setTimeout(() => document.getElementById('care')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }}>
       <div className="homestatus__list">
         {warn.map((c) => (
           <div key={c.id} className="homestatus__row is-warn">

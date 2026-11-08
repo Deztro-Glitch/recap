@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { IconArrowBackUp, IconDots, IconRestore } from '@tabler/icons-react'
+import { IconArrowBackUp, IconArrowsMaximize, IconArrowsMinimize, IconDots, IconRestore } from '@tabler/icons-react'
 import { mergeGroups, sharedWalls } from '../lib/walls'
 import { api } from '../lib/api'
 import { growRooms, fromV1, inside, labelPoint, loadBarriers, polygonize, type Barriers } from '../lib/plangrid'
@@ -36,8 +36,10 @@ const loadGone = (pid: string): string[] => {
 // Planritningen. Tryck på ett rum för att öppna det. Under "Justera" drar man i rummens hörn,
 // ungefär som när man beskär en bild, och plustecknen mitt på kanterna ger nya hörn.
 // Med ett verktyg valt blir väggarna klickbara (mät, markera för rivning) eller rummen (kalkylera yta).
-// copilot: AI-raden längst ner i kortet (Projektläget), som kan riva väggar på begäran.
-export function FloorPlan({ state, onRoom, onAddRoom, tool = null, copilot = false }: { state: ProjectState; onRoom: (room: Room) => void; onAddRoom: () => void; tool?: PlanTool | null; copilot?: boolean }) {
+// stage: arbetsytan i Projektläget. Ritningen ryms i kortets höjd, rumsnamnen syns när man håller över (ytan visar namnet),
+// AI-raden ligger längst ner och Förstora (onExpand) öppnar arbetsytan i helskärm.
+export function FloorPlan({ state, onRoom, onAddRoom, tool = null, stage = false, expanded = false, onExpand }: { state: ProjectState; onRoom: (room: Room) => void; onAddRoom: () => void; tool?: PlanTool | null; stage?: boolean; expanded?: boolean; onExpand?: () => void }) {
+  const copilot = stage
   const toast = useToast()
   const project = state.project!
   const url = project.floorplan_path ? state.urls[project.floorplan_path] : undefined
@@ -369,6 +371,11 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null, copilot = fal
             <IconDots size={18} />
           </button>
         )}
+        {onExpand && !editing && detecting === null && (
+          <button className="btn btn--ghost plan__expand" aria-label={expanded ? 'Förminska ritningen' : 'Förstora ritningen'} onClick={onExpand}>
+            {expanded ? <IconArrowsMinimize size={18} /> : <IconArrowsMaximize size={18} />}
+          </button>
+        )}
         {editing && (
           <>
             <button
@@ -427,7 +434,7 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null, copilot = fal
         </div>
       )}
 
-      <div className={`plan ${editing ? 'is-editing' : ''} ${wallTool ? 'has-wall-tool' : ''} ${tool && !editing ? `tool-${tool}` : ''}`}>
+      <div className={`plan ${editing ? 'is-editing' : ''} ${wallTool ? 'has-wall-tool' : ''} ${tool && !editing ? `tool-${tool}` : ''} ${stage ? 'is-stage' : ''}`} style={{ '--plan-aspect': aspect } as React.CSSProperties}>
         {/* Bilden ger planens storlek; den syns i SVG:n nedan, där rivna väggar kan tonas bort med en mask. */}
         <img className="plan__size" src={url} alt="Planritning" crossOrigin="anonymous" onLoad={(e) => setAspect(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth)} />
         <svg
@@ -560,7 +567,8 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null, copilot = fal
               className="plan__label"
               style={{ left: `${l.at.x * 100}%`, top: `${l.at.y * 100}%` }}
               initial={{ opacity: 0 }}
-              animate={{ opacity: shownArea && lead(shownArea) === l.id ? 0 : 1 }}
+              // På arbetsytan står namnet redan i ritningen; appens namn kommer med ytan när man håller över.
+              animate={{ opacity: (stage ? !editing : shownArea && lead(shownArea) === l.id) ? 0 : 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.35 }}
             >

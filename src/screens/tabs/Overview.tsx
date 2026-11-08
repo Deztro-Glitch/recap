@@ -1,10 +1,10 @@
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { IconFileText, IconX } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan, type PlanTool } from '../../components/FloorPlan'
-import { CareSection, PlanToolbox, useCare } from './ProjectHub'
+import { CareList, PlanToolbox, useCare } from './ProjectHub'
 import { Cockpit } from './Cockpit'
 import { ReviewCard } from './Review'
 import { iconFor } from '../../components/icons'
@@ -20,7 +20,7 @@ import { GlassCard } from '../../components/GlassCard'
 
 // Översikt: nyckeltal, planritningen och en panel som visar hemmet eller det rum man tryckt på.
 // I Projekt är planritningen en stor arbetsyta i mitten med verktygslådan bredvid, och under den Smart underhåll.
-export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & { place: string | null; setPlace: (id: string | null) => void; onFiles?: (files: FileList) => void }) {
+export function Overview({ state, open, place, setPlace }: ViewProps & { place: string | null; setPlace: (id: string | null) => void }) {
   const project = state.project!
   const mode: Mode = project.mode ?? 'full'
   // Nyckeltalen i Projekt och listorna i panelen gäller bara det som hör till läget.
@@ -28,6 +28,15 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
   const room = state.rooms.find((r) => r.id === place) ?? null
   const panel = useRef<HTMLDivElement>(null)
   const [tool, setTool] = useState<PlanTool | null>(null)
+  // Förstora: arbetsytan i helskärm. Esc eller knappen igen lägger tillbaka den.
+  const [full, setFull] = useState(false)
+  useEffect(() => {
+    if (!full) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !tool && setFull(false)
+    addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => { removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+  }, [full, tool])
 
   // På mobilen ligger panelen under ritningen, så den rullas fram när man väljer ett rum.
   useEffect(() => {
@@ -59,6 +68,8 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
   const sidePanel = (
     <aside className="panel glass" ref={panel}>
       {room ? <RoomPanel state={state} open={open} room={room} onClose={() => setPlace(null)} /> : <HomePanel state={state} open={open} items={items} />}
+      {/* I Projekt ligger underhållet i panelen, under hemmet. */}
+      {mode === 'full' && !room && <CareList items={care.items} done={care.done} />}
     </aside>
   )
 
@@ -75,23 +86,25 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
       {mode === 'simple' ? (
         <EconomyDashboard state={state} open={open} />
       ) : (
-        <Cockpit state={state} open={open} onRoom={setPlace} care={care.items} />
+        <Cockpit state={state} open={open} onRoom={setPlace} care={care.items} onCare={() => setPlace(null)} />
       )}
 
       {mode === 'full' ? (
         <>
-          <div className="workspace section">
+          <div className={`workspace section ${project.floorplan_path ? 'has-plan' : ''}`}>
             <div className="workspace__stage">
               {roomTiles}
               {/* Arbetsytan: punktrutnät, verktygslådan uppe till vänster och AI-raden svävande längst ner. */}
-              <GlassCard className={`plan-card plan-card--stage ${project.floorplan_path ? 'has-tools' : ''}`} lift={false}>
+              <AnimatePresence>
+                {full && <motion.div className="stage-scrim" onClick={() => setFull(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} />}
+              </AnimatePresence>
+              <GlassCard className={`plan-card plan-card--stage ${project.floorplan_path ? 'has-tools' : ''} ${full ? 'is-full' : ''}`} lift={false}>
                 {project.floorplan_path && <PlanToolbox tool={tool} onTool={setTool} />}
-                <FloorPlan state={state} tool={tool} copilot={!!project.floorplan_path} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
+                <FloorPlan state={state} tool={tool} stage={!!project.floorplan_path} expanded={full} onExpand={() => setFull(!full)} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
               </GlassCard>
             </div>
             {sidePanel}
           </div>
-          <CareSection items={care.items} done={care.done} onFiles={(f) => onFiles?.(f)} />
         </>
       ) : (
         <div className="overview section">
