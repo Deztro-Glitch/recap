@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { IconClipboardList, IconCreditCard, IconFileText, IconX } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { daysLeft, kr } from '../../lib/format'
-import { FloorPlan } from '../../components/FloorPlan'
+import { FloorPlan, type PlanTool } from '../../components/FloorPlan'
+import { CareSection, PlanToolbox } from './ProjectHub'
 import { iconFor } from '../../components/icons'
 import { Chips, ease } from '../../components/ui'
 import { CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, modeScope, tileStyle, type Mode, type Room } from '../../types'
@@ -18,13 +19,15 @@ import { Counter } from '../../components/Counter'
 import { StatCard } from '../../components/StatCard'
 
 // Översikt: nyckeltal, planritningen och en panel som visar hemmet eller det rum man tryckt på.
-export function Overview({ state, open, place, setPlace }: ViewProps & { place: string | null; setPlace: (id: string | null) => void }) {
+// I Projekt är planritningen en stor arbetsyta i mitten med verktygslådan bredvid, och under den Smart underhåll.
+export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & { place: string | null; setPlace: (id: string | null) => void; onFiles?: (files: FileList) => void }) {
   const project = state.project!
   const mode: Mode = project.mode ?? 'full'
   // Nyckeltalen i Projekt och listorna i panelen gäller bara det som hör till läget.
   const items = modeItems(state)
   const room = state.rooms.find((r) => r.id === place) ?? null
   const panel = useRef<HTMLDivElement>(null)
+  const [tool, setTool] = useState<PlanTool | null>(null)
 
   // På mobilen ligger panelen under ritningen, så den rullas fram när man väljer ett rum.
   useEffect(() => {
@@ -41,6 +44,26 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
     { label: 'Spenderat', icon: IconCreditCard, value: sum(items.filter((i) => i.done)) },
     { label: 'Planerat', icon: IconClipboardList, value: sum(items.filter((i) => !i.done)) },
   ]
+
+  // Rummen som rutor när det inte finns någon planritning.
+  const roomTiles = !project.floorplan_path && state.rooms.length > 0 && (
+    <div className="tiles">
+      {state.rooms.map((r, i) => {
+        const Icon = iconFor(r.icon)
+        return (
+          <motion.button key={r.id} className={`glass tile ${r.id === place ? 'is-selected' : ''}`} style={tileStyle(r.color ?? PALETTE[i % PALETTE.length])} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: i * 0.03, ease }} onClick={() => setPlace(r.id === place ? null : r.id)}>
+            <div className="tile__name">{r.name}</div>
+            <Icon className="tile__icon" />
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+  const sidePanel = (
+    <aside className="panel glass" ref={panel}>
+      {room ? <RoomPanel state={state} open={open} room={room} onClose={() => setPlace(null)} /> : <HomePanel state={state} open={open} items={items} />}
+    </aside>
+  )
 
   return (
     <div>
@@ -59,30 +82,31 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
         </div>
       )}
 
-      <div className="overview section">
-        <div>
-          {!project.floorplan_path && state.rooms.length > 0 && (
-            <div className="tiles">
-              {state.rooms.map((r, i) => {
-                const Icon = iconFor(r.icon)
-                return (
-                  <motion.button key={r.id} className={`glass tile ${r.id === place ? 'is-selected' : ''}`} style={tileStyle(r.color ?? PALETTE[i % PALETTE.length])} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: i * 0.03, ease }} onClick={() => setPlace(r.id === place ? null : r.id)}>
-                    <div className="tile__name">{r.name}</div>
-                    <Icon className="tile__icon" />
-                  </motion.button>
-                )
-              })}
+      {mode === 'full' ? (
+        <>
+          <div className="workspace section">
+            {project.floorplan_path && <PlanToolbox tool={tool} onTool={setTool} />}
+            <div className="workspace__stage">
+              {roomTiles}
+              <GlassCard className="plan-card plan-card--stage" lift={false}>
+                <FloorPlan state={state} tool={tool} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
+              </GlassCard>
             </div>
-          )}
-          <GlassCard className="plan-card" lift={false}>
-            <FloorPlan state={state} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
-          </GlassCard>
+            {sidePanel}
+          </div>
+          <CareSection onFiles={(f) => onFiles?.(f)} />
+        </>
+      ) : (
+        <div className="overview section">
+          <div>
+            {roomTiles}
+            <GlassCard className="plan-card" lift={false}>
+              <FloorPlan state={state} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
+            </GlassCard>
+          </div>
+          {sidePanel}
         </div>
-
-        <aside className="panel glass" ref={panel}>
-          {room ? <RoomPanel state={state} open={open} room={room} onClose={() => setPlace(null)} /> : <HomePanel state={state} open={open} items={items} />}
-        </aside>
-      </div>
+      )}
     </div>
   )
 }

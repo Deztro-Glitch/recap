@@ -224,3 +224,27 @@ export function AreaChart({ values, at, ticks, label }: { values: number[]; at: 
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Aktivitetsring (som på en klocka): en tjock rund båge i en färg, spåret i samma färg men svagt,
+// och en ikon i mitten. Fylls från toppen och glöder lite.
+// ---------------------------------------------------------------------------
+export function ActivityRing({ share, color, size = 76, label, children }: { share: number; color: string; size?: number; label: string; children?: ReactNode }) {
+  const still = useReducedMotion()
+  const pct = Math.max(0, Math.min(1, share)) * 100
+  const style = { width: size, height: size, '--ring': color } as React.CSSProperties
+  return (
+    <div className="aring" style={style} role="img" aria-label={label}>
+      <svg viewBox="0 0 44 44" className="aring__svg">
+        <circle cx="22" cy="22" r="17" pathLength={100} className="aring__track" />
+        <motion.circle
+          cx="22" cy="22" r="17" pathLength={100} className="aring__fill"
+          initial={still ? false : { strokeDasharray: '0 100' }}
+          animate={{ strokeDasharray: `${pct > 0 ? Math.max(pct, 2) : 0} 100` }}
+          transition={{ duration: 1.2, ease: [0.2, 0.8, 0.2, 1], delay: 0.2 }}
+        />
+      </svg>
+      <div className="aring__center">{children}</div>
+    </div>
+  )
+}

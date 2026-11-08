@@ -12,9 +12,15 @@ const W = 1000 // bredden i SVG:ns koordinater; höjden följer bildens proporti
 
 const toPolys = (m: PlanMap | null): Polys => (!m ? {} : 'v' in m ? { ...m.rooms } : fromV1(m))
 
+// Verktygen i Projektläget (verktygslådan bredvid ritningen). Rummens kanter är väggarna.
+export type PlanTool = 'measure' | 'demolish' | 'area'
+
+const dec = (n: number, d = 1) => n.toLocaleString('sv-SE', { minimumFractionDigits: d, maximumFractionDigits: d })
+
 // Planritningen. Tryck på ett rum för att öppna det. Under "Justera" drar man i rummens hörn,
 // ungefär som när man beskär en bild, och plustecknen mitt på kanterna ger nya hörn.
-export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; onRoom: (room: Room) => void; onAddRoom: () => void }) {
+// Med ett verktyg valt blir väggarna klickbara (mät, markera för rivning) eller rummen (kalkylera yta).
+export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: ProjectState; onRoom: (room: Room) => void; onAddRoom: () => void; tool?: PlanTool | null }) {
   const toast = useToast()
   const project = state.project!
   const url = project.floorplan_path ? state.urls[project.floorplan_path] : undefined
@@ -34,6 +40,14 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
   const saveTimer = useRef<number>(undefined)
   const autoDetect = useRef(false)
   const H = W * aspect
+  // Verktygen: markerade väggar för rivning, den uppmätta väggen och rummet vars yta visas. Sparas inte än.
+  const [demolish, setDemolish] = useState<Set<string>>(new Set())
+  const [measured, setMeasured] = useState<string | null>(null)
+  const [areaRoom, setAreaRoom] = useState<string | null>(null)
+  useEffect(() => {
+    setMeasured(null)
+    setAreaRoom(null)
+  }, [tool])
 
   // Ändringar från någon annan syns när man inte själv redigerar.
   useEffect(() => {
@@ -234,6 +248,24 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
 
   const labels = useMemo(() => shown.map(([id, p]) => ({ id, room: roomById(id)!, at: labelPoint(p) })), [polys, rooms])
 
+  // Skalan kommer från boarean: rummens sammanlagda yta på ritningen motsvarar boarean i kvm.
+  // Utan boarea går det bara att visa hur stor del av ytan ett rum är.
+  const polyArea = (p: Pt[]) => Math.abs(p.reduce((s, a, i) => { const b = p[(i + 1) % p.length]; return s + a.x * W * b.y * H - b.x * W * a.y * H }, 0)) / 2
+  const drawnArea = shown.reduce((s, [, p]) => s + polyArea(p), 0)
+  const boarea = project.economy?.area
+  const m2PerUnit = boarea && drawnArea ? boarea / drawnArea : null
+  const walls = shown.flatMap(([id, p]) => p.map((a, i) => ({ key: `${id}:${i}`, a, b: p[(i + 1) % p.length] })))
+  const wallLength = (a: Pt, b: Pt) => Math.hypot((b.x - a.x) * W, (b.y - a.y) * H)
+  const toggleDemolish = (key: string) => setDemolish((cur) => {
+    const next = new Set(cur)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    return next
+  })
+  const wallTool = !editing && (tool === 'measure' || tool === 'demolish')
+  const m = walls.find((w) => w.key === measured)
+  const areaPoly = areaRoom ? polys[areaRoom] : null
+
   const fileInput = <input ref={input} type="file" accept="image/*" hidden onChange={(e) => upload(e.target.files?.[0])} />
 
   if (busy) return <Loader />
@@ -323,7 +355,7 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
         </div>
       )}
 
-      <div className={`plan ${editing ? 'is-editing' : ''}`}>
+      <div className={`plan ${editing ? 'is-editing' : ''} ${wallTool ? 'has-wall-tool' : ''} ${tool && !editing ? `tool-${tool}` : ''}`}>
         <img src={url} alt="Planritning" crossOrigin="anonymous" onLoad={(e) => setAspect(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth)} />
         <svg
           ref={svg}
@@ -343,10 +375,27 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
                 className={`plan__room ${id === selected ? 'is-selected' : ''}`}
                 points={p.map((q) => `${q.x * W},${q.y * H}`).join(' ')}
                 style={{ fill: `var(--c-${r.color}-bg)`, stroke: `var(--c-${r.color}-bg)` }}
-                onClick={() => !editing && onRoom(r)}
+                onClick={() => {
+                  if (editing) return
+                  if (tool === 'area') setAreaRoom(id === areaRoom ? null : id)
+                  else if (!tool) onRoom(r)
+                }}
               />
             )
           })}
+          {/* Väggar som är markerade för rivning syns alltid; de klickbara väggarna bara med ett väggverktyg. */}
+          {walls.filter((w) => demolish.has(w.key)).map((w) => (
+            <line key={`d${w.key}`} className="plan__wall-mark" x1={w.a.x * W} y1={w.a.y * H} x2={w.b.x * W} y2={w.b.y * H} />
+          ))}
+          {m && <line className="plan__wall-measure" x1={m.a.x * W} y1={m.a.y * H} x2={m.b.x * W} y2={m.b.y * H} />}
+          {wallTool && walls.map((w) => (
+            <line
+              key={w.key}
+              className="plan__wall"
+              x1={w.a.x * W} y1={w.a.y * H} x2={w.b.x * W} y2={w.b.y * H}
+              onClick={() => (tool === 'demolish' ? toggleDemolish(w.key) : setMeasured(w.key === measured ? null : w.key))}
+            />
+          ))}
           {editing && sel && (
             <g>
               {/* Plus mitt på kanter som är långa nog; ger ett nytt hörn när man drar i det. */}
@@ -376,6 +425,23 @@ export function FloorPlan({ state, onRoom, onAddRoom }: { state: ProjectState; o
             {l.room.name}
           </span>
         ))}
+        {m && (
+          <span className="plan__measure" style={{ left: `${((m.a.x + m.b.x) / 2) * 100}%`, top: `${((m.a.y + m.b.y) / 2) * 100}%` }}>
+            {m2PerUnit ? `≈ ${dec(wallLength(m.a, m.b) * Math.sqrt(m2PerUnit))} m` : 'Boarea saknas'}
+          </span>
+        )}
+        {areaPoly && areaRoom && (
+          <span className="plan__measure plan__measure--area" style={{ left: `${labelPoint(areaPoly).x * 100}%`, top: `${labelPoint(areaPoly).y * 100}%` }}>
+            <b>{m2PerUnit ? `≈ ${dec(polyArea(areaPoly) * m2PerUnit)} m²` : `${Math.round((polyArea(areaPoly) / drawnArea) * 100)} %`}</b>
+            <small>{roomById(areaRoom)?.name}{m2PerUnit ? ` · ${Math.round((polyArea(areaPoly) / drawnArea) * 100)} % av ytan` : ' av ytan'}</small>
+          </span>
+        )}
+        {demolish.size > 0 && !editing && (
+          <div className="plan__chip">
+            <span>{demolish.size === 1 ? '1 vägg' : `${demolish.size} väggar`} för rivning</span>
+            <button type="button" onClick={() => setDemolish(new Set())}>Rensa</button>
+          </div>
+        )}
       </div>
       {fileInput}
     </div>

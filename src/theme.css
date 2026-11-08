@@ -98,6 +98,12 @@
   --warning: #E6B450;
   --danger: #F0716A;
 
+  /* Underhållsringar (Projekt): nyss gjort, snart dags, dags nu. */
+  --care-ok: #34D399;
+  --care-soon: #FB923C;
+  --care-due: #F0716A;
+  --demolish: #F0716A;   /* väggar markerade för rivning */
+
   /* ---------- Siffror och staplar ---------- */
   --num: linear-gradient(180deg, #FFFFFF 35%, rgba(255, 255, 255, .62) 100%);
   --num-positive: linear-gradient(180deg, #6EE7B7 0%, var(--success-2) 100%);

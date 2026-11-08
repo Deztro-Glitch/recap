@@ -251,6 +251,133 @@
 }
 .plan-tools { display: flex; flex-direction: column; gap: var(--s-3); margin-bottom: var(--s-3); }
 
+/* Verktygen på ritningen (Projekt): väggarna lyser upp under muspekaren och går att klicka på. */
+.plan.has-wall-tool .plan__room { pointer-events: none; }
+.plan.tool-area .plan__room { cursor: crosshair; }
+.plan__wall {
+  stroke: var(--accent); stroke-opacity: 0; stroke-width: 12; stroke-linecap: round;
+  vector-effect: non-scaling-stroke; cursor: pointer; transition: stroke-opacity var(--t-fast);
+}
+.plan__wall:hover { stroke-opacity: .55; }
+.plan.tool-demolish .plan__wall:hover { stroke: var(--demolish); }
+.plan__wall-mark {
+  stroke: var(--demolish); stroke-width: 4; stroke-dasharray: 8 6; stroke-linecap: round;
+  vector-effect: non-scaling-stroke; pointer-events: none;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--demolish) 70%, transparent));
+}
+.plan__wall-measure {
+  stroke: var(--accent-hi); stroke-width: 4; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+.plan__measure {
+  position: absolute; transform: translate(-50%, -150%); pointer-events: none; white-space: nowrap;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: var(--fs-meta); font-weight: 700; color: var(--on-accent);
+  background: var(--accent); box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.plan__measure--area { transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 1px; padding: 6px 12px; border-radius: var(--r-row); }
+.plan__measure--area b { font-size: 15px; }
+.plan__measure--area small { font-size: 11px; font-weight: 600; opacity: .85; }
+.plan__chip {
+  position: absolute; left: var(--s-3); bottom: var(--s-3);
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 6px 6px 6px 12px; border-radius: 999px;
+  font-size: var(--fs-meta); font-weight: 600; color: var(--text);
+  background: var(--sheet-bg); -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--demolish) 60%, transparent);
+}
+.plan__chip button { border: 0; border-radius: 999px; padding: 4px 10px; cursor: pointer; background: var(--fill); color: var(--text); font-weight: 600; }
+
+/* ---------- Projekt: arbetsytan. Verktygslådan, ritningen stor i mitten och panelen till höger ---------- */
+.workspace { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(300px, 380px); gap: var(--gap); align-items: start; }
+.kpis + .workspace { margin-top: var(--gap); }
+.workspace__stage { min-width: 0; }
+.plan-card--stage { padding: var(--s-5); }
+.plan-card--stage .plan { max-width: none; }
+
+.toolbox {
+  position: sticky; top: 96px; z-index: 2;
+  display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-2);
+  border-radius: 999px;
+}
+.toolbox__slot { position: relative; }
+.toolbox__btn {
+  position: relative; width: 48px; height: 48px; border: 0; border-radius: 999px; cursor: pointer;
+  display: grid; place-items: center; background: transparent; color: var(--text-2);
+  transition: color var(--t-fast), background-color var(--t-fast);
+}
+.toolbox__btn:hover { color: var(--text); background: var(--fill); }
+.toolbox__btn.is-active { color: var(--on-accent); }
+.toolbox__btn svg { position: relative; z-index: 1; }
+.toolbox__glow {
+  position: absolute; inset: 0; border-radius: inherit; background: var(--accent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.toolbox__tip {
+  position: absolute; left: calc(100% + 14px); top: 50%; translate: 0 -50%; z-index: 5;
+  padding: 6px 12px; border-radius: 999px; white-space: nowrap; pointer-events: none;
+  font-size: var(--fs-meta); font-weight: 600; color: var(--text);
+  background: var(--sheet-bg); -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
+  box-shadow: var(--glass-edge-inset), var(--shadow-float);
+}
+
+/* Smart underhåll och vitvaror: skanningsytan och en ring per sak, med luft emellan. */
+.care__grid { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr); gap: var(--gap); }
+.care__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--gap); }
+.scan-wrap { display: grid; }
+.scan {
+  display: grid; place-content: center; justify-items: center; gap: var(--s-2); text-align: center;
+  min-height: 220px; cursor: pointer;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: border-color var(--t-fast), background-color var(--t-fast), box-shadow var(--t-fast);
+}
+.scan:hover, .scan.is-over {
+  border-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent), 0 0 40px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.scan__icon {
+  width: 60px; height: 60px; border-radius: 999px; display: grid; place-items: center; margin-bottom: var(--s-2);
+  color: var(--on-accent); background: var(--accent);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 16%, transparent), 0 10px 30px color-mix(in srgb, var(--accent) 45%, transparent);
+  transition: transform var(--t-fast) var(--ease-out);
+}
+.scan:hover .scan__icon, .scan.is-over .scan__icon { transform: scale(1.08) translateY(-2px); }
+.scan__title { font-weight: 700; color: var(--text); }
+
+.care-card { display: flex; align-items: center; gap: var(--s-4); }
+.care-card__text { display: grid; gap: 2px; min-width: 0; }
+.care-card__name { font-weight: 600; color: var(--text); }
+.care-card__when { font-weight: 700; color: var(--text); font-size: var(--fs-meta); }
+.care-card__done {
+  margin-left: auto; flex: none; width: 34px; height: 34px; border: 0; border-radius: 999px; cursor: pointer;
+  display: grid; place-items: center; background: var(--fill); color: var(--text-2);
+  transition: background-color var(--t-fast), color var(--t-fast), transform var(--t-fast) var(--ease-out);
+}
+.care-card__done:hover:not(:disabled) { background: var(--care-ok); color: var(--bg); transform: scale(1.06); }
+.care-card__done:disabled { opacity: .35; cursor: default; }
+
+.aring { position: relative; flex: none; }
+.aring__svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.aring__track, .aring__fill { fill: none; stroke: var(--ring); stroke-width: 5.5; stroke-linecap: round; }
+.aring__track { stroke-opacity: .16; }
+.aring__fill { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--ring) 70%, transparent)); }
+.aring__center { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ring); }
+
+@media (max-width: 1100px) {
+  .care__grid { grid-template-columns: minmax(0, 1fr); }
+  .workspace { grid-template-columns: auto minmax(0, 1fr); }
+  .workspace > .panel { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  /* Mobilen: verktygslådan blir en rad ovanför ritningen. */
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .toolbox { position: static; flex-direction: row; justify-self: center; }
+  .toolbox__tip { left: 50%; top: calc(100% + 10px); translate: -50% 0; }
+  .plan-card--stage { padding: var(--card-pad); }
+  .scan { min-height: 170px; }
+}
+
 
 /* ---------- Översikt: planritningen till vänster, panelen för hemmet eller rummet till höger ---------- */
 

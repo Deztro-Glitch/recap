@@ -264,7 +264,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       ) : (
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3, ease }}>
-            {view === 'overview' && <Overview {...props} place={place} setPlace={setPlace} />}
+            {view === 'overview' && <Overview {...props} place={place} setPlace={setPlace} onFiles={onPicked} />}
             {view === 'log' && <Log {...props} />}
             {view === 'purchases' && <Purchases {...props} />}
             {view === 'contracts' && <Contracts {...props} tab={contractTab} />}
