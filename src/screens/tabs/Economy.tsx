@@ -7,6 +7,8 @@ import { IconArrowsExchange, IconBolt, IconBuildingBank, IconCreditCard, IconRec
 import { Counter } from '../../components/Counter'
 import { Gauge, MiniBars, PriceMeter, Ring, Segmented, type Bar } from '../../components/Charts'
 import { allItems } from '../../lib/items'
+import { askEconomy } from '../../lib/ask'
+import { Copilot } from '../../components/Copilot'
 import type { Scope } from '../../types'
 import type { ProjectState, ViewProps } from '../view'
 
@@ -16,6 +18,8 @@ export function EconomyView(props: ViewProps) {
   return (
     <div>
       <div className="section-head"><h1>Ekonomi</h1></div>
+      {/* Fråga din ekonomi: riktig AI som svarar från appens siffror (steg 5). */}
+      <Copilot inline onAsk={(q) => askEconomy(q, props.state)} placeholder="Fråga om din ekonomi, t.ex. 'Hur mycket la jag på mat i oktober?'" label="Fråga om din ekonomi" />
       <EconomyDashboard {...props} />
     </div>
   )

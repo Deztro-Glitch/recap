@@ -11,13 +11,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['icon.svg', 'apple-touch-icon.png', 'push-sw.js'],
+      // Påminnelserna (Web Push) tas emot av push-sw.js, som läses in i den genererade service workern.
+      workbox: { importScripts: ['push-sw.js'] },
       manifest: {
         name: 'Recap',
         short_name: 'Recap',
-        description: 'Planera renoveringar och inköp till ditt hem',
-        theme_color: '#E7E4F0',
-        background_color: '#E7E4F0',
+        description: 'Hemmet och ekonomin: kvitton, budget, projekt och underhåll',
+        theme_color: '#050505',
+        background_color: '#050505',
         display: 'standalone',
         orientation: 'portrait',
         start_url: base,

@@ -481,6 +481,12 @@
   box-shadow: var(--glass-edge-inset), var(--shadow-float);
 }
 .copilot__answer svg { flex: none; margin-top: 2px; color: var(--accent-glow); }
+/* Fråga din ekonomi: raden står i sidan, och svaret ligger under den tills man stänger det. */
+.copilot-wrap.copilot-wrap--inline { position: static; translate: none; width: 100%; max-width: 720px; margin: 0 0 var(--gap); justify-items: stretch; }
+.copilot-wrap--inline .copilot__answer { font-size: var(--fs-body); line-height: 1.5; padding: var(--s-3) var(--s-4); }
+.copilot__q { display: block; font-size: var(--fs-small); color: var(--text-2); margin-bottom: 2px; }
+.copilot__close { flex: none; margin-left: auto; border: 0; background: none; color: var(--text-2); cursor: pointer; padding: 2px; border-radius: 999px; }
+.copilot__close:hover { color: var(--text); background: var(--fill); }
 
 /* Kostnadskartan: beloppet per rum och en liten skala med totalen nere till vänster i ritningen (uppe ligger rivningschippet). */
 .plan__cost { pointer-events: none; }

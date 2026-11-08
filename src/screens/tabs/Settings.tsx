@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { IconPhoto, IconTrash, IconUserPlus, IconX } from '@tabler/icons-react'
+import { IconBell, IconBellOff, IconPhoto, IconTrash, IconUserPlus, IconX } from '@tabler/icons-react'
+import { disablePush, enablePush, pushBlocker, pushEnabled } from '../../lib/push'
 import { api, type User } from '../../lib/api'
 import { parseNum } from '../../lib/format'
 import { emptyEconomy } from '../../lib/economy'
@@ -76,6 +77,7 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
       </form>
 
       <BackgroundSetting state={state} />
+      <PushSetting state={state} />
 
       <div className="section" style={{ maxWidth: 460 }}>
         <div className="section-head"><h2>Delas med</h2></div>
@@ -114,6 +116,44 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
 }
 
 // Egen bakgrundsbild bakom glaset i hela appen. Laddas upp som andra bilder; sökvägen sparas på hemmet.
+// Påminnelser i telefonen: underhåll som är dags, garantier som snart går ut och kvitton att granska,
+// en gång på morgonen när något finns. Gäller den här enheten.
+function PushSetting({ state }: { state: ProjectState }) {
+  const toast = useToast()
+  const [on, setOn] = useState<boolean | null>(null)
+  const [busy, setBusy] = useState(false)
+  const blocker = pushBlocker()
+  useEffect(() => {
+    pushEnabled().then(setOn).catch(() => setOn(false))
+  }, [])
+  const toggle = async () => {
+    setBusy(true)
+    try {
+      if (on) await disablePush(state.project!.id)
+      else await enablePush(state.project!.id)
+      setOn(!on)
+      toast(on ? 'Påminnelserna är avstängda' : 'Påminnelserna är på')
+    } catch (err: any) {
+      toast({ title: 'Det gick inte', body: err.message })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="section" style={{ maxWidth: 460 }}>
+      <div className="section-head"><h2>Påminnelser</h2></div>
+      {blocker ? (
+        <p className="meta" style={{ margin: 0 }}>{blocker}</p>
+      ) : (
+        <button className="btn btn--secondary" disabled={busy || on === null} onClick={toggle}>
+          {on ? <IconBellOff size={18} /> : <IconBell size={18} />}
+          <span>{on ? 'Stäng av påminnelser' : 'Slå på påminnelser'}</span>
+        </button>
+      )}
+    </div>
+  )
+}
+
 function BackgroundSetting({ state }: { state: ProjectState }) {
   const toast = useToast()
   const p = state.project!

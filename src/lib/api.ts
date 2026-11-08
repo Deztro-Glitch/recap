@@ -4,7 +4,8 @@ import type { Member, Photo, PhotoKind, Project } from '../types'
 // Appen pratar med Supabase om nycklar finns, annars körs ett demoläge
 // där allt sparas i webbläsaren (bra för att testa utan konto).
 
-export type Table = 'rooms' | 'purchases' | 'tasks' | 'photos' | 'ideas' | 'folders' | 'contracts' | 'receipts' | 'todos' | 'renovations' | 'maintenance'
+export type Table = 'rooms' | 'purchases' | 'tasks' | 'photos' | 'ideas' | 'folders' | 'contracts' | 'receipts' | 'todos' | 'renovations' | 'maintenance' | 'push_subscriptions'
+// Tabellerna som laddas och följs per hem (push_subscriptions är per enhet och hanteras i lib/push.ts).
 export const TABLES: Table[] = ['rooms', 'purchases', 'tasks', 'photos', 'ideas', 'folders', 'contracts', 'receipts', 'todos', 'renovations', 'maintenance']
 
 // Kolumner som pekar på en fil i lagringen och ska tas bort tillsammans med raden.
@@ -48,6 +49,8 @@ export interface Api {
   parseReceipt(image: string, rooms: string[], planned: { id: string; title: string; price: number; room: string | null }[], hint?: 'receipt' | null): Promise<Record<string, any> | null>
   // Tolkar en snabb inmatning ("Vinglas 699kr") med AI (Edge Function quick-entry). null i demoläget.
   quickEntry(text: string): Promise<Record<string, any> | null>
+  // Svarar på en fråga om ekonomin med AI (Edge Function ask-economy). null i demoläget.
+  askEconomy(question: string, context: unknown): Promise<string | null>
 }
 
 // ---------- Bildkomprimering (mindre filer = snabbare app) ----------
@@ -171,6 +174,11 @@ function supabaseApi(sb: SupabaseClient): Api {
       if (error) throw new Error(error.message)
       return data
     },
+    async askEconomy(question, context) {
+      const { data, error } = await sb.functions.invoke('ask-economy', { body: { question, context } })
+      if (error) throw new Error(error.message)
+      return typeof data?.answer === 'string' ? data.answer : null
+    },
 
     subscribe(pid, onChange) {
       const ch = sb.channel(`project-${pid}`)
@@ -190,7 +198,7 @@ function demoApi(): Api {
   const KEY = 'recap-demo'
   const me: User = { id: 'demo-user', email: 'demo@recap.se' }
   type Store = { signedIn: boolean; projects: Project[]; members: Member[] } & Record<Table, Row[]>
-  const empty: Store = { signedIn: false, projects: [], members: [], rooms: [], purchases: [], tasks: [], photos: [], ideas: [], folders: [], contracts: [], receipts: [], todos: [], renovations: [], maintenance: [] }
+  const empty: Store = { signedIn: false, projects: [], members: [], rooms: [], purchases: [], tasks: [], photos: [], ideas: [], folders: [], contracts: [], receipts: [], todos: [], renovations: [], maintenance: [], push_subscriptions: [] }
 
   const load = (): Store => {
     try {
@@ -325,6 +333,9 @@ function demoApi(): Api {
       return null
     },
     async quickEntry() {
+      return null
+    },
+    async askEconomy() {
       return null
     },
   }
