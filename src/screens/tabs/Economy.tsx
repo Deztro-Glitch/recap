@@ -19,7 +19,6 @@ import type { ProjectState, ViewProps } from '../ProjectView'
 export function EconomyDashboard({ state, open }: ViewProps) {
   const e = state.project?.economy
   const n = economyNumbers(e ?? emptyEconomy, state.contracts)
-  const detail = (title: string) => () => open({ t: 'stat', title, economy: true })
   const el = useElPrice(e?.zone)
   const has = !!e || n.fixed > 0
 
@@ -27,7 +26,7 @@ export function EconomyDashboard({ state, open }: ViewProps) {
     <div className="eco-dash">
       <MortgageCard state={state} onOpen={() => open({ t: 'mortgage' })} />
       <FlowCard state={state} has={has} onOpen={() => open({ t: 'budget' })} />
-      <StatCard className="eco-dash__cost" icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.costs} /> : '–'} onOpen={detail('Ren månadskostnad')} />
+      <StatCard className="eco-dash__cost" icon={IconReceipt2} label="Ren månadskostnad" value={has ? <Counter value={n.net} /> : '–'} onOpen={() => open({ t: 'cost' })} />
       {e?.zone && el && (
         <StatCard
           className="eco-dash__el"

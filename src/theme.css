@@ -37,7 +37,8 @@
   --nav-hover: inset 1px 1px 0 rgba(255, 255, 255, .12), inset -1px -1px 0 rgba(255, 255, 255, .02), 0 4px 16px rgba(0, 0, 0, .2);
   --shadow-float: 0 24px 70px rgba(0, 0, 0, .6);
   --sheet-bg: rgba(12, 12, 16, .55);        /* paneler och notiser */
-  --scrim: rgba(0, 0, 0, .45);              /* mörkret bakom en panel */
+  --scrim: rgba(0, 0, 0, .5);               /* mörkret bakom en panel */
+  --scrim-blur: blur(8px);                  /* och frostningen, så att sidan anas men inte stör */
   --overlay: rgba(0, 0, 0, .72);            /* bakom en stor bild */
 
   /* ---------- Accent: Projekt (lila och elektrisk blå) ---------- */
@@ -108,6 +109,7 @@
   --bar-slot: rgba(255, 255, 255, .03);
   --bar-cost: rgba(255, 255, 255, .35);
   --bar-cost-top: rgba(255, 255, 255, .6);
+  --cost-running: rgba(255, 255, 255, .55);  /* driftkostnader i Ren månadskostnad, bredvid accentens ränta och avgift */
 
   /* ---------- Innehållsfärger för rum (ikon, planritning). Par: färg + mörk text ---------- */
   --c-sand-bg: #E9CBA3;  --c-sand-fg: #4A2E0F;

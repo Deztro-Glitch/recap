@@ -87,6 +87,7 @@ export function economyNumbers(e: Economy, contracts: Contract[] = []) {
     interestAfter: afterDeduction(home.interest),
     fixed,
     costs,
+    net: afterDeduction(home.interest) + fixed,   // Ren månadskostnad: räntan efter avdrag och boendeavtalen
     saving: home.amortization,
     others,
     cashflow: costs + home.amortization + otherMonthly,
@@ -107,4 +108,28 @@ export function costParts(e: Economy, contracts: Contract[] = []) {
   if (!has('el')) add(CONTRACT_KIND_LABEL.el, e.electricity ?? 0)
   if (!has('forsakring')) add(CONTRACT_KIND_LABEL.forsakring, e.insurance ?? 0)
   return [...parts].map(([label, amount]) => ({ label, amount }))
+}
+
+// Ren månadskostnad uppdelad i tre rader: räntan efter avdrag, avgiften till föreningen och driftkostnaderna
+// (el, elnät, försäkring, bredband, larm …). Varje rad har sina delar med, för detaljvyn.
+export interface CostGroup { key: 'interest' | 'fee' | 'running'; label: string; amount: number; items: { label: string; amount: number }[] }
+export function monthlyCostGroups(e: Economy, contracts: Contract[] = []): CostGroup[] {
+  const n = economyNumbers(e, contracts)
+  const home = homeContracts(contracts)
+  const has = (k: Contract['kind']) => home.some((c) => c.kind === k)
+  const fee: CostGroup['items'] = []
+  const running: CostGroup['items'] = []
+  for (const c of home) {
+    const amount = Number(c.monthly) || 0
+    if (amount > 0) (c.kind === 'avgift' ? fee : running).push({ label: c.provider ? `${CONTRACT_KIND_LABEL[c.kind]}, ${c.provider}` : CONTRACT_KIND_LABEL[c.kind], amount })
+  }
+  if (!has('avgift') && e.fee) fee.push({ label: CONTRACT_KIND_LABEL.avgift, amount: e.fee })
+  if (!has('el') && e.electricity) running.push({ label: CONTRACT_KIND_LABEL.el, amount: e.electricity })
+  if (!has('forsakring') && e.insurance) running.push({ label: CONTRACT_KIND_LABEL.forsakring, amount: e.insurance })
+  const sum = (xs: CostGroup['items']) => xs.reduce((s, x) => s + x.amount, 0)
+  return [
+    { key: 'interest' as const, label: 'Ränta (efter avdrag)', amount: n.interestAfter, items: n.interest > 0 ? [{ label: 'Före avdrag', amount: n.interest }, { label: 'Ränteavdrag', amount: n.interestAfter - n.interest }] : [] },
+    { key: 'fee' as const, label: 'Avgift', amount: sum(fee), items: fee },
+    { key: 'running' as const, label: 'Driftkostnader', amount: sum(running), items: running },
+  ].filter((g) => g.amount > 0)
 }
