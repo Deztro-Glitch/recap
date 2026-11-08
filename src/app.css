@@ -820,13 +820,27 @@
 }
 .donut__value.is-negative { background-image: var(--num-negative); }
 
-.budget__legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2) var(--s-4); }
-.budget__legend li { display: flex; align-items: center; gap: var(--s-2); min-width: 0; }
-.budget__legend i { flex: none; width: 10px; height: 10px; border-radius: 999px; }
-.budget__legend span:not(.meta) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.budget__legend b { margin-left: auto; font-weight: 600; color: var(--text); white-space: nowrap; }
-.budget__legend .meta { white-space: nowrap; }
-@media (max-width: 760px) { .budget__legend { grid-template-columns: 1fr; } }
+.budget__month { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.budget__month h3 { margin: 0; font-size: var(--fs-section); }
+.budget__verdict { margin: 0; text-align: center; font-weight: 600; color: var(--success); }
+.budget__verdict.is-over { color: var(--danger); }
+/* En rad per kategori: prick, namn och belopp, en stapel mot budgeten, kvar eller över, och fältet för budgeten. */
+.bcat { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.bcat__row { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) 0; }
+.bcat__row + .bcat__row { box-shadow: inset 0 1px 0 var(--line); }
+.bcat__dot { flex: none; width: 10px; height: 10px; border-radius: 999px; }
+.bcat__main { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.bcat__top { display: flex; align-items: baseline; gap: var(--s-3); }
+.bcat__label { flex: 1; min-width: 0; color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bcat__spent { color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bcat__track { height: 6px; border-radius: 999px; background: var(--fill); overflow: hidden; }
+.bcat__bar { height: 100%; border-radius: inherit; }
+.bcat__row.is-over .bcat__bar { background: var(--danger); }
+.bcat__note { font-size: var(--fs-small); color: var(--text-2); }
+.bcat__row.is-over .bcat__note { color: var(--danger); font-weight: 600; }
+.bcat__budget { flex: none; width: 104px; }
+.bcat__budget .input { text-align: right; padding-left: var(--s-3); padding-right: var(--s-3); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Senaste transaktioner: en stram textlista med tunna linjer. Namnet till vänster med datumet i liten
    grå text under, beloppet till höger. Ett helt kvitto är en rad. */

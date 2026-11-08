@@ -5,9 +5,9 @@ import { api } from './api'
 import { economyNumbers } from './economy'
 import { parseNum } from './format'
 
-// Kassaflödets budget: lönen (netto) är 100 %, och varje kategori är en del av den.
-// Boende och lån kommer från appens riktiga siffror (avtal, bolån, övriga lån). Övriga kategorier är
-// exempel tills riktiga siffror finns; köp som läggs in med snabbinmatningen läggs ovanpå.
+// Budgeten: lönen (netto) är 100 %, och varje kategori är en del av den. Bara riktiga siffror:
+// boende och lån från avtalen, bolånet och övriga lån, resten från månadens köp och kvittorader.
+// Man sätter en egen budget per kategori (economy.budgets) och ser vad som är kvar eller över.
 
 export type Category = BudgetCategory
 const KEYS: Category[] = ['housing', 'loans', 'food', 'transport', 'home', 'fun', 'saving', 'other']
@@ -23,8 +23,6 @@ export const CATEGORY: Record<Category, { label: string; color: string }> = {
   other: { label: 'Övrigt', color: 'var(--c-sand-bg)' },
 }
 
-// Exempel, som andel av lönen, tills kategorierna fylls med riktiga siffror.
-const EXAMPLE: Partial<Record<Category, number>> = { housing: 0.3, food: 0.15, transport: 0.08, fun: 0.07, saving: 0.1 }
 
 // Gissar kategori från namnet, för köp utan sparad kategori och när AI:n inte svarar.
 const GUESS: [Category, RegExp][] = [
@@ -77,12 +75,12 @@ export interface Tx { id: string; title: string; amount: number; date: string; c
 
 // Klara boendeköp, nyast först. Rader från samma kvitto blir en rad: "ICA Maxi (24 varor)",
 // eller med varornas namn när de är två eller färre: "Byggmax (Färg & Penslar)".
-export function transactions(items: Item[], receipts: Receipt[] = []): Tx[] {
+export function transactions(items: Item[], receipts: Receipt[] = [], month?: string): Tx[] {
   const byId = new Map(receipts.map((r) => [r.id, r]))
   const groups = new Map<string, Item[]>()
   const rows: Tx[] = []
   for (const it of items) {
-    if (!it.done || it.scope !== 'home' || !it.date) continue
+    if (!it.done || it.scope !== 'home' || !it.date || (month && !it.date.startsWith(month))) continue
     if (it.receipt_id) groups.set(it.receipt_id, [...(groups.get(it.receipt_id) ?? []), it])
     else rows.push({ id: it.id, title: it.title, amount: it.amount, date: it.date, created_at: it.created_at })
   }
@@ -98,21 +96,24 @@ export function transactions(items: Item[], receipts: Receipt[] = []): Tx[] {
   return rows.sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
 }
 
-export interface Part { key: Category; label: string; color: string; amount: number }
+// Kategorierna man kan sätta en egen budget för. Boende och lån är fasta och kommer från avtal och lån.
+export const VARIABLE: Category[] = ['food', 'transport', 'home', 'fun', 'saving', 'other']
+export const FIXED: Category[] = ['housing', 'loans']
 
-// Fördelningen för en månad: riktiga fasta kostnader, exempel för resten, och månadens köp ovanpå.
-// Kvittorader utan egen kategori som inte går att gissa från namnet ("KNÄCKEBRÖD") får butikens kategori (ICA = mat).
-export function budgetParts(income: number, e: Economy, state: Pick<ProjectState, 'contracts' | 'receipts'>, items: Item[]): Part[] {
+export interface BudgetRow { key: Category; label: string; color: string; spent: number; budget: number; fixed: boolean }
+
+// En månads budget ("2026-11"): vad varje kategori har kostat och budgeten för den. Boende och lån är månadens
+// fasta kostnader (samma varje månad); köp och kvittorader läggs i sin kategori. Kvittorader utan egen kategori
+// som inte går att gissa från namnet ("KNÄCKEBRÖD") får butikens kategori (ICA = mat). Renoveringen räknas inte,
+// den har sin egen budget i projektet. Alla rörliga kategorier finns med, så att man kan sätta en budget.
+export function monthBudget(e: Economy, state: Pick<ProjectState, 'contracts' | 'receipts'>, items: Item[], month: string): BudgetRow[] {
   const n = economyNumbers(e, state.contracts)
   const sums: Partial<Record<Category, number>> = {}
   const add = (k: Category, v: number) => { if (v > 0) sums[k] = (sums[k] ?? 0) + v }
-
-  add('housing', n.costs > 0 ? n.costs : income * (EXAMPLE.housing ?? 0))
+  add('housing', n.costs)
   add('loans', n.cashflow - n.costs)
-  for (const k of ['food', 'transport', 'fun', 'saving'] as const) add(k, income * (EXAMPLE[k] ?? 0))
 
   const stores = new Map(state.receipts.map((r) => [r.id, r.store ?? '']))
-  const month = new Date().toISOString().slice(0, 7)
   for (const it of items) {
     if (!it.done || it.scope !== 'home' || !it.date?.startsWith(month)) continue
     let k = categoryOf(it)
@@ -120,5 +121,18 @@ export function budgetParts(income: number, e: Economy, state: Pick<ProjectState
     add(k, it.amount)
   }
 
-  return KEYS.filter((k) => (sums[k] ?? 0) > 0).map((k) => ({ key: k, ...CATEGORY[k], amount: Math.round(sums[k]!) }))
+  return KEYS
+    .map((k) => ({ key: k, ...CATEGORY[k], spent: Math.round(sums[k] ?? 0), budget: Number(e.budgets?.[k]) || 0, fixed: FIXED.includes(k) }))
+    .filter((r) => !r.fixed || r.spent > 0)
+}
+
+// Kategorier som har gått över sin budget.
+export const overBudget = (rows: BudgetRow[]) => rows.filter((r) => !r.fixed && r.budget > 0 && r.spent > r.budget)
+
+// Månaden som text ("2026-11" → "november 2026") och ett steg fram eller bak.
+export const monthLabel = (m: string) => new Date(`${m}-01T12:00:00`).toLocaleDateString('sv-SE', { month: 'long', year: 'numeric' })
+export const shiftMonth = (m: string, by: number) => {
+  const d = new Date(`${m}-01T12:00:00`)
+  d.setMonth(d.getMonth() + by)
+  return d.toISOString().slice(0, 7)
 }

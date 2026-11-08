@@ -9,6 +9,7 @@ import type { ViewProps } from '../view'
 import { activeRenovation, allItems, renovationNumbers, sum } from '../../lib/items'
 import { RENOVATION_STATUS_LABEL } from '../../types'
 import { careWarnings, type Care } from './ProjectHub'
+import { monthBudget, overBudget } from '../../lib/budget'
 import { ReviewCard } from './Review'
 import { TodoCard } from './Todos'
 import { QuickEntryCard } from './QuickEntry'
@@ -59,9 +60,12 @@ function LeftCard({ state, open }: ViewProps) {
   const left = income - n.cashflow - spent
   const used = income > 0 ? Math.min(1, (n.cashflow + spent) / income) : 0
   const monthName = new Date().toLocaleDateString('sv-SE', { month: 'long' })
+  // Kategorier som har gått över sin budget den här månaden syns som en märkning på kortet.
+  const over = overBudget(monthBudget(e ?? emptyEconomy, state, allItems(state), month))
+  const badge = over.length === 1 ? `${over[0].label} över budget` : over.length > 1 ? `${over.length} över budget` : undefined
 
   return (
-    <StatCard tone="accent" className="leftcard" icon={IconWallet} label={income > 0 ? `Kvar i ${monthName}` : `Köpt i ${monthName}`} value={<Counter value={income > 0 ? left : spent} />} onOpen={() => open({ t: 'budget' })}>
+    <StatCard tone="accent" className="leftcard" icon={IconWallet} label={income > 0 ? `Kvar i ${monthName}` : `Köpt i ${monthName}`} badge={badge} value={<Counter value={income > 0 ? left : spent} />} onOpen={() => open({ t: 'budget' })}>
       {income > 0 && (
         <>
           <div className="leftcard__track" role="progressbar" aria-label="Hur mycket av lönen som är använd" aria-valuenow={Math.round(used * 100)} aria-valuemin={0} aria-valuemax={100}>
