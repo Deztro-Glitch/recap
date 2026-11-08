@@ -50,7 +50,7 @@ export function QuickEntryCard({ state }: { state: ProjectState }) {
 
   const c = saved ? CATEGORY[saved.category] : null
   return (
-    <GlassCard className="kpi glass--light eco-dash__quick quick-card" lift={false}>
+    <GlassCard className="kpi glass--light quick-card" lift={false}>
       <div className="kpi__head">
         <span className="kpi__icon"><IconSparkles size={16} stroke={1.8} /></span>
         <span className="kpi__label">Snabb inmatning</span>
@@ -86,7 +86,7 @@ export function QuickEntryCard({ state }: { state: ProjectState }) {
           >
             <IconCheck size={16} stroke={2.4} className="quick__ok" />
             <span className="quick__what">{saved.title} – {kr(saved.amount)}</span>
-            <span className="quick__cat"><i style={{ background: c.color }} />{saved.scope === 'build' ? 'Projekt' : c.label}</span>
+            <span className="quick__cat"><i style={{ background: c.color }} />{saved.scope === 'build' ? 'Renovering' : c.label}</span>
           </motion.p>
         )}
       </AnimatePresence>

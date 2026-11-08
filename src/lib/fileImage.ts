@@ -12,7 +12,7 @@ export type FileResult =
   | { kind: 'unknown' }
 
 // Sorterar en bild utan att fråga: AI:n avgör om det är ett kvitto, ett foto av ett rum eller något man vill köpa,
-// och sparar det på rätt ställe oavsett om man står i Projekt eller Boende.
+// och sparar det på rätt ställe, var i appen man än står.
 // Kvittorader AI:n är säker på sparas som klara köp (och stänger ett planerat köp om det är samma sak).
 // Rader den är osäker på sparas också, men märks needs_review och visas i Att granska.
 // hint "receipt": man valde Skanna kvitto. "unknown" betyder att man får välja själv vad bilden är.

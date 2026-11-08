@@ -2,7 +2,7 @@
    theme.css — appens känsla på ett ställe.
    Alla färger, typsnitt, storlekar, avstånd och glaseffekter är variabler här.
    design.css och app.css använder bara dessa variabler, aldrig egna färgvärden.
-   Appen är alltid mörk. Projekt och Boende skiljer sig bara i accent och ljus.
+   Appen är alltid mörk med varm orange accent, och de ljusa korten är frostat glas.
    ========================================================================== */
 
 :root {
@@ -41,15 +41,15 @@
   --scrim-blur: blur(8px);                  /* och frostningen, så att sidan anas men inte stör */
   --overlay: rgba(0, 0, 0, .72);            /* bakom en stor bild */
 
-  /* ---------- Accent: Projekt (lila och elektrisk blå) ---------- */
-  /* Accenten lyser bara på Lägg till, aktiva menyval och staplar. */
-  --accent: #7C5CFF;
+  /* ---------- Accent: varm orange med vita detaljer (önskat av användaren) ---------- */
+  /* Accenten lyser bara på Lägg till, aktiva menyval, staplar och det stora orangea kortet. */
+  --accent: #F2683F;
   --on-accent: #FFFFFF;
-  --accent-glow: #A78BFA;                   /* aktiv text och ikon i menyn */
-  --accent-hi: #9F87FF;                     /* ljusare accent: den skarpa kanten och textglöden på Lägg till */
-  --blob-1: #5B21B6;
-  --blob-2: #1D4ED8;
-  --blob-3: #7C3AED;
+  --accent-glow: #FF9A76;                   /* aktiv text och ikon i menyn */
+  --accent-hi: #FFAD8F;                     /* ljusare accent: den skarpa kanten och textglöden på Lägg till */
+  --blob-1: #9A3412;
+  --blob-2: #B45309;
+  --blob-3: #C2410C;
   /* Hur starkt ljusfläckarna lyser: ljuskällor i ett mörkt rum, inte en färgad skärm. */
   --blob-strength-1: .38;
   --blob-strength-2: .3;
@@ -68,17 +68,20 @@
     inset 0 0 20px color-mix(in srgb, var(--accent) 55%, transparent),
     0 0 32px color-mix(in srgb, var(--accent) 34%, transparent);
 
-  /* Ljusa statistikkort: ljust frostat glas med mörk text, svagt tonat av lägets accent. */
-  --card-light: color-mix(in srgb, color-mix(in srgb, var(--accent) 6%, #F4F7F5) 74%, transparent);
-  --card-light-2: color-mix(in srgb, color-mix(in srgb, var(--accent) 16%, #E2EBE6) 58%, transparent);
-  --card-ink: #0E1512;                      /* rubriker och siffror på ljusa kort */
-  --card-ink-2: rgba(14, 21, 18, .58);      /* detaljer på ljusa kort */
-  --card-ink-fill: rgba(14, 21, 18, .07);   /* ikonrutor, märkningar och spår på ljusa kort */
-  --card-light-shadow: 0 14px 44px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .85);
-  --card-light-shadow-hover: 0 20px 54px rgba(0, 0, 0, .6), inset 0 1px 0 #FFFFFF;
-  --card-num: linear-gradient(180deg, #0B1210 30%, #34463D 100%);   /* stora siffror på ljusa kort */
+  /* Ljusa kort: frostat glas med svarta rubriker. Mer genomskinligt än förut, så att ljuset bakom lyser igenom,
+     men tätt nog för att texten ska gå att läsa. Svagt tonat av den orangea accenten. */
+  --card-light: color-mix(in srgb, color-mix(in srgb, var(--accent) 8%, #FFF8F4) 60%, transparent);
+  --card-light-2: color-mix(in srgb, color-mix(in srgb, var(--accent) 18%, #F2E6DF) 44%, transparent);
+  --card-light-blur: blur(38px) saturate(190%) brightness(1.08);
+  --card-light-sheen: radial-gradient(130% 90% at 0% 0%, rgba(255, 255, 255, .6), transparent 55%);
+  --card-ink: #121110;                      /* rubriker och siffror på ljusa kort */
+  --card-ink-2: rgba(18, 17, 16, .62);      /* detaljer på ljusa kort */
+  --card-ink-fill: rgba(18, 17, 16, .07);   /* ikonrutor, märkningar och spår på ljusa kort */
+  --card-light-shadow: 0 14px 44px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 0 0 1px rgba(255, 255, 255, .28);
+  --card-light-shadow-hover: 0 20px 54px rgba(0, 0, 0, .52), inset 0 1px 0 #FFFFFF, inset 0 0 0 1px rgba(255, 255, 255, .4);
+  --card-num: linear-gradient(180deg, #121110 30%, #3D3633 100%);   /* stora siffror på ljusa kort */
 
-  /* Accentkortet (det stora kortet i Boende): mättad accent som frostat glas, vit text och vita detaljer. */
+  /* Accentkortet (de stora korten: Kvar i månaden och Bolån): mättad accent som frostat glas, vit text och vita detaljer. */
   --card-accent: linear-gradient(150deg,
     color-mix(in srgb, color-mix(in srgb, var(--accent) 80%, #FFFFFF) 92%, transparent) 0%,
     color-mix(in srgb, var(--accent) 90%, transparent) 45%,
@@ -98,14 +101,14 @@
   --warning: #E6B450;
   --danger: #F0716A;
 
-  /* Underhållsringar (Projekt): långt kvar, en bit kvar, snart dags, dags nu. */
+  /* Underhållsringar (Hemmet): långt kvar, en bit kvar, snart dags, dags nu. */
   --care-fresh: #60A5FA;
   --care-ok: #34D399;
   --care-soon: #FB923C;
   --care-due: #F0716A;
   --demolish: #F0716A;   /* väggar markerade för rivning */
 
-  /* Arbetsytan i Projekt: ett mörkare glas med ett svagt punktrutnät, som i ett ritprogram. */
+  /* Arbetsytan i Hemmet: ett mörkare glas med ett svagt punktrutnät, som i ett ritprogram. */
   --stage-bg: rgba(0, 0, 0, .22);
   --stage-dot: rgba(255, 255, 255, .075);
   --stage-dot-gap: 20px;
@@ -171,21 +174,6 @@
   --t-base: 500ms;
 }
 
-/* Boende: varm orange med vita detaljer och svarta rubriker på de ljusa korten. */
-:root[data-mode="home"] {
-  --accent: #F2683F;
-  --on-accent: #FFFFFF;
-  --accent-glow: #FF9A76;
-  --accent-hi: #FFAD8F;
-  --blob-1: #9A3412;
-  --blob-2: #B45309;
-  --blob-3: #C2410C;
-  --card-ink: #121110;
-  --card-ink-2: rgba(18, 17, 16, .6);
-  --card-ink-fill: rgba(18, 17, 16, .07);
-  --card-num: linear-gradient(180deg, #121110 30%, #3D3633 100%);
-}
-
 /* Mobilen: mindre luft, samma känsla. */
 @media (max-width: 760px) {
   :root {
@@ -199,7 +187,7 @@
 
 /* Utskrift (Bostads-CV): alltid mörk text på vitt papper. */
 @media print {
-  :root, :root[data-mode="home"] {
+  :root {
     --bg: #FFFFFF; --text: #17141F; --text-2: #5E5A6E;
     --glass: transparent; --fill: #ECEAF4; --line: #D3CFE0;
     --num: linear-gradient(#17141F, #17141F);

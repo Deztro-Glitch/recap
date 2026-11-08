@@ -1,31 +1,26 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { IconFileText, IconX } from '@tabler/icons-react'
-import { api } from '../../lib/api'
 import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan, type PlanTool } from '../../components/FloorPlan'
-import { CareList, PlanToolbox, useCare } from './ProjectHub'
-import { Cockpit } from './Cockpit'
-import { ReviewCard } from './Review'
+import { CareList, PlanToolbox, type useCare } from './ProjectHub'
 import { iconFor } from '../../components/icons'
-import { Chips, ease } from '../../components/ui'
-import { CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, modeScope, tileStyle, type Mode, type Room } from '../../types'
+import { ease } from '../../components/ui'
+import { CONTRACT_KIND_LABEL, PALETTE, tileStyle, type Room } from '../../types'
 import type { ProjectState, ViewProps } from '../view'
 import { ContractStatus } from './Contracts'
 import { ItemList, sheetFor, useMarkDone } from './Items'
-import { allItems, byDate, byImportance, modeItems, roomFacts, sum, type Item } from '../../lib/items'
+import { allItems, byDate, byImportance, roomFacts, sum, type Item } from '../../lib/items'
 import { RoomPhotos } from './Photos'
 import { RoomEditSheet } from './Rooms'
-import { EconomyDashboard } from './Economy'
 import { GlassCard } from '../../components/GlassCard'
 
-// Översikt: nyckeltal, planritningen och en panel som visar hemmet eller det rum man tryckt på.
-// I Projekt är planritningen en stor arbetsyta i mitten med verktygslådan bredvid, och under den Smart underhåll.
-export function Overview({ state, open, place, setPlace }: ViewProps & { place: string | null; setPlace: (id: string | null) => void }) {
+// Hemmet: planritningen som en arbetsyta med verktygslådan och AI-raden, och en panel som visar hemmet
+// (Senast och Underhåll) eller det rum man tryckt på. Planritningen finns bara här.
+export function Overview({ state, open, place, setPlace, care }: ViewProps & { place: string | null; setPlace: (id: string | null) => void; care: ReturnType<typeof useCare> }) {
   const project = state.project!
-  const mode: Mode = project.mode ?? 'full'
-  // Nyckeltalen i Projekt och listorna i panelen gäller bara det som hör till läget.
-  const items = modeItems(state)
+  // Det som hör till bostaden: renoveringen och allt som har ett rum. Mat och annan vardag finns under Ekonomi.
+  const items = allItems(state).filter((i) => i.scope === 'build' || i.room_id)
   const room = state.rooms.find((r) => r.id === place) ?? null
   const panel = useRef<HTMLDivElement>(null)
   const [tool, setTool] = useState<PlanTool | null>(null)
@@ -44,14 +39,6 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
     if (room && matchMedia('(max-width: 1024px)').matches) panel.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [room?.id])
 
-  const setMode = async (m: Mode) => {
-    await api.updateProject(project.id, { mode: m })
-    await state.reload()
-  }
-
-  // Underhållet (exempeldata tills vidare) delas av cockpitens statuskort och Smart underhåll.
-  const care = useCare()
-
   // Rummen som rutor när det inte finns någon planritning.
   const roomTiles = !project.floorplan_path && state.rooms.length > 0 && (
     <div className="tiles">
@@ -69,55 +56,31 @@ export function Overview({ state, open, place, setPlace }: ViewProps & { place: 
   const sidePanel = (
     <aside className="panel glass" ref={panel}>
       {room ? <RoomPanel state={state} open={open} room={room} onClose={() => setPlace(null)} /> : <HomePanel state={state} open={open} items={items} />}
-      {/* I Projekt ligger underhållet i panelen, under hemmet. */}
-      {mode === 'full' && !room && <CareList items={care.items} done={care.done} />}
+      {/* Underhållet ligger i panelen, under hemmet. */}
+      {!room && <CareList items={care.items} done={care.done} />}
     </aside>
   )
 
   return (
     <div>
       <div className="section-head">
-        <h1>Översikt</h1>
-        <Chips value={mode} onChange={setMode} options={(['full', 'simple'] as Mode[]).map((m) => ({ value: m, label: MODE_LABEL[m] }))} />
+        <h1>Hemmet</h1>
       </div>
 
-      {/* Kvittorader AI:n var osäker på, oavsett läge. Syns bara när något väntar. */}
-      <ReviewCard state={state} open={open} />
-
-      {mode === 'simple' ? (
-        <EconomyDashboard state={state} open={open} />
-      ) : (
-        <Cockpit state={state} open={open} onRoom={setPlace} care={care.items} onCare={() => setPlace(null)} />
-      )}
-
-      {mode === 'full' ? (
-        <>
-          <div className={`workspace section ${project.floorplan_path ? 'has-plan' : ''}`}>
-            <div className="workspace__stage">
-              {roomTiles}
-              {/* Arbetsytan: punktrutnät, verktygslådan uppe till vänster och AI-raden svävande längst ner. */}
-              <AnimatePresence>
-                {full && <motion.div className="stage-scrim" onClick={() => setFull(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} />}
-              </AnimatePresence>
-              <GlassCard className={`plan-card plan-card--stage ${project.floorplan_path ? 'has-tools' : ''} ${full ? 'is-full' : ''}`} lift={false}>
-                {project.floorplan_path && <PlanToolbox tool={tool} onTool={setTool} />}
-                <FloorPlan state={state} tool={tool} stage={!!project.floorplan_path} expanded={full} onExpand={() => setFull(!full)} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
-              </GlassCard>
-            </div>
-            {sidePanel}
-          </div>
-        </>
-      ) : (
-        <div className="overview section">
-          <div>
-            {roomTiles}
-            <GlassCard className="plan-card" lift={false}>
-              <FloorPlan state={state} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
-            </GlassCard>
-          </div>
-          {sidePanel}
+      <div className={`workspace ${project.floorplan_path ? 'has-plan' : ''}`}>
+        <div className="workspace__stage">
+          {roomTiles}
+          {/* Arbetsytan: punktrutnät, verktygslådan uppe till vänster och AI-raden svävande längst ner. */}
+          <AnimatePresence>
+            {full && <motion.div className="stage-scrim" onClick={() => setFull(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} />}
+          </AnimatePresence>
+          <GlassCard className={`plan-card plan-card--stage ${project.floorplan_path ? 'has-tools' : ''} ${full ? 'is-full' : ''}`} lift={false}>
+            {project.floorplan_path && <PlanToolbox tool={tool} onTool={setTool} />}
+            <FloorPlan state={state} tool={tool} stage={!!project.floorplan_path} expanded={full} onExpand={() => setFull(!full)} onRoom={(r) => setPlace(r.id === place ? null : r.id)} onAddRoom={() => open({ t: 'room' })} />
+          </GlassCard>
         </div>
-      )}
+        {sidePanel}
+      </div>
     </div>
   )
 }
@@ -198,7 +161,7 @@ function RoomPanel({ state, open, room, onClose }: { state: ProjectState; open: 
         <div className="section-head">
           <h3>Planerat</h3>
           <span className="meta">{kr(sum(items.filter((i) => !i.done)))}</span>
-          <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { room_id: room.id, scope: modeScope(state.project?.mode) } })}>Lägg till</button>
+          <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { room_id: room.id, scope: 'build' } })}>Lägg till</button>
         </div>
         <ItemList items={items.filter((i) => !i.done).sort(byImportance)} state={state} open={open} onCheck={markDone} empty="Inget planerat" hideRoom />
       </div>

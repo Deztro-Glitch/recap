@@ -8,7 +8,7 @@ import { FileField, FileThumb } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
 import { FilterBar, FilterToggle, isFiltered, matches, noFilter, type FilterState } from '../../components/Filters'
 import { SwipeRow } from '../../components/SwipeRow'
-import { K6_LABEL, SCOPE_LABEL, modeScope, type Detail, type K6Kind, type Purchase, type Scope, type Task } from '../../types'
+import { K6_LABEL, SCOPE_LABEL, type Detail, type K6Kind, type Purchase, type Scope, type Task } from '../../types'
 import type { ProjectState, ViewProps } from '../view'
 import { allItems, byImportance, fmtDate, fromPurchase, fromTask, guessScope, itemText, removeRow, setDone, sum, today, type Item, type ItemTable } from '../../lib/items'
 
@@ -47,7 +47,7 @@ export function useMarkDone(state: ProjectState) {
 }
 
 // Inköp: planerat till vänster, klart till höger. Bockar man av flyttar saken över.
-// Inköp är inköpslistan: allt planerat från både Projekt och Boende. Det som är klart finns i Logg.
+// Inköp är inköpslistan: allt planerat, både renovering och vardag. Det som är klart finns i Logg.
 export function Purchases({ state, open }: ViewProps) {
   const { markDone, field } = useMarkDone(state)
   const [filter, setFilter] = useState<FilterState>(noFilter)
@@ -155,7 +155,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
     setF({
       title: item.title ?? '',
       room_id: item.room_id ?? '',
-      scope: p.scope ?? (item.id ? guessScope(item.title ?? '') : modeScope(state.project?.mode)),
+      scope: p.scope ?? (item.id ? guessScope(item.title ?? '') : 'home'),
       done,
       amount: amount ? String(amount) : '',
       date: (isTask ? t.done_on : p.bought_on) ?? '',

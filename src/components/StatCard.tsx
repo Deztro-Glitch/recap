@@ -6,8 +6,8 @@ type IconType = React.ComponentType<{ size?: number; stroke?: number }>
 
 // Ett ljust statistikkort: ikon och rubrik, en stor siffra, ibland en märkning och en stapel.
 // Hela kortet går att öppna (detaljvyn); pilen uppe till höger visar det. Ingen förklarande text på kortet.
-// tone "accent": det stora kortet i accentfärgen med vit text (Bolån i Boende).
-// tone "dark": mörkt glas med vit text, som resten av Projektläget.
+// tone "accent": det stora kortet i accentfärgen med vit text (Kvar i månaden, Bolån).
+// tone "dark": mörkt glas med vit text.
 export function StatCard({ icon: Icon, label, value, badge, top, onOpen, className, tone = 'light', children }: {
   icon: IconType
   label: string

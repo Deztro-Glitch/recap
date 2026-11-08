@@ -50,13 +50,6 @@
   .tabbar { display: flex; align-items: stretch; }
 }
 
-/* Bara när man byter läge glider färgerna över, så att vanlig hover inte blir trög. */
-:root.is-switching *, :root.is-switching *::before, :root.is-switching *::after {
-  transition: background-color 400ms ease, color 400ms ease, border-color 400ms ease, box-shadow 400ms ease, fill 400ms ease, stroke 400ms ease !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  :root.is-switching *, :root.is-switching *::before, :root.is-switching *::after { transition: none !important; }
-}
 
 
 /* ---------- Menyrader (Lägg till, Mer) ---------- */
@@ -283,11 +276,33 @@
 .plan__measure--area { pointer-events: none; }
 .plan__measure--area.is-pinned { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent), 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent); }
 
-/* ---------- Projekt: cockpiten överst på Översikt (Cockpit.tsx). Tre mörka glaskort i ett luftigt rutnät ---------- */
-.cockpit { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); }
-.cockpit + .workspace { margin-top: var(--gap); }
-.cockpit__cell { min-width: 0; display: flex; }
-.cockpit__cell > .glass { flex: 1; min-height: 220px; }
+/* ---------- Idag (Today.tsx): startsidan. Kvar i månaden stort till vänster, renoveringen och underhållet bredvid,
+   Snabb inmatning och Att göra under. Allt i ljust, frostat glas utom det stora orangea kortet. ---------- */
+.today {
+  display: grid; gap: var(--gap);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas:
+    "left left project project"
+    "left left status status"
+    "quick quick todo todo";
+}
+.today__date { margin-left: auto; }
+.today__cell { min-width: 0; display: flex; }
+.today__cell > .glass { flex: 1; }
+.today__left { grid-area: left; }
+.today__project { grid-area: project; }
+.today__status { grid-area: status; }
+.today__quick { grid-area: quick; }
+.today__todo { grid-area: todo; }
+
+/* Kvar i månaden: siffran stort, en tunn vit stapel för hur mycket av lönen som är använd och tre små delar under. */
+.leftcard .kpi__value { font-size: clamp(34px, 4.4vw, 52px); margin-top: auto; }
+.leftcard__track { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, .22); overflow: hidden; }
+.leftcard__bar { height: 100%; border-radius: inherit; background: #FFFFFF; box-shadow: 0 0 12px rgba(255, 255, 255, .6); }
+.leftcard__parts { display: flex; gap: var(--s-5); margin-top: var(--s-4); flex-wrap: wrap; }
+.leftcard__parts span { display: grid; gap: 2px; }
+.leftcard__parts small { font-size: var(--fs-small); color: var(--text-2); }
+.leftcard__parts b { font-size: var(--fs-body); font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 
 /* Aktivt projekt: rummet stort, en tunn stapel som lyser i accentfärgen och nästa steg på en rad. */
 .focus__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; margin: var(--s-5) 0 var(--s-4); }
@@ -310,10 +325,6 @@
 .focus__next span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .focus__next b { color: var(--text); font-weight: 600; }
 
-/* Månadens kassaflöde: bara staplarna, lite smalare spår än i Boende. */
-.flowmini .minibars { padding-top: 30px; }
-.flowmini .minibars__track { height: 108px; }
-
 /* Hemmets status: varningar med orange ikon och en grön prick som pulserar lugnt när resten rullar. */
 .homestatus__list { display: grid; gap: var(--s-3); padding-top: var(--s-4); }
 .homestatus__row { display: flex; align-items: center; gap: var(--s-3); font-size: var(--fs-meta); color: var(--text-2); }
@@ -335,20 +346,18 @@
 @media (prefers-reduced-motion: reduce) { .homestatus__dot { animation: none; } }
 
 @media (max-width: 1100px) {
-  .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cockpit__cell--0 { grid-column: 1 / -1; }
-  .cockpit__cell--0 > .glass { min-height: 0; }
+  .today { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "left left" "project status" "quick quick" "todo todo"; }
 }
 @media (max-width: 760px) {
-  .cockpit { grid-template-columns: minmax(0, 1fr); }
-  .cockpit__cell > .glass { min-height: 0; }
+  .today { grid-template-columns: minmax(0, 1fr); grid-template-areas: "left" "quick" "project" "status" "todo"; }
   .focus__name { font-size: 22px; }
   /* Korten är fulla breda här, så rubriken får ligga kvar på en rad bredvid ikonen. */
-  .cockpit .kpi__head { flex-wrap: nowrap; gap: 10px; }
-  .cockpit .kpi__head .kpi__label { order: 0; flex-basis: auto; }
+  .today .kpi__head { flex-wrap: nowrap; gap: 10px; }
+  .today .kpi__head .kpi__label { order: 0; flex-basis: auto; }
+  .today__date { display: none; }
 }
 
-/* ---------- Projekt: arbetsytan. Ritningen stor till vänster, panelen till höger ---------- */
+/* ---------- Hemmet: arbetsytan. Ritningen stor till vänster, panelen till höger ---------- */
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: var(--gap); align-items: start; }
 .kpis + .workspace { margin-top: var(--gap); }
 .workspace__stage { min-width: 0; }
@@ -525,31 +534,28 @@
 }
 
 
-/* ---------- Ekonomi i Boendeläget ---------- */
+/* ---------- Ekonomi ---------- */
 
-/* Rutnätet: bolån och värde är det stora kortet som drar blicken, kassaflödet brett med staplar,
-   de mindre korten runt omkring. Smalare skärmar staplar det stora kortet överst. */
+/* Rutnätet: bolånet är det stora orangea kortet, kassaflödet brett med staplar och de mindre korten runt omkring.
+   Smalare skärmar staplar det stora kortet överst. */
 .eco-dash {
   display: grid; gap: var(--gap);
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-areas:
     "hero hero flow flow"
     "hero hero cost el"
-    "loans loans todo todo"
-    "quick quick todo todo";
+    "hero hero loans loans";
   margin-bottom: var(--s-6);
 }
 .eco-dash__hero { grid-area: hero; }
 .eco-dash__flow { grid-area: flow; }
 .eco-dash__cost { grid-area: cost; }
-.eco-dash__todo { grid-area: todo; }
 .eco-dash__loans { grid-area: loans; }
 .eco-dash__el { grid-area: el; }
-.eco-dash__quick { grid-area: quick; }
 @media (max-width: 1100px) {
   .eco-dash {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "hero hero" "quick quick" "flow flow" "cost el" "loans loans" "todo todo";
+    grid-template-areas: "hero hero" "flow flow" "cost el" "loans loans";
   }
 }
 

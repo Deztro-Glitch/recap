@@ -14,13 +14,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <title>Recap</title>
-    <script>
-      // Öppnas ett hem direkt får ljuset och accenten senaste lägets färg från start.
-      try { if (location.hash.indexOf('#/p/') === 0) { var m = localStorage.getItem('recap-mode'); if (m) document.documentElement.dataset.mode = m } } catch {}
-    </script>
   </head>
   <body>
-    <!-- Ljuset bakom glaset: stora suddiga färgfläckar, färgen följer läget (app.css, .mesh). -->
+    <!-- Ljuset bakom glaset: stora suddiga färgfläckar i accentens varma toner (design.css, .mesh). -->
     <div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>
     <!-- Planritningen: det vita blir genomskinligt och linjerna ljusa (används i app.css, .plan img). -->
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">

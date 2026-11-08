@@ -72,7 +72,7 @@ export function otherLoanNumbers(l: OtherLoan) {
   }
 }
 
-// Allt Boendeläget visar, räknat från dagens datum. Ren månadskostnad gäller bara boendet;
+// Allt Ekonomi visar, räknat från dagens datum. Ren månadskostnad gäller bara boendet;
 // kassaflödet tar också med andra lån (ränta och amortering), t.ex. MC-lånet.
 export function economyNumbers(e: Economy, contracts: Contract[] = []) {
   const home = loanNumbers(e)

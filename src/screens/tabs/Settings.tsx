@@ -116,7 +116,7 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
   )
 }
 
-// Egen bakgrundsbild bakom glaset i Boende. Laddas upp som andra bilder; sökvägen sparas på hemmet.
+// Egen bakgrundsbild bakom glaset i hela appen. Laddas upp som andra bilder; sökvägen sparas på hemmet.
 function BackgroundSetting({ state }: { state: ProjectState }) {
   const toast = useToast()
   const p = state.project!

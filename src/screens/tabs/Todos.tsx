@@ -7,7 +7,7 @@ import { useToast } from '../../components/ui'
 import type { Todo } from '../../types'
 import type { ProjectState } from '../view'
 
-// "Att göra" i Boende: skriv och tryck Enter för att lägga till, bocka av med den runda rutan.
+// "Att göra" på Idag: skriv och tryck Enter för att lägga till, bocka av med den runda rutan.
 // Avbockade uppgifter blir gråa, stryks över och glider ner under de som är kvar.
 export function TodoCard({ state }: { state: ProjectState }) {
   const toast = useToast()
@@ -35,7 +35,7 @@ export function TodoCard({ state }: { state: ProjectState }) {
   }
 
   return (
-    <GlassCard className="kpi glass--light eco-dash__todo todo-card" lift={false}>
+    <GlassCard className="kpi glass--light todo-card" lift={false}>
       <div className="kpi__head">
         <span className="kpi__icon"><IconChecklist size={16} stroke={1.8} /></span>
         <span className="kpi__label">Att göra</span>

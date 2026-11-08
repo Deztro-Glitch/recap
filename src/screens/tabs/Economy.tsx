@@ -4,16 +4,23 @@ import { ore, useElPrice } from '../../lib/elpris'
 import { kr } from '../../lib/format'
 import { StatCard } from '../../components/StatCard'
 import { IconArrowsExchange, IconBolt, IconBuildingBank, IconCreditCard, IconReceipt2 } from '@tabler/icons-react'
-import { TodoCard } from './Todos'
-import { QuickEntryCard } from './QuickEntry'
 import { Counter } from '../../components/Counter'
 import { Gauge, MiniBars, PriceMeter, Ring, Segmented, type Bar } from '../../components/Charts'
 import { allItems } from '../../lib/items'
 import type { Scope } from '../../types'
 import type { ProjectState, ViewProps } from '../view'
 
-// Boendeläget, appens hubb: bolånet som stort kort, kassaflödet med flikar och stapeldiagram, ett kort per annat lån
-// (t.ex. MC-lånet), Ren månadskostnad, Elpris och Att göra. Varje kort öppnar sin detaljvy; därifrån når man Ekonomi.
+// Ekonomi: allt om pengar. Bolånet som stort orange kort, kassaflödet med flikar och stapeldiagram,
+// Ren månadskostnad, Elpris och ett kort per annat lån (t.ex. MC-lånet). Varje kort öppnar sin panel.
+export function EconomyView(props: ViewProps) {
+  return (
+    <div>
+      <div className="section-head"><h1>Ekonomi</h1></div>
+      <EconomyDashboard {...props} />
+    </div>
+  )
+}
+
 export function EconomyDashboard({ state, open }: ViewProps) {
   const e = state.project?.economy
   const n = economyNumbers(e ?? emptyEconomy, state.contracts)
@@ -38,8 +45,6 @@ export function EconomyDashboard({ state, open }: ViewProps) {
         </StatCard>
       )}
       <OtherLoansCard state={state} onOpen={(id) => open({ t: 'loans', id })} />
-      <TodoCard state={state} />
-      <QuickEntryCard state={state} />
     </div>
   )
 }
@@ -89,7 +94,7 @@ function OtherLoansCard({ state, onOpen }: { state: ProjectState; onOpen: (id: s
 
 // Kassaflödet med två flikar. Fasta utgifter: räntor, avtal, amorteringar och lånens avgifter per månad.
 // Rörligt (Leva): det som köpts till boendet de senaste sex månaderna, från inköpen och kvittoraderna.
-// Projektets köp hör till Projektläget och blandas inte in här. Finns inget köpt än visas gråa platshållarstaplar.
+// Renoveringens köp räknas inte in här. Finns inget köpt än visas gråa platshållarstaplar.
 type FlowTab = 'fixed' | 'home'
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
 const GHOST = [38, 62, 30, 78, 52, 44]

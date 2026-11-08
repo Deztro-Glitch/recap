@@ -498,10 +498,8 @@ p { margin: 0; }
   --bar-cost: rgba(14, 21, 18, .55);     /* kostnadsstaplarna */
   --bar-cost-top: rgba(14, 21, 18, .38);
   /* Glas: genomskinligt ljust, ett skimmer uppe till vänster och kraftig blur, så att ljuset bakom anas. */
-  background:
-    radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, .55), transparent 55%),
-    linear-gradient(160deg, var(--card-light) 0%, var(--card-light-2) 100%);
-  -webkit-backdrop-filter: blur(30px) saturate(170%); backdrop-filter: blur(30px) saturate(170%);
+  background: var(--card-light-sheen), linear-gradient(160deg, var(--card-light) 0%, var(--card-light-2) 100%);
+  -webkit-backdrop-filter: var(--card-light-blur); backdrop-filter: var(--card-light-blur);
   box-shadow: var(--card-light-shadow);
   color: var(--text);
 }

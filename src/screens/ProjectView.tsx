@@ -2,19 +2,21 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import {
   IconArrowLeft, IconCamera, IconChecklist, IconCircleCheck, IconDots, IconFileText, IconHome, IconHomeCheck, IconLayoutGrid,
-  IconList, IconPhoto, IconReceipt, IconScan, IconSettings, IconShoppingCart,
+  IconList, IconPhoto, IconReceipt, IconScan, IconSettings, IconShoppingCart, IconWallet,
 } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
-import { applyMode } from '../lib/mode'
 import { Shell, type Tab } from '../components/Shell'
 import { PhotoBackdrop } from '../components/PhotoBackdrop'
-import { Field, Loader, Sheet, ease, useToast } from '../components/ui'
-import { modeScope, type PhotoKind, type Purchase } from '../types'
+import { Field, Loader, Sheet, ease, isMobile, useToast } from '../components/ui'
+import type { PhotoKind, Purchase, Scope } from '../types'
 import { AddRoomSheet } from './tabs/Rooms'
 import { ItemSheet, Purchases } from './tabs/Items'
 import { ContractSheet, Contracts, type ContractTab } from './tabs/Contracts'
 import { Overview } from './tabs/Overview'
+import { Today } from './tabs/Today'
+import { EconomyView } from './tabs/Economy'
+import { useCare } from './tabs/ProjectHub'
 import { StatDetail } from './tabs/StatDetail'
 import { LoansSheet } from './tabs/Loans'
 import { BudgetSheet } from './tabs/Budget'
@@ -26,13 +28,14 @@ import { fileImage, type FileResult } from '../lib/fileImage'
 import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
 
-type ViewId = 'overview' | 'log' | 'purchases' | 'contracts' | 'settings'
+// Idag (startsidan), Ekonomi och Hemmet är huvuddelarna; Inköp, Logg, Avtal, Bostads-CV och Inställningar finns också.
+type ViewId = 'today' | 'economy' | 'home' | 'log' | 'purchases' | 'contracts' | 'settings'
 import type { ProjectState, SheetState, ViewProps } from './view'
 export type { ProjectState, SheetState, ViewProps }
 
 export function ProjectView({ pid, user, onBack }: { pid: string; user: User; onBack: () => void }) {
   const state = useProject(pid)
-  const [view, setView] = useState<ViewId>('overview')
+  const [view, setView] = useState<ViewId>('today')
   // Rummet som är valt i översikten.
   const [place, setPlace] = useState<string | null>(null)
   const [sheet, setSheet] = useState<SheetState | null>(null)
@@ -51,12 +54,8 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const pickRoom = useRef<string | null | undefined>(undefined)
 
   // Läget färgar hela appen så länge hemmet är öppet.
-  const mode = state.project?.mode
-  useEffect(() => {
-    if (mode) applyMode(mode)
-  }, [mode])
-  useEffect(() => () => applyMode(null), [])
-  const scope = modeScope(mode)
+  // Underhållet (exempeldata tills vidare) delas av Idag (Hemmets status) och Hemmet (listan i panelen).
+  const care = useCare()
 
   // Bilder sorteras av AI:n i bakgrunden, så att man kan gå vidare direkt. Kvitton sparas som köp (osäkra rader
   // hamnar i Att granska), foton på rum hamnar på rummet och saker man vill köpa blir planerade. Kan AI:n inte
@@ -157,7 +156,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   }
   const open = (s: SheetState) => {
     if (s.t === 'roomInfo') {
-      go('overview')
+      go('home')
       return setPlace(s.room.id)
     }
     if (s.t === 'pick') {
@@ -169,34 +168,34 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   }
   const close = () => setSheet(null)
 
-  // Nya saker hamnar i rummet som är valt i översikten.
-  const here = { room_id: view === 'overview' ? place : null }
+  // Nya saker hamnar i rummet som är valt i Hemmet. Från Hemmet blir nya köp renovering, annars boende.
+  const here = { room_id: view === 'home' ? place : null }
+  const scope: Scope = view === 'home' ? 'build' : 'home'
   const props: ViewProps = { state, open }
-  const moreViews: ViewId[] = ['contracts', 'settings']
+  const showRoom = (id: string) => { setPlace(id); go('home') }
   const showContracts = (tab: ContractTab) => {
     setContractTab(tab)
     go('contracts')
   }
+  // Mer: på mobilen ligger Inköp och Logg här, på dator står de i menypillret.
+  const mobile = isMobile()
+  const moreViews: ViewId[] = mobile ? ['purchases', 'log', 'contracts', 'settings'] : ['contracts', 'settings']
   const moreRows = [
+    ...(mobile ? [
+      { id: 'purchases', icon: IconShoppingCart, label: 'Inköp', on: () => go('purchases') },
+      { id: 'log', icon: IconList, label: 'Logg', on: () => go('log') },
+    ] : []),
     { id: 'contracts', icon: IconFileText, label: 'Avtal', on: () => showContracts('contracts') },
     { id: 'cv', icon: IconHomeCheck, label: 'Bostads-CV', on: () => showContracts('cv') },
     { id: 'settings', icon: IconSettings, label: 'Inställningar', on: () => go('settings') },
   ]
 
-  const tabs: Tab[] = [
-    { id: 'overview', label: 'Översikt', icon: IconLayoutGrid, active: view === 'overview', onClick: () => go('overview') },
-    { id: 'log', label: 'Logg', icon: IconList, active: view === 'log', onClick: () => go('log') },
-    { id: 'purchases', label: 'Inköp', icon: IconShoppingCart, active: view === 'purchases', onClick: () => go('purchases') },
-    { id: 'more', label: 'Mer', icon: IconDots, active: moreViews.includes(view), onClick: () => open({ t: 'more' }) },
-  ]
-
-  // Menypillret på dator: huvudvyerna, Avtal och Bostads-CV. Ekonomi och Inställningar ligger under Mer.
-  const nav: Tab[] = [
-    tabs[0], tabs[1], tabs[2],
-    { id: 'contracts', label: 'Avtal', icon: IconFileText, active: view === 'contracts' && contractTab === 'contracts', onClick: () => showContracts('contracts') },
-    { id: 'cv', label: 'Bostads-CV', icon: IconHomeCheck, active: view === 'contracts' && contractTab === 'cv', onClick: () => showContracts('cv') },
-    { ...tabs[3], active: view === 'settings' },
-  ]
+  const tab = (id: ViewId, label: string, icon: Tab['icon']): Tab => ({ id, label, icon, active: view === id, onClick: () => go(id) })
+  const more: Tab = { id: 'more', label: 'Mer', icon: IconDots, active: moreViews.includes(view), onClick: () => open({ t: 'more' }) }
+  // Bottenmenyn på mobil: Idag, Ekonomi, plusknappen, Hemmet och Mer.
+  const tabs: Tab[] = [tab('today', 'Idag', IconLayoutGrid), tab('economy', 'Ekonomi', IconWallet), tab('home', 'Hemmet', IconHome), more]
+  // Menypillret på dator: huvuddelarna, Inköp och Logg. Avtal, Bostads-CV och Inställningar ligger under Mer.
+  const nav: Tab[] = [tabs[0], tabs[1], tabs[2], tab('purchases', 'Inköp', IconShoppingCart), tab('log', 'Logg', IconList), more]
 
   const addRows = [
     { icon: IconScan, title: 'Skanna kvitto', on: () => { hint.current = 'receipt'; cameraInput.current?.click() } },
@@ -210,7 +209,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
 
   return (
     <>
-    <PhotoBackdrop path={mode === 'simple' ? state.project?.background_path ?? null : null} />
+    <PhotoBackdrop path={state.project?.background_path ?? null} />
     <Shell
       user={user}
       home={state.project ? { name: state.project.name, onClick: onBack } : undefined}
@@ -238,7 +237,9 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       ) : (
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3, ease }}>
-            {view === 'overview' && <Overview {...props} place={place} setPlace={setPlace} />}
+            {view === 'today' && <Today {...props} care={care.items} onRoom={showRoom} onCare={() => { setPlace(null); go('home') }} />}
+            {view === 'economy' && <EconomyView {...props} />}
+            {view === 'home' && <Overview {...props} place={place} setPlace={setPlace} care={care} />}
             {view === 'log' && <Log {...props} />}
             {view === 'purchases' && <Purchases {...props} />}
             {view === 'contracts' && <Contracts {...props} tab={contractTab} />}
@@ -329,14 +330,14 @@ function summary(results: FileResult[]): { title: string; body?: string } {
     if (r.kind === 'receipt') {
       return {
         title: `${r.store ?? 'Kvittot'}: ${n(r.saved, 'sak sparad', 'saker sparade')}`,
-        body: [r.closed.length && `Stängde ${r.closed.join(', ')}.`, r.review && `${n(r.review, 'rad', 'rader')} att granska på Översikt.`].filter(Boolean).join(' ') || undefined,
+        body: [r.closed.length && `Stängde ${r.closed.join(', ')}.`, r.review && `${n(r.review, 'rad', 'rader')} att granska på Idag.`].filter(Boolean).join(' ') || undefined,
       }
     }
     if (r.kind === 'photo') return { title: r.room ? `Bilden är sparad i ${r.room}` : 'Bilden är sparad' }
     if (r.kind === 'planned') return { title: `${r.item.title} är planerat`, body: 'Under Inköp.' }
   }
   const review = results.reduce((s, r) => s + (r.kind === 'receipt' ? r.review : 0), 0)
-  return { title: `${n(results.length, 'bild', 'bilder')} sorterade`, body: review ? `${n(review, 'rad', 'rader')} att granska på Översikt.` : undefined }
+  return { title: `${n(results.length, 'bild', 'bilder')} sorterade`, body: review ? `${n(review, 'rad', 'rader')} att granska på Idag.` : undefined }
 }
 
 const pickedRows: { as: 'receipt' | PhotoKind | 'planned'; icon: React.ComponentType<{ size?: number }>; title: string }[] = [

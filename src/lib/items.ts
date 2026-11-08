@@ -1,6 +1,6 @@
 import { api } from './api'
 import { needsInfo, paid, type ProjectState } from './useProject'
-import { modeScope, type BudgetCategory, type Detail, type K6Kind, type Purchase, type Receipt, type Scope, type Task } from '../types'
+import { type BudgetCategory, type Detail, type K6Kind, type Purchase, type Receipt, type Scope, type Task } from '../types'
 
 // Inköpsmodellen: inköp och jobb som en sak (Item), hur de läses från databasen, sorteras, summeras och bockas av.
 // Används av skärmarna, komponenterna och hjälpfunktionerna; själva listorna och formulären finns i screens/tabs/Items.tsx.
@@ -66,11 +66,8 @@ export const allItems = (state: Pick<ProjectState, 'purchases' | 'tasks'> & { re
   return [...state.purchases.map((p) => fromPurchase(p, p.receipt_id ? files.get(p.receipt_id) : null)), ...state.tasks.map(fromTask)]
 }
 
-// Det som hör till läget man är i: bygget i Projekt, inredningen i Boende.
-export const modeItems = (state: ProjectState) => {
-  const scope = modeScope(state.project?.mode)
-  return allItems(state).filter((i) => i.scope === scope)
-}
+// Renoveringen: köp och jobb som hör till bygget (scope build). Används av Aktivt projekt och projektbudgeten.
+export const renovationItems = (state: Pick<ProjectState, 'purchases' | 'tasks'>) => allItems(state).filter((i) => i.scope === 'build')
 
 // Gissar om något är bygge eller inredning när man inte har valt själv.
 const BUILD = /(riv|spackl|slip|grundm|måla|målning|stryk|kakel|klinker|fog|golvlist|golvläggning|lägga golv|parkett|laminat|tätskikt|golvbrunn|gips|regel|reglar|elarbete|elektriker|dra el|vvs|rör|avlopp|ventilation|tapet|puts|isoler|snick|stomm|bänkskiva|köksrenov|bygg|färg|spik|skruv|cement|fästmassa)/i

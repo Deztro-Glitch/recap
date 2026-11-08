@@ -15,14 +15,14 @@ import { usePlanEditor } from './plan/usePlanEditor'
 import { usePlanWalls } from './plan/usePlanWalls'
 import { PlanBar } from './plan/PlanBar'
 
-// Verktygen i Projektläget (verktygslådan bredvid ritningen). Rummens kanter är väggarna.
+// Verktygen i Hemmet (verktygslådan bredvid ritningen). Rummens kanter är väggarna.
 export type PlanTool = 'measure' | 'demolish' | 'area' | 'cost'
 
 // Planritningen: bilden med rummen ovanpå. Tryck på ett rum för att öppna det. Delarna ligger i components/plan/:
 // geometry (mått och färger), detect (läsa rummen ur bilden), usePlanEditor (Justera: dra i hörnen),
 // usePlanWalls (riva väggar, sammanslagna rum och AI-raden) och PlanBar (rubriken och knapparna ovanför).
 // Med ett verktyg valt blir väggarna klickbara (mät, markera för rivning) eller rummen (kalkylera yta, kostnadskarta).
-// stage: arbetsytan i Projektläget. Ritningen ryms i kortets höjd, rumsnamnen syns när man håller över (ytan visar namnet),
+// stage: arbetsytan i Hemmet. Ritningen ryms i kortets höjd, rumsnamnen syns när man håller över (ytan visar namnet),
 // AI-raden ligger längst ner och Förstora (onExpand) öppnar arbetsytan i helskärm.
 export function FloorPlan({ state, onRoom, onAddRoom, tool = null, stage = false, expanded = false, onExpand }: { state: ProjectState; onRoom: (room: Room) => void; onAddRoom: () => void; tool?: PlanTool | null; stage?: boolean; expanded?: boolean; onExpand?: () => void }) {
   const toast = useToast()

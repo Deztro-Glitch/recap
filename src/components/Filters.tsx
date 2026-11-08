@@ -16,7 +16,7 @@ export function FilterToggle({ open, active, onClick }: { open: boolean; active:
   )
 }
 
-// Sökfält, rum, Projekt/Boende och märkning på en rad. Rummen är desamma som på planritningen.
+// Sökfält, rum, renovering/vardag och märkning på en rad. Rummen är desamma som på planritningen.
 export function FilterBar({ state, value, onChange, placeholder, open }: { state: ProjectState; value: FilterState; onChange: (f: FilterState) => void; placeholder: string; open: boolean }) {
   return (
     <div className={`filter-bar ${open ? 'is-open' : ''}`}>
@@ -28,10 +28,10 @@ export function FilterBar({ state, value, onChange, placeholder, open }: { state
         <option value="">Rum: Alla</option>
         {state.rooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
       </select>
-      <select className="select" value={value.scope} onChange={(e) => onChange({ ...value, scope: e.target.value as Scope | '' })} aria-label="Projekt eller Boende">
-        <option value="">Projekt och Boende</option>
-        <option value="build">Projekt</option>
-        <option value="home">Boende</option>
+      <select className="select" value={value.scope} onChange={(e) => onChange({ ...value, scope: e.target.value as Scope | '' })} aria-label="Renovering eller vardag">
+        <option value="">Renovering och vardag</option>
+        <option value="build">Renovering</option>
+        <option value="home">Vardag</option>
       </select>
       <select className="select" value={value.flag} onChange={(e) => onChange({ ...value, flag: e.target.value as Flag })} aria-label="Märkning">
         <option value="all">Visa: Allt</option>

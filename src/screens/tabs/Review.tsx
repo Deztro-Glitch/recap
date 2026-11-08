@@ -7,7 +7,7 @@ import { CATEGORY } from '../../lib/budget'
 import { suggestPlanned } from '../../lib/receiptReader'
 import { GlassCard } from '../../components/GlassCard'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
-import { K6_LABEL, type BudgetCategory, type K6Kind, type Purchase, type Scope } from '../../types'
+import { K6_LABEL, SCOPE_LABEL, type BudgetCategory, type K6Kind, type Purchase, type Scope } from '../../types'
 import type { ProjectState, ViewProps } from '../view'
 import { fmtDate } from '../../lib/items'
 
@@ -15,7 +15,7 @@ import { fmtDate } from '../../lib/items'
 export const toReview = (state: Pick<ProjectState, 'purchases'>) =>
   state.purchases.filter((p) => p.needs_review).sort((a, b) => a.created_at.localeCompare(b.created_at))
 
-// Ett smalt kort överst på Översikt, bara när något väntar.
+// Ett smalt kort överst på Idag, bara när något väntar.
 export function ReviewCard({ state, open }: ViewProps) {
   const items = toReview(state)
   const stores = [...new Set(items.map((p) => p.store).filter(Boolean))].slice(0, 3).join(' · ')
@@ -146,7 +146,7 @@ function ReviewForm({ item, state, place, onSkip }: { item: Purchase; state: Pro
       </Field>
       <div className="field">
         <span className="field__label">Hör till</span>
-        <Chips value={f.scope} onChange={(scope) => setF({ ...f, scope })} options={[{ value: 'build' as Scope, label: 'Projekt' }, { value: 'home' as Scope, label: 'Boende' }]} />
+        <Chips value={f.scope} onChange={(scope) => setF({ ...f, scope })} options={(['build', 'home'] as Scope[]).map((v) => ({ value: v, label: SCOPE_LABEL[v] }))} />
       </div>
       <Field label="Rum">
         <select className={`select ${f.room_id ? '' : 'is-empty'}`} value={f.room_id} onChange={(e) => setF({ ...f, room_id: e.target.value })}>

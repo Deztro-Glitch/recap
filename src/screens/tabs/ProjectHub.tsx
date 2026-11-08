@@ -90,7 +90,7 @@ const toneFor = (share: number) => (share >= 0.9 ? 'var(--care-due)' : share >= 
 const days = (n: number) => `${n} ${n === 1 ? 'dag' : 'dagar'}`
 const whenText = (left: number) => (left < 0 ? `${days(-left)} sen` : left === 0 ? 'Dags i dag' : `Om ${days(left)}`)
 
-// Underhållet delas mellan Översiktens statuskort och Smart underhåll, så att en bock syns på båda ställena.
+// Underhållet delas mellan Hemmets status på Idag och listan i Hemmet, så att en bock syns på båda ställena.
 export function useCare() {
   const [items, setItems] = useState(EXAMPLES)
   const done = (id: string) => setItems((cur) => cur.map((c) => (c.id === id ? { ...c, doneDaysAgo: 0 } : c)))

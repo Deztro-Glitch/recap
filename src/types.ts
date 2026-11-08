@@ -1,13 +1,11 @@
 import type { CSSProperties } from 'react'
 
 export type Kind = 'lagenhet' | 'hus' | 'annat'
-// Översiktens läge: renovering (Projekt) eller vanligt boende (Boende). Sparas i projects.mode.
+// Det gamla läget (Projekt/Boende) i projects.mode. Används inte längre sedan appen delades i Idag, Ekonomi och Hemmet.
 export type Mode = 'simple' | 'full'
-export const MODE_LABEL: Record<Mode, string> = { full: 'Projekt', simple: 'Boende' }
-// Vad ett inköp hör till: bygget (syns i Projekt) eller inredningen (syns i Boende).
+// Vad ett köp hör till: renoveringen (bygget, Aktivt projekt och projektbudgeten) eller vardagen (allt annat, budgeten).
 export type Scope = 'build' | 'home'
-export const SCOPE_LABEL: Record<Scope, string> = { build: 'Projekt', home: 'Boende' }
-export const modeScope = (m: Mode | undefined): Scope => (m === 'simple' ? 'home' : 'build')
+export const SCOPE_LABEL: Record<Scope, string> = { build: 'Renovering', home: 'Vardag' }
 export type TaskStatus = 'todo' | 'doing' | 'done'
 export type PhotoKind = 'before' | 'after' | 'inspo'
 
