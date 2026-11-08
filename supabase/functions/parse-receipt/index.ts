@@ -1,8 +1,9 @@
-// Recap – läser ett fotat kvitto med OpenAI (gpt-4o-mini) och lämnar tillbaka raderna som JSON.
+// Recap – läser en bild med OpenAI (gpt-4o-mini): avgör om det är ett kvitto, ett foto av ett rum eller en sak man
+// vill köpa, och läser kvittots rader med rum, Projekt/Boende, kategori, K6 och om AI:n är säker.
 // Nyckeln ligger som hemlighet OPENAI_API_KEY i Supabase, aldrig i appen.
-// Anropas från appen med supabase.functions.invoke('parse-receipt', { body: { image, rooms, planned } }),
-// där image är en data-URL (jpeg), rooms är hemmets rumsnamn och planned är planerade köp
-// ({ id, title, price, room }) som en rad på kvittot kan höra ihop med. Kräver inloggad användare.
+// Anropas från appen med supabase.functions.invoke('parse-receipt', { body: { image, rooms, planned, hint } }),
+// där image är en data-URL (jpeg), rooms är hemmets rumsnamn, planned är planerade köp
+// ({ id, title, price, room }) och hint är "receipt" när man har valt Skanna kvitto. Kräver inloggad användare.
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -13,38 +14,37 @@ const CORS = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
 
-// Exakt det format appen förväntar sig (ReceiptScan i src/lib/receiptReader.ts, med rummen som namn).
+const CATEGORIES = ['housing', 'food', 'transport', 'home', 'fun', 'saving', 'other']
+
+// Exakt det format appen förväntar sig (se readWithAi i src/lib/receiptReader.ts, med rummen som namn).
 const SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['store', 'date', 'total', 'lines', 'ignored'],
+  required: ['kind', 'room', 'title', 'price', 'store', 'date', 'total', 'lines'],
   properties: {
-    store: { type: ['string', 'null'], description: 'Butikens namn, t.ex. Bauhaus' },
-    date: { type: ['string', 'null'], description: 'Köpdatum som YYYY-MM-DD' },
-    total: { type: ['number', 'null'], description: 'Totalsumman att betala i kronor' },
+    kind: { type: 'string', enum: ['receipt', 'room', 'product', 'other'], description: 'Vad bilden är' },
+    room: { type: ['string', 'null'], description: 'Foto av ett rum eller en sak: ett av rummen i listan, eller null' },
+    title: { type: ['string', 'null'], description: 'Sak man vill köpa: vad det är, t.ex. "Soffa Söderhamn". Annars null' },
+    price: { type: ['number', 'null'], description: 'Sak man vill köpa: priset om det syns, annars null' },
+    store: { type: ['string', 'null'], description: 'Kvitto: butikens namn, t.ex. ICA Maxi' },
+    date: { type: ['string', 'null'], description: 'Kvitto: köpdatum som YYYY-MM-DD' },
+    total: { type: ['number', 'null'], description: 'Kvitto: totalsumman att betala i kronor' },
     lines: {
       type: 'array',
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['title', 'price', 'room', 'scope', 'match', 'k6'],
+        required: ['title', 'price', 'room', 'scope', 'category', 'match', 'k6', 'sure'],
         properties: {
           title: { type: 'string', description: 'Varans namn, läsbart på svenska' },
           price: { type: 'number', description: 'Radens pris i kronor efter rabatt, för hela antalet' },
           room: { type: ['string', 'null'], description: 'Ett av rummen i listan, eller null' },
           scope: { type: 'string', enum: ['build', 'home'] },
+          category: { type: 'string', enum: CATEGORIES },
           match: { type: ['string', 'null'], description: 'id på det planerade köp raden är, eller null' },
           k6: { type: ['string', 'null'], enum: ['basic', 'maintenance', null], description: 'Typ av K6-avdrag, eller null' },
+          sure: { type: 'boolean', description: 'true om du är säker på namn, pris, kategori, Projekt/Boende, rum och K6' },
         },
-      },
-    },
-    ignored: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['title', 'price'],
-        properties: { title: { type: 'string' }, price: { type: 'number' } },
       },
     },
   },
@@ -52,26 +52,37 @@ const SCHEMA = {
 
 interface Planned { id: string; title: string; price: number; room: string | null }
 
-const instructions = (rooms: string[], planned: Planned[]) => `Du läser kvitton åt en svensk app där man dokumenterar sitt hem: renoveringar och inredning.
-Läs kvittot på bilden och fyll i JSON enligt schemat.
+const instructions = (rooms: string[], planned: Planned[], hint: string | null) => `Du hjälper en svensk app för privatekonomi och hemmet: vardagsköp, inredning och renoveringar.
+Användaren fotar och vill sedan gå vidare med sin dag. Du ska sortera allt själv. Fyll i JSON enligt schemat.
 
-- store: butikens namn. date: köpdatum som YYYY-MM-DD. total: summan att betala.
-- lines: varje vara som hör till hemmet. Skriv namnet läsbart (skriv ut förkortningar, t.ex. "VÄGGF ALCRO 3L" blir "Väggfärg Alcro 3 l").
-  Slå ihop antal och rabatt till ett pris för raden. Ta inte med summor, moms, pant, betalning eller växel.
-- scope: "build" för renovering och bygge (färg, spackel, kakel, golv, skruv, verktyg, byggmaterial, el och VVS),
-  "home" för inredning och boende (möbler, textilier, köksredskap, belysning, vitvaror, förvaring, dekoration).
-- room: välj det rum raden troligast hör till bland dessa: ${rooms.length ? rooms.join(', ') : '(inga rum)'}. Annars null.
-  Byggmaterial som inte tydligt hör till ett rum får null.
-- ignored: varor som inte hör till hemmet, t.ex. godis, snacks, dricka, mat, tidningar, kassar och påsar.
-- k6: avdrag vid försäljning av bostadsrätt (blankett K6). "basic" för grundförbättring: något nytt som inte fanns
-  eller ombyggnad (t.ex. ny köksinredning, nytt badrum, ny fast installation, nya innerdörrar). "maintenance" för
-  förbättrande reparation och underhåll av ytskikt och fast inredning (t.ex. väggfärg, tapet, golv, kakel, fogmassa).
-  null för lösöre och förbrukning (möbler, textilier, husgeråd, verktyg, städ, belysning som inte är fast).
-- match: om raden är samma sak som ett av de planerade köpen nedan, skriv dess id. Produktnamn räknas, t.ex. är
-  "ÄPPLARYD 3-sits" en soffa och passar "Soffa". Priset och rummet ger stöd men behöver inte stämma exakt.
-  Varje planerat köp får matchas mot högst en rad. Är du inte säker, skriv null.
+1. kind: vad bilden är.
+   "receipt" = ett kvitto eller en faktura. "room" = ett foto av ett rum eller en del av hemmet (före/efter, en vägg, ett golv).
+   "product" = en sak man vill köpa (produktbild, skärmdump från en butik, en möbel i en butik). "other" = inget av dem.
+   ${hint === 'receipt' ? 'Användaren har sagt att det är ett kvitto, så välj "receipt" om det går att läsa något alls.' : ''}
+2. Foto av rum eller sak: room = det rum det troligast är bland rummen nedan, annars null. Sak: title och price om det syns.
+   För kvitton och "other": room, title och price är null.
+3. Kvitto: store, date (YYYY-MM-DD) och total. lines = varje vara, även mat, godis och dricka.
+   Skriv namnet läsbart (skriv ut förkortningar, "VÄGGF ALCRO 3L" blir "Väggfärg Alcro 3 l"). Slå ihop antal och rabatt till ett pris.
+   Ta inte med summor, moms, pant, kassar, påsar, avrundning, betalning eller växel. Är det inget kvitto, lämna lines tom.
+   - category: food = mat och dagligvaror, godis, dricka, restaurang och kaffe; transport = bensin, laddning, biljetter,
+     parkering, bil och MC; home = allt till hemmet (inredning, möbler, husgeråd, städ, textilier, belysning, växter,
+     verktyg, färg och byggmaterial); fun = nöje, fritid, kläder, hobby, gym, resor; housing = boendekostnader
+     (avgift, el, vatten, bredband, hemförsäkring); saving = sparande; other = allt annat (apotek, hygien, presenter …).
+   - scope: "build" för renovering och bygge (färg, spackel, kakel, golv, skruv, verktyg, byggmaterial, el och VVS,
+     hantverkare). "home" för allt annat, även mat och vardag.
+   - room: bara för saker till hemmet (category home): det rum raden troligast hör till bland dessa:
+     ${rooms.length ? rooms.join(', ') : '(inga rum)'}. Mat och förbrukning får null. Byggmaterial som inte tydligt hör till ett rum får null.
+   - k6: avdrag vid försäljning av bostadsrätt (blankett K6). "basic" för grundförbättring: något nytt som inte fanns
+     eller ombyggnad (ny köksinredning, nytt badrum, ny fast installation, nya innerdörrar). "maintenance" för
+     förbättrande reparation och underhåll av ytskikt och fast inredning (väggfärg, tapet, golv, kakel, fogmassa).
+     null för lösöre och förbrukning (möbler, textilier, husgeråd, verktyg, städ, mat, belysning som inte är fast).
+   - match: om raden är samma sak som ett av de planerade köpen nedan, skriv dess id. Produktnamn räknas, t.ex. är
+     "ÄPPLARYD 3-sits" en soffa och passar "Soffa". Varje planerat köp får matchas mot högst en rad. Osäker: null.
+   - sure: false om du är osäker på något av ovan för raden: svårläst namn eller pris, oklart om det är Projekt eller
+     Boende, oklart rum för en sak till hemmet, oklart K6 eller en möjlig men osäker koppling till ett planerat köp.
+     Vanliga matvaror och tydliga saker är true. Hellre false än en gissning som kan bli fel.
 Planerade köp: ${planned.length ? planned.map((p) => `${p.id}: ${p.title}${p.price ? `, ca ${p.price} kr` : ''}${p.room ? `, ${p.room}` : ''}`).join('; ') : '(inga)'}
-Hittar du ingenting, lämna listorna tomma. Gissa aldrig fram varor som inte står på kvittot.`
+Gissa aldrig fram varor som inte står på kvittot.`
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
@@ -86,7 +97,7 @@ Deno.serve(async (req) => {
   const key = Deno.env.get('OPENAI_API_KEY')
   if (!key) return json({ error: 'OPENAI_API_KEY saknas i Supabase' }, 500)
 
-  let image: string, rooms: string[], planned: Planned[]
+  let image: string, rooms: string[], planned: Planned[], hint: string | null
   try {
     const body = await req.json()
     image = String(body.image ?? '')
@@ -94,6 +105,7 @@ Deno.serve(async (req) => {
     planned = Array.isArray(body.planned)
       ? body.planned.slice(0, 100).map((p: any) => ({ id: String(p.id), title: String(p.title).slice(0, 120), price: Number(p.price) || 0, room: p.room ? String(p.room) : null }))
       : []
+    hint = body.hint === 'receipt' ? 'receipt' : null
   } catch {
     return json({ error: 'Ogiltig förfrågan' }, 400)
   }
@@ -106,9 +118,9 @@ Deno.serve(async (req) => {
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       temperature: 0,
-      response_format: { type: 'json_schema', json_schema: { name: 'receipt', strict: true, schema: SCHEMA } },
+      response_format: { type: 'json_schema', json_schema: { name: 'image', strict: true, schema: SCHEMA } },
       messages: [
-        { role: 'system', content: instructions(rooms, planned) },
+        { role: 'system', content: instructions(rooms, planned, hint) },
         { role: 'user', content: [{ type: 'image_url', image_url: { url: image, detail: 'high' } }] },
       ],
     }),

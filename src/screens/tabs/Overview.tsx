@@ -6,6 +6,7 @@ import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan, type PlanTool } from '../../components/FloorPlan'
 import { CareSection, PlanToolbox, useCare } from './ProjectHub'
 import { Cockpit } from './Cockpit'
+import { ReviewCard } from './Review'
 import { iconFor } from '../../components/icons'
 import { Chips, ease } from '../../components/ui'
 import { CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, modeScope, tileStyle, type Mode, type Room } from '../../types'
@@ -67,6 +68,9 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
         <h1>Översikt</h1>
         <Chips value={mode} onChange={setMode} options={(['full', 'simple'] as Mode[]).map((m) => ({ value: m, label: MODE_LABEL[m] }))} />
       </div>
+
+      {/* Kvittorader AI:n var osäker på, oavsett läge. Syns bara när något väntar. */}
+      <ReviewCard state={state} open={open} />
 
       {mode === 'simple' ? (
         <EconomyDashboard state={state} open={open} />

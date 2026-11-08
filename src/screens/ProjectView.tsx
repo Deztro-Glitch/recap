@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import {
   IconArrowLeft, IconCamera, IconChecklist, IconCircleCheck, IconDots, IconFileText, IconHome, IconHomeCheck, IconLayoutGrid,
-  IconList, IconPhoto, IconReceipt, IconSettings, IconShoppingCart, IconWallet,
+  IconList, IconPhoto, IconReceipt, IconScan, IconSettings, IconShoppingCart,
 } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
@@ -12,17 +12,17 @@ import { PhotoBackdrop } from '../components/PhotoBackdrop'
 import { Field, Loader, Sheet, ease, useToast } from '../components/ui'
 import { modeScope, type Contract, type PhotoKind, type Purchase, type Room, type Task } from '../types'
 import { AddRoomSheet } from './tabs/Rooms'
-import { ItemSheet, Purchases, fmtDate, today } from './tabs/Items'
+import { ItemSheet, Purchases } from './tabs/Items'
 import { ContractSheet, Contracts, type ContractTab } from './tabs/Contracts'
 import { Overview } from './tabs/Overview'
-import { EconomySheet } from './tabs/Economy'
 import { StatDetail } from './tabs/StatDetail'
 import { LoansSheet } from './tabs/Loans'
 import { BudgetSheet } from './tabs/Budget'
 import { MortgageSheet } from './tabs/Mortgage'
 import { MonthlyCostSheet } from './tabs/MonthlyCost'
 import { ElectricitySheet } from './tabs/Electricity'
-import { ReceiptReview } from './tabs/ReceiptReview'
+import { ReviewSheet } from './tabs/Review'
+import { fileImage, type FileResult } from '../lib/fileImage'
 import { Settings } from './tabs/Settings'
 import { Log } from './tabs/Log'
 
@@ -32,13 +32,12 @@ export type ProjectState = ReturnType<typeof useProject>
 // Alla formulär och paneler öppnas härifrån, så att de kan nås från vilken vy som helst.
 export type SheetState =
   | { t: 'purchase'; item: Partial<Purchase> }
-  | { t: 'receipt'; item?: Partial<Purchase> }
   | { t: 'task'; item: Task }
   | { t: 'contract'; item: Contract | Partial<Contract> }
   | { t: 'pick'; room_id?: string | null }   // kameran, med ett rum förvalt
   | { t: 'room' }
-  | { t: 'economy' }
-  | { t: 'stat'; title: string; economy?: boolean }   // detaljvyn för ett statistikkort
+  | { t: 'review' }                                   // Att granska: kvittorader AI:n var osäker på
+  | { t: 'stat'; title: string }   // detaljvyn för ett statistikkort
   | { t: 'loans'; id: string | null }                 // övriga lån: redigera det valda eller lägg till (null)
   | { t: 'mortgage' }                                 // bolånet: skulden i dag, uppgifterna och räntekalkylatorn
   | { t: 'el' }                                       // elpriset: dagens kurva, kostnad att köra maskiner och egna avgifter
@@ -62,11 +61,11 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const [sheet, setSheet] = useState<SheetState | null>(null)
   const [contractTab, setContractTab] = useState<ContractTab>('contracts')
   const toast = useToast()
-  const receiptInput = useRef<HTMLInputElement>(null)
-  const receiptDefaults = useRef<Partial<Purchase>>({})
   const [saving, setSaving] = useState(0)
-  // Ett fotat kvitto granskas rad för rad innan det sparas.
-  const [reviewFile, setReviewFile] = useState<File | null>(null)
+  // Bilder som AI:n läser och sorterar just nu.
+  const [reading, setReading] = useState(0)
+  // "receipt" när man valde Skanna kvitto, så att AI:n vet att det är ett kvitto.
+  const hint = useRef<'receipt' | null>(null)
   // Fota direkt med kameran, eller välj bilder från biblioteket. Vad bilden är väljer man efteråt.
   const cameraInput = useRef<HTMLInputElement>(null)
   const photoInput = useRef<HTMLInputElement>(null)
@@ -82,47 +81,49 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   useEffect(() => () => applyMode(null), [])
   const scope = modeScope(mode)
 
-  // Kvitton: fota först, fyll i sen. Bilden sparas direkt som ett köp, och formuläret öppnas
-  // för den som vill fylla i belopp och butik på en gång.
-  const onReceipts = async (files: FileList | File[] | null) => {
-    if (!files?.length || !state.project) return
-    const list = Array.from(files)
-    if (list.length === 1 && list[0].type.startsWith('image/')) {
-      if (receiptInput.current) receiptInput.current.value = ''
-      return setReviewFile(list[0])
-    }
-    setSaving(list.length)
-    try {
-      const created: Purchase[] = []
-      for (const file of list) {
-        const path = await api.uploadFile(state.project.id, file)
-        created.push(
-          await api.insert<Purchase>('purchases', {
-            project_id: state.project.id, room_id: null, ...receiptDefaults.current,
-            title: `Kvitto ${fmtDate(today())}`, est_price: 0, price: null, bought: true, bought_on: today(),
-            receipt_path: path, priority: 2, stays: false, k6: false, scope, store: null, link: null, note: null, details: null,
-          }),
-        )
-        setSaving((n) => n - 1)
+  // Bilder sorteras av AI:n i bakgrunden, så att man kan gå vidare direkt. Kvitton sparas som köp (osäkra rader
+  // hamnar i Att granska), foton på rum hamnar på rummet och saker man vill köpa blir planerade. Kan AI:n inte
+  // avgöra vad bilden är frågar appen ("Vad är bilden?").
+  const sortFiles = async (files: File[], hint: 'receipt' | null) => {
+    if (!files.length || !state.project) return
+    setReading((n) => n + files.length)
+    const results: FileResult[] = []
+    const unknown: File[] = []
+    for (const file of files) {
+      try {
+        const r = await fileImage(state, file, hint)
+        if (r.kind === 'unknown') unknown.push(file)
+        else results.push(r)
+      } catch (err: any) {
+        toast({ title: 'Bilden kunde inte sparas', body: err.message })
+      } finally {
+        setReading((n) => n - 1)
       }
-      await state.reload()
-      if (created.length === 1) setSheet({ t: 'purchase', item: { ...created[0] } })
-      else toast({ title: `${created.length} kvitton är sparade`, body: 'Fyll i beloppen när du hinner.' })
-    } catch (err: any) {
-      toast({ title: 'Kvittot kunde inte sparas', body: err.message })
-    } finally {
-      setSaving(0)
-      if (receiptInput.current) receiptInput.current.value = ''
+    }
+    await state.reload()
+    if (results.length) toast(summary(results))
+    if (unknown.length) {
+      setPicked(unknown)
+      setPickedRoom(here.room_id ?? '')
+      setSheet({ t: 'picked' })
     }
   }
 
   const onPicked = (files: FileList | null) => {
     if (!files?.length) return
-    setPicked(Array.from(files))
-    setPickedRoom((pickRoom.current !== undefined ? pickRoom.current : here.room_id) ?? '')
-    pickRoom.current = undefined
-    setSheet({ t: 'picked' })
+    const list = Array.from(files)
+    const h = hint.current
+    hint.current = null
     for (const el of [cameraInput.current, photoInput.current]) if (el) el.value = ''
+    // Fotar man från ett rum (t.ex. Före/Efter i rummet) vet man redan vad det är.
+    if (pickRoom.current !== undefined) {
+      setPicked(list)
+      setPickedRoom(pickRoom.current ?? '')
+      pickRoom.current = undefined
+      return setSheet({ t: 'picked' })
+    }
+    setSheet(null)
+    sortFiles(list, h)
   }
 
   // Vad bilderna var: kvitton blir köp, före/efter hamnar på rummet, något man vill ha blir planerat.
@@ -131,10 +132,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     const room_id = pickedRoom || null
     setSheet(null)
     setPicked([])
-    if (as === 'receipt') {
-      receiptDefaults.current = { room_id }
-      return onReceipts(files)
-    }
+    if (as === 'receipt') return sortFiles(files, 'receipt')
     setSaving(files.length)
     try {
       if (as === 'planned') {
@@ -190,12 +188,6 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       setSheet(null)
       return cameraInput.current?.click()
     }
-    if (s.t === 'receipt') {
-      // Kameran/bildväljaren måste öppnas direkt i trycket.
-      receiptDefaults.current = s.item ?? {}
-      setSheet(null)
-      return receiptInput.current?.click()
-    }
     setSheet(s)
   }
   const close = () => setSheet(null)
@@ -211,7 +203,6 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const moreRows = [
     { id: 'contracts', icon: IconFileText, label: 'Avtal', on: () => showContracts('contracts') },
     { id: 'cv', icon: IconHomeCheck, label: 'Bostads-CV', on: () => showContracts('cv') },
-    { id: 'economy', icon: IconWallet, label: 'Ekonomi', on: () => open({ t: 'economy' }) },
     { id: 'settings', icon: IconSettings, label: 'Inställningar', on: () => go('settings') },
   ]
 
@@ -231,8 +222,9 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   ]
 
   const addRows = [
-    { icon: IconCamera, title: 'Fota kvitto eller bild', on: () => cameraInput.current?.click() },
-    { icon: IconPhoto, title: 'Välj från bilder eller filer', on: () => photoInput.current?.click() },
+    { icon: IconScan, title: 'Skanna kvitto', on: () => { hint.current = 'receipt'; cameraInput.current?.click() } },
+    { icon: IconCamera, title: 'Fota', on: () => { hint.current = null; cameraInput.current?.click() } },
+    { icon: IconPhoto, title: 'Välj från bilder eller filer', on: () => { hint.current = null; photoInput.current?.click() } },
     { icon: IconChecklist, title: 'Planerat köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, scope } }) },
     { icon: IconCircleCheck, title: 'Klart köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, scope, bought: true } }) },
     { icon: IconFileText, title: 'Avtal', on: () => open({ t: 'contract', item: {} }) },
@@ -252,7 +244,12 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     >
       <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPicked(e.target.files)} />
       <input ref={photoInput} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => onPicked(e.target.files)} />
-      <input ref={receiptInput} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => onReceipts(e.target.files)} />
+      {reading > 0 && (
+        <div className="saving">
+          <Loader />
+          <span className="status status--sent">{reading === 1 ? 'AI:n läser bilden' : `AI:n läser ${reading} bilder`}</span>
+        </div>
+      )}
       {saving > 0 && (
         <div className="saving">
           <Loader />
@@ -283,14 +280,13 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           />
           <ContractSheet item={sheet?.t === 'contract' ? sheet.item : null} state={state} onClose={close} />
           <AddRoomSheet open={sheet?.t === 'room'} onClose={close} state={state} />
-          <EconomySheet open={sheet?.t === 'economy'} onClose={close} state={state} />
-          <StatDetail stat={sheet?.t === 'stat' ? sheet : null} onClose={close} onEdit={() => open({ t: 'economy' })} />
+          <StatDetail stat={sheet?.t === 'stat' ? sheet : null} onClose={close} />
           <LoansSheet open={sheet?.t === 'loans'} id={sheet?.t === 'loans' ? sheet.id : null} state={state} onClose={close} />
           <BudgetSheet open={sheet?.t === 'budget'} state={state} onClose={close} />
           <MortgageSheet open={sheet?.t === 'mortgage'} state={state} onClose={close} />
           <MonthlyCostSheet open={sheet?.t === 'cost'} state={state} onClose={close} />
           <ElectricitySheet open={sheet?.t === 'el'} state={state} onClose={close} />
-          <ReceiptReview file={reviewFile} defaultRoom={receiptDefaults.current.room_id ?? null} state={state} onClose={() => setReviewFile(null)} />
+          <ReviewSheet open={sheet?.t === 'review'} state={state} onClose={close} />
 
           <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">
             <div className="rows">
@@ -346,6 +342,24 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     </Shell>
     </>
   )
+}
+
+// Vad som blev av bilderna, i ett meddelande. Kvitton säger hur många rader som sparades och hur många att granska.
+function summary(results: FileResult[]): { title: string; body?: string } {
+  const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`
+  if (results.length === 1) {
+    const r = results[0]
+    if (r.kind === 'receipt') {
+      return {
+        title: `${r.store ?? 'Kvittot'}: ${n(r.saved, 'sak sparad', 'saker sparade')}`,
+        body: [r.closed.length && `Stängde ${r.closed.join(', ')}.`, r.review && `${n(r.review, 'rad', 'rader')} att granska på Översikt.`].filter(Boolean).join(' ') || undefined,
+      }
+    }
+    if (r.kind === 'photo') return { title: r.room ? `Bilden är sparad i ${r.room}` : 'Bilden är sparad' }
+    if (r.kind === 'planned') return { title: `${r.item.title} är planerat`, body: 'Under Inköp.' }
+  }
+  const review = results.reduce((s, r) => s + (r.kind === 'receipt' ? r.review : 0), 0)
+  return { title: `${n(results.length, 'bild', 'bilder')} sorterade`, body: review ? `${n(review, 'rad', 'rader')} att granska på Översikt.` : undefined }
 }
 
 const pickedRows: { as: 'receipt' | PhotoKind | 'planned'; icon: React.ComponentType<{ size?: number }>; title: string }[] = [

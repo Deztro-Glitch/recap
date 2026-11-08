@@ -6,7 +6,7 @@ export type Mode = 'simple' | 'full'
 export const MODE_LABEL: Record<Mode, string> = { full: 'Projekt', simple: 'Boende' }
 // Vad ett inköp hör till: bygget (syns i Projekt) eller inredningen (syns i Boende).
 export type Scope = 'build' | 'home'
-export const SCOPE_LABEL: Record<Scope, string> = { build: 'Bygg', home: 'Inredning' }
+export const SCOPE_LABEL: Record<Scope, string> = { build: 'Projekt', home: 'Boende' }
 export const modeScope = (m: Mode | undefined): Scope => (m === 'simple' ? 'home' : 'build')
 export type TaskStatus = 'todo' | 'doing' | 'done'
 export type PhotoKind = 'before' | 'after' | 'inspo'
@@ -146,6 +146,7 @@ export interface Purchase {
   category?: BudgetCategory | null   // tomt = gissas utifrån namnet (migration 011)
   receipt_path: string | null
   receipt_id?: string | null   // raden hör till ett kvitto med flera rader
+  needs_review?: boolean       // AI:n var osäker, syns i Att granska (migration 013)
   image_path: string | null
   bought_on: string | null
   details: Detail[] | null

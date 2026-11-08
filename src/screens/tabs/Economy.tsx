@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react'
-import { api } from '../../lib/api'
+import { useState } from 'react'
 import { costParts, durationText, emptyEconomy, economyNumbers } from '../../lib/economy'
 import { ore, useElPrice } from '../../lib/elpris'
 import { kr } from '../../lib/format'
-import { Chips, Primary, Sheet, useToast } from '../../components/ui'
 import { StatCard } from '../../components/StatCard'
 import { IconArrowsExchange, IconBolt, IconBuildingBank, IconCreditCard, IconReceipt2 } from '@tabler/icons-react'
 import { TodoCard } from './Todos'
@@ -11,7 +9,7 @@ import { QuickEntryCard } from './QuickEntry'
 import { Counter } from '../../components/Counter'
 import { Gauge, MiniBars, PriceMeter, Ring, Segmented, type Bar } from '../../components/Charts'
 import { allItems } from './Items'
-import { EL_ZONE_LABEL, type ElZone, type Scope } from '../../types'
+import type { Scope } from '../../types'
 import type { ProjectState, ViewProps } from '../ProjectView'
 
 // Boendeläget, appens hubb: bolånet som stort kort, kassaflödet med flikar och stapeldiagram, ett kort per annat lån
@@ -184,45 +182,5 @@ function MortgageCard({ state, onOpen }: { state: ProjectState; onOpen: () => vo
         </div>
       )}
     </StatCard>
-  )
-}
-
-// Ekonomi: elområdet för dagens spotpris. Bolånet redigeras i bolånepanelen (kortet Bolån) och
-// avgift, el och försäkring kommer från boendeavtalen under Avtal.
-export function EconomySheet({ open, state, onClose }: { open: boolean; state: ProjectState; onClose: () => void }) {
-  const toast = useToast()
-  const [zone, setZone] = useState<ElZone | null>(null)
-
-  useEffect(() => {
-    if (open) setZone(state.project?.economy?.zone ?? null)
-  }, [open])
-
-  const save = async (ev: React.FormEvent) => {
-    ev.preventDefault()
-    const old = state.project?.economy ?? emptyEconomy
-    try {
-      await api.updateProject(state.project!.id, { economy: { ...old, zone } })
-      await state.reload()
-      toast('Ekonomin är sparad')
-      onClose()
-    } catch (err: any) {
-      toast({ title: 'Ekonomin kunde inte sparas', body: err.message })
-    }
-  }
-
-  return (
-    <Sheet open={open} onClose={onClose} title="Ekonomi">
-      <form className="form" onSubmit={save}>
-        <div className="field">
-          <span className="field__label">Elområde</span>
-          <Chips value={zone} onChange={(z) => setZone(z === zone ? null : z)} options={(Object.keys(EL_ZONE_LABEL) as ElZone[]).map((z) => ({ value: z as ElZone | null, label: EL_ZONE_LABEL[z] }))} />
-        </div>
-        <p className="meta" style={{ margin: 0 }}>Avgift, el och försäkring räknas från dina boendeavtal under Avtal.</p>
-
-        <div className="form__actions">
-          <Primary>Spara</Primary>
-        </div>
-      </form>
-    </Sheet>
   )
 }

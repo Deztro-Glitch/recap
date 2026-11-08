@@ -43,8 +43,9 @@ export interface Api {
 
   subscribe(pid: string, onChange: () => void): () => void
 
-  // Läser ett kvittofoto med AI (Edge Function parse-receipt). null när det inte går, t.ex. i demoläget.
-  parseReceipt(image: string, rooms: string[], planned: { id: string; title: string; price: number; room: string | null }[]): Promise<Record<string, any> | null>
+  // Läser en bild med AI (Edge Function parse-receipt): vad bilden är och kvittots rader. null i demoläget.
+  // hint "receipt" när man har valt Skanna kvitto.
+  parseReceipt(image: string, rooms: string[], planned: { id: string; title: string; price: number; room: string | null }[], hint?: 'receipt' | null): Promise<Record<string, any> | null>
   // Tolkar en snabb inmatning ("Vinglas 699kr") med AI (Edge Function quick-entry). null i demoläget.
   quickEntry(text: string): Promise<Record<string, any> | null>
 }
@@ -160,8 +161,8 @@ function supabaseApi(sb: SupabaseClient): Api {
       await sb.storage.from('photos').remove([path])
     },
 
-    async parseReceipt(image, rooms, planned) {
-      const { data, error } = await sb.functions.invoke('parse-receipt', { body: { image, rooms, planned } })
+    async parseReceipt(image, rooms, planned, hint) {
+      const { data, error } = await sb.functions.invoke('parse-receipt', { body: { image, rooms, planned, hint: hint ?? null } })
       if (error) throw new Error(error.message)
       return data
     },

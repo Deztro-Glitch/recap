@@ -4,7 +4,7 @@ import { IconExternalLink, IconStarFilled } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { kr, parseNum } from '../../lib/format'
 import { needsInfo, paid } from '../../lib/useProject'
-import { Checkbox, Chips, Collapsible, Field, More, Primary, Sheet, isMobile, useToast } from '../../components/ui'
+import { Checkbox, Chips, Field, More, Primary, Sheet, useToast } from '../../components/ui'
 import { FileField, FileThumb } from '../../components/FileField'
 import { DetailsField, DetailsList, cleanDetails } from '../../components/Details'
 import { FilterBar, FilterToggle, isFiltered, matches, noFilter, type FilterState } from '../../components/Filters'
@@ -136,48 +136,26 @@ export function useMarkDone(state: ProjectState) {
 }
 
 // Inköp: planerat till vänster, klart till höger. Bockar man av flyttar saken över.
+// Inköp är inköpslistan: allt planerat från både Projekt och Boende. Det som är klart finns i Logg.
 export function Purchases({ state, open }: ViewProps) {
   const { markDone, field } = useMarkDone(state)
   const [filter, setFilter] = useState<FilterState>(noFilter)
   const roomName = (id: string | null) => state.rooms.find((r) => r.id === id)?.name
-  const items = modeItems(state).filter((it) => matches(filter, { ...it, text: itemText(it, roomName(it.room_id)) }))
-  const planned = items.filter((i) => !i.done).sort(byImportance)
-  const done = items.filter((i) => i.done).sort(byDate)
+  const planned = allItems(state).filter((it) => !it.done && matches(filter, { ...it, text: itemText(it, roomName(it.room_id)) })).sort(byImportance)
   const [showFilter, setShowFilter] = useState(false)
-  // Det som hör till det andra läget göms, men man ska se att det finns och kunna byta dit.
-  const mode = state.project?.mode
-  const other = allItems(state).filter((it) => it.scope !== modeScope(mode) && matches(filter, { ...it, text: itemText(it, roomName(it.room_id)) })).length
-  const switchMode = async () => {
-    await api.updateProject(state.project!.id, { mode: mode === 'simple' ? 'full' : 'simple' })
-    await state.reload()
-  }
 
   return (
     <div>
       {field}
       <div className="section-head">
         <h1>Inköp</h1>
+        <span className="row__amount">{kr(sum(planned))}</span>
         <FilterToggle open={showFilter} active={isFiltered(filter)} onClick={() => setShowFilter(!showFilter)} />
       </div>
       <FilterBar state={state} value={filter} onChange={setFilter} open={showFilter} placeholder="Sök inköp, butik eller färgkod" />
-
-      <div className="columns section">
-        <div>
-          <div className="section-head">
-            <h2>Planerat</h2>
-            <span className="row__amount">{kr(sum(planned))}</span>
-          </div>
-          <ItemList items={planned} state={state} open={open} onCheck={markDone} empty="Inget planerat" />
-        </div>
-        <Collapsible title="Klart" meta={`${done.length} st · ${kr(sum(done))}`} startOpen={!isMobile()}>
-          <ItemList items={done} state={state} open={open} empty="Inget klart än" />
-        </Collapsible>
+      <div className="section purchases">
+        <ItemList items={planned} state={state} open={open} onCheck={markDone} empty="Inget planerat" />
       </div>
-      {other > 0 && (
-        <button className="link-btn other-mode" onClick={switchMode}>
-          {other} {other === 1 ? 'sak' : 'saker'} i {mode === 'simple' ? 'Projekt' : 'Boende'}
-        </button>
-      )}
     </div>
   )
 }

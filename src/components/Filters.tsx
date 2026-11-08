@@ -1,10 +1,11 @@
 import { IconAdjustmentsHorizontal, IconSearch } from '@tabler/icons-react'
 import type { ProjectState } from '../screens/ProjectView'
+import type { Scope } from '../types'
 
 export type Flag = 'all' | 'stays' | 'k6'
-export interface FilterState { q: string; room: string; flag: Flag }
-export const noFilter: FilterState = { q: '', room: '', flag: 'all' }
-export const isFiltered = (f: FilterState) => !!(f.q || f.room || f.flag !== 'all')
+export interface FilterState { q: string; room: string; flag: Flag; scope: Scope | '' }
+export const noFilter: FilterState = { q: '', room: '', flag: 'all', scope: '' }
+export const isFiltered = (f: FilterState) => !!(f.q || f.room || f.flag !== 'all' || f.scope)
 
 // På mobilen ligger sök och filter bakom en knapp vid rubriken, så att listan kommer direkt.
 export function FilterToggle({ open, active, onClick }: { open: boolean; active: boolean; onClick: () => void }) {
@@ -15,7 +16,7 @@ export function FilterToggle({ open, active, onClick }: { open: boolean; active:
   )
 }
 
-// Sökfält, rum och märkning på en rad. Rummen är desamma som på planritningen.
+// Sökfält, rum, Projekt/Boende och märkning på en rad. Rummen är desamma som på planritningen.
 export function FilterBar({ state, value, onChange, placeholder, open }: { state: ProjectState; value: FilterState; onChange: (f: FilterState) => void; placeholder: string; open: boolean }) {
   return (
     <div className={`filter-bar ${open ? 'is-open' : ''}`}>
@@ -27,6 +28,11 @@ export function FilterBar({ state, value, onChange, placeholder, open }: { state
         <option value="">Rum: Alla</option>
         {state.rooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
       </select>
+      <select className="select" value={value.scope} onChange={(e) => onChange({ ...value, scope: e.target.value as Scope | '' })} aria-label="Projekt eller Boende">
+        <option value="">Projekt och Boende</option>
+        <option value="build">Projekt</option>
+        <option value="home">Boende</option>
+      </select>
       <select className="select" value={value.flag} onChange={(e) => onChange({ ...value, flag: e.target.value as Flag })} aria-label="Märkning">
         <option value="all">Visa: Allt</option>
         <option value="stays">Följer med lägenheten</option>
@@ -37,8 +43,9 @@ export function FilterBar({ state, value, onChange, placeholder, open }: { state
 }
 
 // Om en rad passar filtret. Texten är allt man kan söka på (titel, butik, färgkod …).
-export function matches(f: FilterState, row: { room_id: string | null; stays: boolean; k6: boolean; text: string }) {
+export function matches(f: FilterState, row: { room_id: string | null; stays: boolean; k6: boolean; text: string; scope?: Scope | null }) {
   if (f.room && row.room_id !== f.room) return false
+  if (f.scope && row.scope !== f.scope) return false
   if (f.flag === 'stays' && !row.stays) return false
   if (f.flag === 'k6' && !row.k6) return false
   const words = f.q.toLowerCase().split(/\s+/).filter(Boolean)
