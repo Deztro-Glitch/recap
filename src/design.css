@@ -42,6 +42,15 @@ p { margin: 0; }
 .mesh i:nth-child(1) { width: 60vmax; height: 60vmax; left: -20vmax; top: -24vmax; background: var(--blob-1); opacity: var(--blob-strength-1); }
 .mesh i:nth-child(2) { width: 50vmax; height: 50vmax; right: -18vmax; top: 10vh; background: var(--blob-2); opacity: var(--blob-strength-2); }
 /* Mitt på skärmen, så att ljuset syns genom korten i mitten och inte bara i kanterna. */
+/* Egen bakgrundsbild (PhotoBackdrop.tsx): ersätter ljusfläckarna. Suddas och dämpas lite för läsbarheten. */
+.photo-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: var(--bg); }
+.photo-bg__img {
+  position: absolute; inset: calc(var(--photo-blur) * -2);
+  background: center / cover no-repeat;
+  filter: blur(var(--photo-blur));
+}
+.photo-bg::after { content: ""; position: absolute; inset: 0; background: var(--photo-dim); }
+:root[data-photo] .mesh { opacity: 0; }
 .mesh i:nth-child(3) { width: 52vmax; height: 40vmax; left: 22vw; top: 38vh; background: var(--blob-3); opacity: var(--blob-strength-3); }
 
 
@@ -475,7 +484,7 @@ p { margin: 0; }
   --text-2: var(--card-ink-2);
   --fill: var(--card-ink-fill);
   --glass-hover: rgba(14, 21, 18, .12);
-  --num: linear-gradient(180deg, #0B1210 30%, #34463D 100%);
+  --num: var(--card-num);
   --num-positive: linear-gradient(180deg, #059669 0%, #047857 100%);
   --num-negative: linear-gradient(180deg, #DC2626 0%, #B91C1C 100%);
   --positive-ink: #047857;
@@ -498,6 +507,31 @@ p { margin: 0; }
 }
 .glass--light.glass--interactive:hover { box-shadow: var(--card-light-shadow-hover); }
 .glass--light .budget-track { box-shadow: inset 0 1px 2px rgba(14, 21, 18, .15); }
+
+/* Accentkort (Bolån i Boende): mättad accent som glas, vit text, vita siffror och vita detaljer i grafen. */
+.glass--accent {
+  --text: #FFFFFF;
+  --text-2: rgba(255, 255, 255, .82);
+  --fill: rgba(255, 255, 255, .2);
+  --glass-hover: rgba(255, 255, 255, .24);
+  --num: linear-gradient(180deg, #FFFFFF 40%, rgba(255, 255, 255, .8) 100%);
+  --positive-ink: #FFFFFF;
+  --line: rgba(255, 255, 255, .25);
+  --gauge-fill: #FFFFFF;                  /* amorterat: vita streck */
+  --gauge-track: rgba(255, 255, 255, .22); /* skulden: svaga streck */
+  --gauge-debt: rgba(255, 255, 255, .45);
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, .3), transparent 55%),
+    var(--card-accent);
+  -webkit-backdrop-filter: blur(30px) saturate(160%); backdrop-filter: blur(30px) saturate(160%);
+  box-shadow: var(--card-accent-shadow);
+  color: var(--text);
+}
+.glass--accent .kpi__open,
+.glass--accent.kpi:hover .kpi__open, .glass--accent.kpi:focus-visible .kpi__open, .glass--accent.kpi:active .kpi__open {
+  background: #FFFFFF; color: var(--card-ink);
+}
+.glass--accent .btn--secondary { background: #FFFFFF; color: var(--card-ink); }
 
 
 /* --------------------------------------------------------------------------

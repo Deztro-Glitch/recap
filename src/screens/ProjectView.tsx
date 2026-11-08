@@ -8,6 +8,7 @@ import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
 import { applyMode } from '../lib/mode'
 import { Shell, type Tab } from '../components/Shell'
+import { PhotoBackdrop } from '../components/PhotoBackdrop'
 import { Field, Loader, Sheet, ease, useToast } from '../components/ui'
 import { modeScope, type Contract, type PhotoKind, type Purchase, type Room, type Task } from '../types'
 import { AddRoomSheet } from './tabs/Rooms'
@@ -237,6 +238,8 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   ]
 
   return (
+    <>
+    <PhotoBackdrop path={mode === 'simple' ? state.project?.background_path ?? null : null} />
     <Shell
       user={user}
       home={state.project ? { name: state.project.name, onClick: onBack } : undefined}
@@ -338,6 +341,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
         </>
       )}
     </Shell>
+    </>
   )
 }
 

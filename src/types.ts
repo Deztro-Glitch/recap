@@ -21,6 +21,7 @@ export interface Project {
   floorplan_map: PlanMap | null
   economy: Economy | null
   mode: Mode
+  background_path?: string | null   // egen bakgrundsbild, visas i Boende (migration 012)
   created_by: string
   created_at: string
 }

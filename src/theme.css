@@ -75,6 +75,18 @@
   --card-ink-fill: rgba(14, 21, 18, .07);   /* ikonrutor, märkningar och spår på ljusa kort */
   --card-light-shadow: 0 14px 44px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .85);
   --card-light-shadow-hover: 0 20px 54px rgba(0, 0, 0, .6), inset 0 1px 0 #FFFFFF;
+  --card-num: linear-gradient(180deg, #0B1210 30%, #34463D 100%);   /* stora siffror på ljusa kort */
+
+  /* Accentkortet (det stora kortet i Boende): mättad accent som frostat glas, vit text och vita detaljer. */
+  --card-accent: linear-gradient(150deg,
+    color-mix(in srgb, color-mix(in srgb, var(--accent) 80%, #FFFFFF) 92%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 90%, transparent) 45%,
+    color-mix(in srgb, color-mix(in srgb, var(--accent) 82%, #000000) 90%, transparent) 100%);
+  --card-accent-shadow: 0 18px 50px color-mix(in srgb, var(--accent) 32%, transparent), 0 10px 30px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .5);
+
+  /* Egen bakgrundsbild (Inställningar): suddas och dämpas lite, så att glaset går att läsa. */
+  --photo-blur: 18px;
+  --photo-dim: rgba(0, 0, 0, .22);
 
   /* Menypillret: egen glaskant så att det skiljer sig från ljuset bakom. */
   --pill-border: rgba(255, 255, 255, .1);
@@ -144,15 +156,19 @@
   --t-base: 500ms;
 }
 
-/* Boende: djup smaragdgrön och dämpad bärnsten. */
+/* Boende: varm orange med vita detaljer och svarta rubriker på de ljusa korten. */
 :root[data-mode="home"] {
-  --accent: #34D399;
-  --on-accent: #03140D;
-  --accent-glow: #6EE7B7;
-  --accent-hi: #7EEBC0;
-  --blob-1: #065F46;
-  --blob-2: #92400E;
-  --blob-3: #047857;
+  --accent: #F2683F;
+  --on-accent: #FFFFFF;
+  --accent-glow: #FF9A76;
+  --accent-hi: #FFAD8F;
+  --blob-1: #9A3412;
+  --blob-2: #B45309;
+  --blob-3: #C2410C;
+  --card-ink: #121110;
+  --card-ink-2: rgba(18, 17, 16, .6);
+  --card-ink-fill: rgba(18, 17, 16, .07);
+  --card-num: linear-gradient(180deg, #121110 30%, #3D3633 100%);
 }
 
 /* Mobilen: mindre luft, samma känsla. */

@@ -6,7 +6,8 @@ type IconType = React.ComponentType<{ size?: number; stroke?: number }>
 
 // Ett ljust statistikkort: ikon och rubrik, en stor siffra, ibland en märkning och en stapel.
 // Hela kortet går att öppna (detaljvyn); pilen uppe till höger visar det. Ingen förklarande text på kortet.
-export function StatCard({ icon: Icon, label, value, badge, top, onOpen, className, children }: {
+// tone "accent": det stora kortet i accentfärgen med vit text (Bolån i Boende).
+export function StatCard({ icon: Icon, label, value, badge, top, onOpen, className, tone = 'light', children }: {
   icon: IconType
   label: string
   value?: ReactNode   // utelämnas när kortet visar en graf i stället för en enda siffra
@@ -14,10 +15,11 @@ export function StatCard({ icon: Icon, label, value, badge, top, onOpen, classNa
   top?: ReactNode     // något mellan rubriken och siffran, t.ex. flikar
   onOpen: () => void
   className?: string
+  tone?: 'light' | 'accent'
   children?: ReactNode
 }) {
   return (
-    <GlassCard className={['kpi', 'glass--light', className].filter(Boolean).join(' ')} onClick={onOpen} lift>
+    <GlassCard className={['kpi', tone === 'accent' ? 'glass--accent' : 'glass--light', className].filter(Boolean).join(' ')} onClick={onOpen} lift>
       <div className="kpi__head">
         <span className="kpi__icon"><Icon size={16} stroke={1.8} /></span>
         <span className="kpi__label">{label}</span>

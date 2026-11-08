@@ -162,6 +162,7 @@ function MortgageCard({ state, onOpen }: { state: ProjectState; onOpen: () => vo
   return (
     <StatCard
       className="eco-dash__hero"
+      tone="accent"
       icon={IconBuildingBank}
       label="Bolån"
       badge={e?.loan ? <span className="is-positive">{pct < 1 && paid > 0 ? '<1' : pct} % betalt</span> : undefined}

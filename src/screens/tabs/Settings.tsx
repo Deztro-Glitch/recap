@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { IconUserPlus, IconX } from '@tabler/icons-react'
+import { IconPhoto, IconTrash, IconUserPlus, IconX } from '@tabler/icons-react'
 import { api, type User } from '../../lib/api'
 import { parseNum } from '../../lib/format'
 import { Chips, Field, useToast } from '../../components/ui'
 import { initials } from '../../components/Shell'
 import { KIND_LABEL, type Kind, type Member } from '../../types'
-import type { ViewProps } from '../ProjectView'
+import type { ProjectState, ViewProps } from '../ProjectView'
 
 export function Settings({ state, user, onDeleted }: ViewProps & { user: User; onDeleted: () => void }) {
   const toast = useToast()
@@ -68,6 +68,8 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
         <div><button className="btn btn--secondary">Spara ändringar</button></div>
       </form>
 
+      <BackgroundSetting state={state} />
+
       <div className="section" style={{ maxWidth: 460 }}>
         <div className="section-head"><h2>Delas med</h2></div>
         <div className="rows">
@@ -99,6 +101,63 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
       <div className="section" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn btn--secondary" onClick={() => api.signOut()}>Logga ut</button>
         {isOwner && <button className="btn btn--danger" onClick={del}>Ta bort hemmet</button>}
+      </div>
+    </div>
+  )
+}
+
+// Egen bakgrundsbild bakom glaset i Boende. Laddas upp som andra bilder; sökvägen sparas på hemmet.
+function BackgroundSetting({ state }: { state: ProjectState }) {
+  const toast = useToast()
+  const p = state.project!
+  const [preview, setPreview] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!p.background_path) return setPreview(null)
+    api.fileUrls([p.background_path]).then((u) => setPreview(u[p.background_path!] ?? null))
+  }, [p.background_path])
+
+  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBusy(true)
+    try {
+      const old = p.background_path
+      const path = await api.uploadFile(p.id, file)
+      await api.updateProject(p.id, { background_path: path })
+      if (old && !api.demo) await api.removeFile(old)
+      await state.reload()
+      toast('Bakgrunden är bytt')
+    } catch (err: any) {
+      toast({ title: 'Bakgrunden kunde inte sparas', body: err.message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const remove = async () => {
+    const old = p.background_path
+    await api.updateProject(p.id, { background_path: null })
+    if (old && !api.demo) await api.removeFile(old)
+    await state.reload()
+  }
+
+  return (
+    <div className="section" style={{ maxWidth: 460 }}>
+      <div className="section-head"><h2>Bakgrund</h2></div>
+      <div className="bg-pick">
+        <div className="bg-pick__preview" style={preview ? { backgroundImage: `url("${preview}")` } : undefined}>
+          {!preview && <IconPhoto size={22} stroke={1.6} />}
+        </div>
+        <div className="bg-pick__actions">
+          <label className={`btn btn--secondary ${busy ? 'is-busy' : ''}`}>
+            <IconPhoto size={16} /> {busy ? 'Laddar upp …' : preview ? 'Byt bild' : 'Välj bild'}
+            <input type="file" accept="image/*" hidden onChange={pick} disabled={busy} />
+          </label>
+          {preview && <button type="button" className="btn btn--danger" onClick={remove}><IconTrash size={16} /> Ta bort</button>}
+        </div>
       </div>
     </div>
   )
