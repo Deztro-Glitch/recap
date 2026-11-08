@@ -1,5 +1,6 @@
-// Recap – läser en bild med OpenAI (gpt-4o-mini): avgör om det är ett kvitto, ett foto av ett rum eller en sak man
-// vill köpa, och läser kvittots rader med rum, Projekt/Boende, kategori, K6 och om AI:n är säker.
+// Recap – läser en bild med OpenAI (gpt-4o-mini): avgör om det är ett kvitto, ett foto av ett rum, en sak man vill köpa
+// eller en vitvara/typskylt, och läser kvittots rader med rum, renovering/vardag, kategori, K6, om varan håller länge
+// (för reklamationsrätten) och om AI:n är säker. Från en typskylt kommer vitvaran och dess vanliga underhåll.
 // Nyckeln ligger som hemlighet OPENAI_API_KEY i Supabase, aldrig i appen.
 // Anropas från appen med supabase.functions.invoke('parse-receipt', { body: { image, rooms, planned, hint } }),
 // där image är en data-URL (jpeg), rooms är hemmets rumsnamn, planned är planerade köp
@@ -20,9 +21,9 @@ const CATEGORIES = ['housing', 'food', 'transport', 'home', 'fun', 'saving', 'ot
 const SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['kind', 'room', 'title', 'price', 'store', 'date', 'total', 'lines'],
+  required: ['kind', 'room', 'title', 'price', 'store', 'date', 'total', 'lines', 'appliance'],
   properties: {
-    kind: { type: 'string', enum: ['receipt', 'room', 'product', 'other'], description: 'Vad bilden är' },
+    kind: { type: 'string', enum: ['receipt', 'room', 'product', 'appliance', 'other'], description: 'Vad bilden är' },
     room: { type: ['string', 'null'], description: 'Foto av ett rum eller en sak: ett av rummen i listan, eller null' },
     title: { type: ['string', 'null'], description: 'Sak man vill köpa: vad det är, t.ex. "Soffa Söderhamn". Annars null' },
     price: { type: ['number', 'null'], description: 'Sak man vill köpa: priset om det syns, annars null' },
@@ -34,7 +35,7 @@ const SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['title', 'price', 'room', 'scope', 'category', 'match', 'k6', 'sure'],
+        required: ['title', 'price', 'room', 'scope', 'category', 'match', 'k6', 'durable', 'sure'],
         properties: {
           title: { type: 'string', description: 'Varans namn, läsbart på svenska' },
           price: { type: 'number', description: 'Radens pris i kronor efter rabatt, för hela antalet' },
@@ -43,9 +44,37 @@ const SCHEMA = {
           category: { type: 'string', enum: CATEGORIES },
           match: { type: ['string', 'null'], description: 'id på det planerade köp raden är, eller null' },
           k6: { type: ['string', 'null'], enum: ['basic', 'maintenance', null], description: 'Typ av K6-avdrag, eller null' },
-          sure: { type: 'boolean', description: 'true om du är säker på namn, pris, kategori, Projekt/Boende, rum och K6' },
+          durable: { type: 'boolean', description: 'true för varor som håller länge: vitvaror, elektronik, möbler, verktyg, lampor' },
+          sure: { type: 'boolean', description: 'true om du är säker på namn, pris, kategori, renovering/vardag, rum och K6' },
         },
       },
+    },
+    appliance: {
+      anyOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          required: ['name', 'model', 'room', 'care'],
+          properties: {
+            name: { type: 'string', description: 'Vad det är, t.ex. Diskmaskin' },
+            model: { type: ['string', 'null'], description: 'Märke och modell från typskylten, t.ex. Bosch SMS4HVI33E' },
+            room: { type: ['string', 'null'], description: 'Ett av rummen i listan, eller null' },
+            care: {
+              type: 'array',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['name', 'every_days'],
+                properties: {
+                  name: { type: 'string', description: 'Underhållet, t.ex. Rengöra diskmaskinens filter' },
+                  every_days: { type: 'integer', description: 'Hur ofta, i dagar' },
+                },
+              },
+            },
+          },
+        },
+        { type: 'null' },
+      ],
     },
   },
 }
@@ -57,10 +86,16 @@ Användaren fotar och vill sedan gå vidare med sin dag. Du ska sortera allt sj�
 
 1. kind: vad bilden är.
    "receipt" = ett kvitto eller en faktura. "room" = ett foto av ett rum eller en del av hemmet (före/efter, en vägg, ett golv).
-   "product" = en sak man vill köpa (produktbild, skärmdump från en butik, en möbel i en butik). "other" = inget av dem.
+   "product" = en sak man vill köpa (produktbild, skärmdump från en butik, en möbel i en butik).
+   "appliance" = en vitvara eller maskin som redan finns i hemmet, eller dess typskylt (diskmaskin, tvättmaskin, kyl,
+   frys, köksfläkt, ugn, torktumlare, varmvattenberedare). "other" = inget av dem.
    ${hint === 'receipt' ? 'Användaren har sagt att det är ett kvitto, så välj "receipt" om det går att läsa något alls.' : ''}
 2. Foto av rum eller sak: room = det rum det troligast är bland rummen nedan, annars null. Sak: title och price om det syns.
    För kvitton och "other": room, title och price är null.
+   Vitvara: appliance = vad det är, märke och modell om typskylten syns, rummet, och det vanliga underhållet för just den
+   sortens maskin med rimliga intervall (t.ex. diskmaskin: rengöra filtret var 30:e dag; köksfläkt: byta eller diska filtret
+   var 90:e dag; tvättmaskin: rengöra luddfilter och fack var 60:e dag; frys: frosta av var 180:e dag). Högst fyra.
+   För allt annat än vitvaror är appliance null.
 3. Kvitto: store, date (YYYY-MM-DD) och total. lines = varje vara, även mat, godis och dricka.
    Skriv namnet läsbart (skriv ut förkortningar, "VÄGGF ALCRO 3L" blir "Väggfärg Alcro 3 l"). Slå ihop antal och rabatt till ett pris.
    Ta inte med summor, moms, pant, kassar, påsar, avrundning, betalning eller växel. Är det inget kvitto, lämna lines tom.
@@ -81,6 +116,8 @@ Användaren fotar och vill sedan gå vidare med sin dag. Du ska sortera allt sj�
    - sure: false om du är osäker på något av ovan för raden: svårläst namn eller pris, oklart om det är Projekt eller
      Boende, oklart rum för en sak till hemmet, oklart K6 eller en möjlig men osäker koppling till ett planerat köp.
      Vanliga matvaror och tydliga saker är true. Hellre false än en gissning som kan bli fel.
+   - durable: true för varor som håller länge och omfattas av reklamationsrätten på riktigt: vitvaror, elektronik,
+     möbler, verktyg och maskiner, lampor. false för mat, förbrukning, färg och byggmaterial, kläder och småsaker.
 Planerade köp: ${planned.length ? planned.map((p) => `${p.id}: ${p.title}${p.price ? `, ca ${p.price} kr` : ''}${p.room ? `, ${p.room}` : ''}`).join('; ') : '(inga)'}
 Gissa aldrig fram varor som inte står på kvittot.`
 

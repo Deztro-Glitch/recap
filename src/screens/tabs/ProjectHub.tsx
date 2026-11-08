@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  IconCheck, IconCoins, IconDimensions, IconFilter, IconFridge, IconRulerMeasure, IconToolsKitchen2, IconWallOff, IconWashMachine,
+  IconCheck, IconCoins, IconDimensions, IconDroplet, IconFilter, IconFlame, IconFridge, IconRulerMeasure, IconShieldCheck, IconTool,
+  IconToolsKitchen2, IconWallOff, IconWashMachine, IconWind,
 } from '@tabler/icons-react'
+import { api } from '../../lib/api'
+import { careItems, untilText, warranties, whenText } from '../../lib/care'
+import type { ProjectState, ViewProps } from '../view'
 import { GlassCard } from '../../components/GlassCard'
 import { ActivityRing } from '../../components/Charts'
 import type { PlanTool } from '../../components/FloorPlan'
@@ -71,61 +75,81 @@ export function PlanToolbox({ tool, onTool }: { tool: PlanTool | null; onTool: (
 }
 
 // ---------------------------------------------------------------------------
-// Underhåll: en ring per sak som behöver skötas. Ringen visar hur stor del av intervallet som har gått och byter
-// färg från blå/grön till orange/röd ju närmare det är. Bocken ("gjort") nollställer ringen.
+// Underhåll: en ring per sak som behöver skötas (tabellen maintenance). Ringen visar hur stor del av intervallet
+// som har gått och byter färg från blå/grön till orange/röd ju närmare det är. Bocken ("gjort") nollställer ringen,
+// och raden öppnar underhållet. Under listan står garantierna som inte har gått ut.
 // ---------------------------------------------------------------------------
-// thing och todo är den korta varningen på Översikten, t.ex. "Köksfläkt: Dags att byta filter".
-export type Care = { id: string; thing: string; todo: string; name: string; icon: typeof IconFilter; every: number; doneDaysAgo: number }
-
-// Exempel tills underhållet sparas i databasen. Intervall och senast gjort i dagar.
-const EXAMPLES: Care[] = [
-  { id: 'flakt', name: 'Filter köksfläkt', thing: 'Köksfläkt', todo: 'Dags att byta filter', icon: IconFilter, every: 90, doneDaysAgo: 76 },
-  { id: 'disk', name: 'Rengöring diskmaskin', thing: 'Diskmaskin', todo: 'Dags att rengöra', icon: IconToolsKitchen2, every: 30, doneDaysAgo: 16 },
-  { id: 'tvatt', name: 'Rengöring tvättmaskin', thing: 'Tvättmaskin', todo: 'Dags att rengöra', icon: IconWashMachine, every: 60, doneDaysAgo: 12 },
-  { id: 'frys', name: 'Frosta av frysen', thing: 'Frysen', todo: 'Dags att frosta av', icon: IconFridge, every: 180, doneDaysAgo: 175 },
-]
 
 // Blå när det är långt kvar, grön en bit in, orange när det närmar sig och röd när det är dags.
-const toneFor = (share: number) => (share >= 0.9 ? 'var(--care-due)' : share >= 0.65 ? 'var(--care-soon)' : share >= 0.3 ? 'var(--care-ok)' : 'var(--care-fresh)')
-const days = (n: number) => `${n} ${n === 1 ? 'dag' : 'dagar'}`
-const whenText = (left: number) => (left < 0 ? `${days(-left)} sen` : left === 0 ? 'Dags i dag' : `Om ${days(left)}`)
+export const toneFor = (share: number) => (share >= 0.9 ? 'var(--care-due)' : share >= 0.65 ? 'var(--care-soon)' : share >= 0.3 ? 'var(--care-ok)' : 'var(--care-fresh)')
 
-// Underhållet delas mellan Hemmets status på Idag och listan i Hemmet, så att en bock syns på båda ställena.
-export function useCare() {
-  const [items, setItems] = useState(EXAMPLES)
-  const done = (id: string) => setItems((cur) => cur.map((c) => (c.id === id ? { ...c, doneDaysAgo: 0 } : c)))
-  return { items, done }
+// En ikon från namnet, så att listan går att skumma.
+export function careIcon(name: string) {
+  const n = name.toLowerCase()
+  if (/fläkt|filter/.test(n)) return IconFilter
+  if (/disk/.test(n)) return IconToolsKitchen2
+  if (/tvätt|tork/.test(n)) return IconWashMachine
+  if (/frys|kyl/.test(n)) return IconFridge
+  if (/brand|rök/.test(n)) return IconFlame
+  if (/brunn|avlopp|vatten|kran/.test(n)) return IconDroplet
+  if (/ventil|luft/.test(n)) return IconWind
+  return IconTool
 }
-// Det som snart är dags (minst 80 % av intervallet har gått), det mest bråttom först.
-export const careWarnings = (items: Care[]) => items.filter((c) => c.doneDaysAgo / c.every >= 0.8).sort((a, b) => b.doneDaysAgo / b.every - a.doneDaysAgo / a.every)
 
-// Underhållet som en kompakt lista i panelen bredvid ritningen: en liten ring per sak, när det är dags och en bock.
-export function CareList({ items, done }: { items: Care[]; done: (id: string) => void }) {
-  // Det som är närmast på tur först.
-  const sorted = [...items].sort((a, b) => b.doneDaysAgo / b.every - a.doneDaysAgo / a.every)
+// Bocken: gjort i dag.
+export const markCareDone = async (state: ProjectState, id: string) => {
+  await api.update('maintenance', id, { last_done: new Date().toISOString().slice(0, 10) })
+  await state.reload()
+}
+
+export function CareList({ state, open }: ViewProps) {
+  const items = careItems(state)
+  const list = warranties(state)
+  if (!items.length && !list.length) return null
   return (
     <div className="section care-list" id="care">
-      <div className="section-head"><h3>Underhåll</h3></div>
-      <div className="rows">
-        {sorted.map((c, i) => {
-          const share = c.doneDaysAgo / c.every
-          const tone = toneFor(share)
-          return (
-            <motion.div key={c.id} layout className="care-row" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 + i * 0.05 }}>
-              <ActivityRing share={share} color={tone} size={40} label={`${c.name}: ${Math.round(share * 100)} % av intervallet har gått`}>
-                <c.icon size={16} stroke={1.9} />
-              </ActivityRing>
-              <div className="care-row__text">
-                <span className="care-row__name">{c.name}</span>
-                <span className="care-row__when" style={share >= 0.65 ? { color: tone } : undefined}>{whenText(c.every - c.doneDaysAgo)}</span>
+      {items.length > 0 && (
+        <>
+          <div className="section-head"><h3>Underhåll</h3></div>
+          <div className="rows">
+            {items.map((c, i) => {
+              const tone = toneFor(c.share)
+              const Icon = careIcon(c.name)
+              return (
+                <motion.div key={c.id} layout className="care-row" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 + i * 0.05 }}
+                  role="button" tabIndex={0} onClick={() => open({ t: 'maintenance', item: c.raw })} onKeyDown={(e) => e.key === 'Enter' && open({ t: 'maintenance', item: c.raw })}>
+                  <ActivityRing share={Math.min(1, c.share)} color={tone} size={40} label={`${c.name}: ${Math.round(Math.min(1, c.share) * 100)} % av intervallet har gått`}>
+                    <Icon size={16} stroke={1.9} />
+                  </ActivityRing>
+                  <div className="care-row__text">
+                    <span className="care-row__name">{c.name}</span>
+                    <span className="care-row__when" style={c.share >= 0.65 ? { color: tone } : undefined}>{whenText(c.left)}</span>
+                  </div>
+                  <button type="button" className="care-card__done" onClick={(e) => { e.stopPropagation(); markCareDone(state, c.id) }} disabled={c.share === 0} aria-label={`${c.name}: gjort`}>
+                    <IconCheck size={15} stroke={2.4} />
+                  </button>
+                </motion.div>
+              )
+            })}
+          </div>
+        </>
+      )}
+      {list.length > 0 && (
+        <div className="section">
+          <div className="section-head"><h3>Garantier</h3></div>
+          <div className="rows">
+            {list.map((w) => (
+              <div key={w.id} className="care-row" role="button" tabIndex={0} onClick={() => open({ t: 'purchase', item: w.raw })} onKeyDown={(e) => e.key === 'Enter' && open({ t: 'purchase', item: w.raw })}>
+                <span className={`care-row__shield ${w.left <= 60 ? 'is-soon' : ''}`}><IconShieldCheck size={18} stroke={1.8} /></span>
+                <div className="care-row__text">
+                  <span className="care-row__name">{w.title}</span>
+                  <span className="care-row__when">{untilText(w)}</span>
+                </div>
               </div>
-              <button type="button" className="care-card__done" onClick={() => done(c.id)} disabled={c.doneDaysAgo === 0} aria-label={`${c.name}: gjort`}>
-                <IconCheck size={15} stroke={2.4} />
-              </button>
-            </motion.div>
-          )
-        })}
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

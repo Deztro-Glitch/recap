@@ -12,10 +12,13 @@ export interface ScanLine {
   category: BudgetCategory
   match_id?: string | null   // ett planerat köp som raden troligen är
   k6Kind?: K6Kind | null     // föreslaget K6-avdrag
+  durable?: boolean          // håller länge (vitvara, elektronik, möbel): får reklamationsrätt
   sure: boolean              // false: raden hamnar i Att granska
 }
+// En vitvara från ett foto eller en typskylt, med det vanliga underhållet för den.
+export interface ScannedAppliance { name: string; model: string | null; room_id: string | null; care: { name: string; every_days: number }[] }
 // Vad bilden är. "unknown" när varken AI:n eller textigenkänningen kunde avgöra det; då får man välja själv.
-export type ImageKind = 'receipt' | 'room' | 'product' | 'other' | 'unknown'
+export type ImageKind = 'receipt' | 'room' | 'product' | 'appliance' | 'other' | 'unknown'
 export interface ReceiptScan {
   kind: ImageKind
   room_id: string | null    // foto av ett rum eller en sak
@@ -25,6 +28,7 @@ export interface ReceiptScan {
   date: string | null
   total: number | null
   lines: ScanLine[]
+  appliance: ScannedAppliance | null
   ai: boolean               // läst av AI:n; annars textigenkänning på enheten och allt granskas
   example: boolean          // exempeldata i demoläget, inte läst från bilden
 }
@@ -33,7 +37,7 @@ export interface ReceiptScan {
 export interface PlannedRef { id: string; title: string; price: number; room_id: string | null }
 export interface ReadContext { rooms: Room[]; planned: PlannedRef[]; hint?: 'receipt' | null }
 
-const empty: ReceiptScan = { kind: 'unknown', room_id: null, title: null, price: null, store: null, date: null, total: null, lines: [], ai: false, example: false }
+const empty: ReceiptScan = { kind: 'unknown', room_id: null, title: null, price: null, store: null, date: null, total: null, lines: [], appliance: null, ai: false, example: false }
 
 const STORES = ['ICA Maxi', 'ICA Kvantum', 'ICA Supermarket', 'ICA Nära', 'ICA', 'Coop', 'Willys', 'Hemköp', 'Lidl', 'City Gross', 'Bauhaus', 'IKEA', 'Clas Ohlson', 'Jula', 'Biltema', 'Hornbach', 'Byggmax', 'Beijer', 'K-Rauta', 'Colorama', 'Elgiganten', 'Mio', 'Jysk', 'Rusta', 'Granit', 'Åhléns', 'Hemtex', 'Mekonomen', 'Netonnet', 'Power', 'Apotek', 'Circle K', 'OKQ8', 'Preem']
 
@@ -57,6 +61,10 @@ export function guessRoom(title: string, rooms: Room[]) {
   return null
 }
 
+// Varor som håller länge, när AI:n inte säger det själv (äldre funktion eller textigenkänning).
+const DURABLE = /(diskmaskin|tvättmaskin|torktumlare|kyl|frys|spis|ugn|mikro|köksfläkt|dammsugare|kaffemaskin|vattenkokare|brödrost|tv\b|tv-|dator|laptop|skärm|mobil|telefon|surfplatta|högtalare|hörlurar|borrmaskin|skruvdragare|sticksåg|cirkelsåg|slipmaskin|soffa|säng|fåtölj|bord|stol|byrå|garderob|lampa|taklampa)/i
+export const isDurable = (title: string) => DURABLE.test(title)
+
 // Kategori från namnet, annars från butiken (allt från ICA är mat om inget annat syns).
 const categoryFor = (title: string, store: string | null): BudgetCategory => {
   const c = guessCategory(title)
@@ -67,7 +75,7 @@ const num = (s: string) => parseFloat(s.replace(/[\s.](?=\d{3}\b)/g, '').replace
 // En rad som lästs på enheten: allt är gissat, så den granskas alltid.
 const localLine = (title: string, price: number, rooms: Room[], store: string | null): ScanLine => {
   const category = categoryFor(title, store)
-  return { title, price, room_id: category === 'home' ? guessRoom(title, rooms) : null, scope: guessScope(title), category, sure: false }
+  return { title, price, room_id: category === 'home' ? guessRoom(title, rooms) : null, scope: guessScope(title), category, durable: isDurable(title), sure: false }
 }
 
 // Läser kvittot med textigenkänning i webbläsaren. Fungerar bäst på ett rakt foto i bra ljus.
@@ -142,18 +150,25 @@ export const readWithAi = async (file: File, { rooms, planned, hint }: ReadConte
       scope: l.scope === 'build' ? 'build' : 'home',
       match_id: match(l.match),
       k6Kind: l.k6 === 'basic' || l.k6 === 'maintenance' ? l.k6 : null,
+      durable: typeof l.durable === 'boolean' ? l.durable : isDurable(title),
       // En äldre version av funktionen säger inte om den är säker; då granskas raden.
       sure: l.sure === true && price(l.price) > 0,
     }
   })
   const total = res.total == null ? null : price(res.total)
   // En äldre version av funktionen läser bara kvitton och säger inte vad bilden är.
-  const kind: ImageKind = ['receipt', 'room', 'product', 'other'].includes(res.kind) ? res.kind : lines.length || total != null ? 'receipt' : hint ?? 'unknown'
+  const kind: ImageKind = ['receipt', 'room', 'product', 'appliance', 'other'].includes(res.kind) ? res.kind : lines.length || total != null ? 'receipt' : hint ?? 'unknown'
   return {
     kind, store, date, total, lines,
     room_id: roomId(res.room),
     title: res.title ? String(res.title) : null,
     price: res.price == null ? null : price(res.price),
+    appliance: res.appliance && typeof res.appliance.name === 'string' ? {
+      name: String(res.appliance.name), model: res.appliance.model ? String(res.appliance.model) : null, room_id: roomId(res.appliance.room),
+      care: (Array.isArray(res.appliance.care) ? res.appliance.care : [])
+        .filter((c: any) => c?.name && Number(c.every_days) > 0).slice(0, 4)
+        .map((c: any) => ({ name: String(c.name), every_days: Math.round(Number(c.every_days)) })),
+    } : null,
     ai: true, example: false,
   }
 }
@@ -162,10 +177,11 @@ export const readWithAi = async (file: File, { rooms, planned, hint }: ReadConte
 export const exampleScan = (rooms: Room[]): ReceiptScan => {
   const room = (name: string) => rooms.find((r) => r.name.toLowerCase().startsWith(name))?.id ?? null
   return {
-    ...empty, kind: 'receipt', store: 'Bauhaus', date: new Date().toISOString().slice(0, 10), total: 1335, ai: true, example: true,
+    ...empty, kind: 'receipt', store: 'Bauhaus', date: new Date().toISOString().slice(0, 10), ai: true, example: true, total: 1834,
     lines: [
       { title: 'Väggfärg Alcro Bestå 3 l', price: 649, room_id: null, scope: 'build', category: 'home', k6Kind: 'maintenance', sure: true },
       { title: 'Stekpanna 28 cm', price: 399, room_id: room('kök'), scope: 'home', category: 'home', sure: true },
+      { title: 'Vattenkokare Wilfa 1,7 l', price: 499, room_id: room('kök'), scope: 'home', category: 'home', durable: true, sure: true },
       { title: 'Gardinstång 120 cm', price: 249, room_id: null, scope: 'home', category: 'home', sure: false },
       { title: 'Snickers', price: 15, room_id: null, scope: 'home', category: 'food', sure: true },
       { title: 'Kaffe bryggmalet', price: 23, room_id: null, scope: 'home', category: 'food', sure: true },

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type Table } from './api'
-import type { Contract, Photo, Project, Purchase, Receipt, Renovation, Room, Task, Todo } from '../types'
+import type { Contract, Maintenance, Photo, Project, Purchase, Receipt, Renovation, Room, Task, Todo } from '../types'
 
 export interface ProjectData {
   project: Project | null
@@ -12,6 +12,7 @@ export interface ProjectData {
   receipts: Receipt[]
   todos: Todo[]
   renovations: Renovation[]   // projekten (renoveringar) i hemmet
+  maintenance: Maintenance[]  // underhållet (filter, rengöring …)
   urls: Record<string, string>   // filsökväg → visningsbar adress (kvitton, planritning, bilder, avtal)
   loading: boolean
 }
@@ -21,11 +22,11 @@ const byPriority = <T extends { priority?: number }>(a: T, b: T) => (a.priority 
 
 // Laddar allt för ett projekt och håller det uppdaterat (även när någon annan ändrar).
 export function useProject(pid: string) {
-  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], contracts: [], receipts: [], todos: [], renovations: [], urls: {}, loading: true })
+  const [data, setData] = useState<ProjectData>({ project: null, rooms: [], purchases: [], tasks: [], photos: [], contracts: [], receipts: [], todos: [], renovations: [], maintenance: [], urls: {}, loading: true })
   const urlCache = useRef(new Map<string, string>())
 
   const reload = useCallback(async () => {
-    const [projects, rooms, purchases, tasks, rawPhotos, contracts, receipts, todos, renovations] = await Promise.all([
+    const [projects, rooms, purchases, tasks, rawPhotos, contracts, receipts, todos, renovations, maintenance] = await Promise.all([
       api.listProjects(),
       api.list<Room>('rooms', pid),
       api.list<Purchase>('purchases', pid),
@@ -35,6 +36,7 @@ export function useProject(pid: string) {
       api.list<Receipt>('receipts', pid).catch(() => [] as Receipt[]),
       api.list<Todo>('todos', pid).catch(() => [] as Todo[]),
       api.list<Renovation>('renovations', pid).catch(() => [] as Renovation[]),
+      api.list<Maintenance>('maintenance', pid).catch(() => [] as Maintenance[]),
     ])
     const project = projects.find((p) => p.id === pid) ?? null
 
@@ -55,6 +57,7 @@ export function useProject(pid: string) {
       receipts,
       todos: todos.sort((a, b) => a.created_at.localeCompare(b.created_at)),
       renovations: renovations.sort((a, b) => b.created_at.localeCompare(a.created_at)),
+      maintenance: maintenance.sort((a, b) => a.created_at.localeCompare(b.created_at)),
       urls: Object.fromEntries(urlCache.current),
       loading: false,
     })

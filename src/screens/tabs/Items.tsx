@@ -140,7 +140,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
   const parentId = (item as Partial<Purchase> | null)?.receipt_id
   const parent = parentId ? state.receipts.find((r) => r.id === parentId) : undefined
   const siblings = parent ? state.purchases.filter((p) => p.receipt_id === parent.id).length : 0
-  const blank = { title: '', room_id: '', renovation: '', scope: 'build' as Scope, done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, k6Kind: 'basic' as K6Kind, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
+  const blank = { title: '', room_id: '', renovation: '', warranty: '', scope: 'build' as Scope, done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, k6Kind: 'basic' as K6Kind, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
   const [f, setF] = useState(blank)
   const [urls, setUrls] = useState<{ receipt?: string; image?: string }>({})
 
@@ -156,6 +156,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
       title: item.title ?? '',
       room_id: item.room_id ?? '',
       renovation: item.renovation_id ?? '',
+      warranty: p.warranty_until ?? '',
       scope: item.renovation_id ? 'build' : p.scope ?? (item.id ? guessScope(item.title ?? '') : 'home'),
       done,
       amount: amount ? String(amount) : '',
@@ -204,6 +205,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
           link: f.link.trim() || null,
           stays: f.stays,
           scope: f.renovation ? 'build' : f.scope,
+          warranty_until: f.warranty || null,
           image_path: f.image,
         }
     try {
@@ -278,7 +280,12 @@ export function ItemSheet({ table, item, state, onClose, title }: {
             onChange={(path, url) => { setF((c) => ({ ...c, receipt: path })); setUrls((u) => ({ ...u, receipt: url })) }} />
         ))}
 
-        <More open={!!(existing && (existing.details?.length || existing.link || existing.image || item?.note))}>
+        <More open={!!(existing && (existing.details?.length || existing.link || existing.image || item?.note || (item as Partial<Purchase>).warranty_until))}>
+          {!isTask && (
+            <Field label="Garanti till">
+              <input className="input" type="date" value={f.warranty} onChange={set('warranty')} />
+            </Field>
+          )}
           {!isTask && (
             <FileField pid={state.project!.id} label="Bild" accept="image/*" path={f.image} url={urls.image}
               onChange={(path, url) => { setF((c) => ({ ...c, image: path })); setUrls((u) => ({ ...u, image: url })) }} />

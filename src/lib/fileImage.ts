@@ -1,6 +1,7 @@
 import { api } from './api'
 import { readReceipt } from './receiptReader'
 import { activeRenovation, guessScope, today } from './items'
+import { reclaimUntil } from './care'
 import type { Purchase, Receipt } from '../types'
 import type { ProjectState } from './useProject'
 
@@ -9,6 +10,7 @@ export type FileResult =
   | { kind: 'receipt'; store: string | null; saved: number; review: number; closed: string[] }
   | { kind: 'photo'; room: string | null }
   | { kind: 'planned'; item: Purchase }
+  | { kind: 'appliance'; name: string; added: string[] }
   | { kind: 'unknown' }
 
 // Sorterar en bild utan att fråga: AI:n avgör om det är ett kvitto, ett foto av ett rum eller något man vill köpa,
@@ -41,6 +43,20 @@ export async function fileImage(state: ProjectState, file: File, hint: 'receipt'
     return { kind: 'planned', item }
   }
 
+  // En vitvara eller typskylt: dess vanliga underhåll läggs in (det som redan finns hoppas över).
+  if (scan.kind === 'appliance' && scan.appliance) {
+    const a = scan.appliance
+    const model = a.model ?? a.name
+    const taken = new Set(state.maintenance.map((m) => m.name.toLowerCase()))
+    const added: string[] = []
+    for (const c of a.care) {
+      if (taken.has(c.name.toLowerCase())) continue
+      await api.insert('maintenance', { project_id: pid, name: c.name, every_days: c.every_days, last_done: today(), room_id: a.room_id, appliance: model })
+      added.push(c.name)
+    }
+    return { kind: 'appliance', name: a.model ? `${a.name} ${a.model}` : a.name, added }
+  }
+
   if (scan.kind !== 'receipt') return { kind: 'unknown' }
 
   const file_path = await api.uploadFile(pid, file)
@@ -64,6 +80,8 @@ export async function fileImage(state: ProjectState, file: File, hint: 'receipt'
     const fields = {
       title: l.title, price: l.price, room_id: l.room_id, scope: l.scope, category: l.category,
       k6: !!l.k6Kind, k6_kind: l.k6Kind ?? null, needs_review: unsure, renovation_id: l.scope === 'build' ? reno : null,
+      // Varor som håller länge får reklamationsrätten: tre år från köpet.
+      warranty_until: l.durable && l.price >= 300 ? reclaimUntil(date) : null,
     }
     const plan = !unsure && l.match_id ? open.find((p) => p.id === l.match_id) : undefined
     if (plan) {

@@ -127,6 +127,18 @@ export interface Renovation {
   created_at: string
 }
 
+// Något i hemmet som behöver skötas med jämna mellanrum, t.ex. filtret i köksfläkten (migration 015).
+export interface Maintenance {
+  id: string
+  project_id: string
+  name: string
+  every_days: number
+  last_done: string | null
+  room_id: string | null
+  appliance: string | null   // vitvaran det gäller, t.ex. "Bosch SMS4HVI33E"
+  created_at: string
+}
+
 export interface Purchase {
   id: string
   project_id: string
@@ -149,6 +161,7 @@ export interface Purchase {
   receipt_id?: string | null   // raden hör till ett kvitto med flera rader
   needs_review?: boolean       // AI:n var osäker, syns i Att granska (migration 013)
   renovation_id?: string | null   // projektet köpet hör till (migration 014)
+  warranty_until?: string | null  // garanti eller reklamationsrätt till och med (migration 015)
   image_path: string | null
   bought_on: string | null
   details: Detail[] | null

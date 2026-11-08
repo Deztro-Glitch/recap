@@ -8,7 +8,7 @@ import { kr } from '../../lib/format'
 import type { ViewProps } from '../view'
 import { activeRenovation, allItems, renovationNumbers, sum } from '../../lib/items'
 import { RENOVATION_STATUS_LABEL } from '../../types'
-import { careWarnings, type Care } from './ProjectHub'
+import { careDue, careItems, warranties, warrantySoon, whenText } from '../../lib/care'
 import { monthBudget, overBudget } from '../../lib/budget'
 import { ReviewCard } from './Review'
 import { TodoCard } from './Todos'
@@ -19,7 +19,7 @@ import { QuickEntryCard } from './QuickEntry'
 // Att granska när AI:n var osäker, renoveringen (Aktivt projekt), underhållet (Hemmets status), Snabb inmatning
 // och Att göra. Korten tonar in och glider upp ett i taget.
 // ---------------------------------------------------------------------------
-export function Today({ state, open, care, onCare }: ViewProps & { care: Care[]; onCare: () => void }) {
+export function Today({ state, open, onCare }: ViewProps & { onCare: () => void }) {
   const still = useReducedMotion()
   const cell = (i: number, area: string) => ({
     className: `today__cell today__${area}`,
@@ -39,7 +39,7 @@ export function Today({ state, open, care, onCare }: ViewProps & { care: Care[];
       <div className="today">
         <motion.div {...cell(0, 'left')}><LeftCard state={state} open={open} /></motion.div>
         <motion.div {...cell(1, 'project')}><ActiveProject state={state} open={open} /></motion.div>
-        <motion.div {...cell(2, 'status')}><HomeStatus care={care} onCare={onCare} /></motion.div>
+        <motion.div {...cell(2, 'status')}><HomeStatus state={state} open={open} onCare={onCare} /></motion.div>
         <motion.div {...cell(3, 'quick')}><QuickEntryCard state={state} /></motion.div>
         <motion.div {...cell(4, 'todo')}><TodoCard state={state} /></motion.div>
       </div>
@@ -127,17 +127,26 @@ function ActiveProject({ state, open }: ViewProps) {
   )
 }
 
-// Smarta hemmet: det som snart behöver skötas med en orange ikon, och en grön pulserande prick för resten.
-function HomeStatus({ care, onCare }: { care: Care[]; onCare: () => void }) {
-  const warn = careWarnings(care).slice(0, 2)
-  const calm = care.length - careWarnings(care).length
+// Hemmets status: underhåll som snart är dags och garantier som snart går ut, med en orange ikon,
+// och en grön pulserande prick när resten rullar. Utan underhåll öppnar kortet ett nytt.
+function HomeStatus({ state, open, onCare }: ViewProps & { onCare: () => void }) {
+  const items = careItems(state)
+  const due = careDue(items)
+  const soon = warrantySoon(warranties(state))
+  const warn = [
+    ...due.map((c) => ({ id: c.id, what: c.name, text: whenText(c.left) })),
+    ...soon.map((w) => ({ id: w.id, what: w.title, text: w.left <= 0 ? 'Garantin går ut i dag' : `Garantin går ut om ${w.left} dagar` })),
+  ].slice(0, 3)
+  const calm = items.length - due.length
+  const empty = !items.length && !soon.length
   return (
-    <StatCard className="homestatus" icon={IconSmartHome} label="Hemmets status" onOpen={() => { onCare(); setTimeout(() => document.getElementById('care')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 450) }}>
+    <StatCard className="homestatus" icon={IconSmartHome} label="Hemmets status"
+      onOpen={() => (empty ? open({ t: 'maintenance', item: {} }) : (onCare(), setTimeout(() => document.getElementById('care')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 450)))}>
       <div className="homestatus__list">
         {warn.map((c) => (
           <div key={c.id} className="homestatus__row is-warn">
             <span className="homestatus__icon"><IconAlertTriangle size={16} stroke={2} /></span>
-            <span><b>{c.thing}:</b> {c.todo}</span>
+            <span><b>{c.what}:</b> {c.text}</span>
           </div>
         ))}
         {calm > 0 && (
@@ -146,6 +155,7 @@ function HomeStatus({ care, onCare }: { care: Care[]; onCare: () => void }) {
             <span>{warn.length ? 'Allt annat rullar' : 'Allt rullar'}</span>
           </div>
         )}
+        {empty && <span className="meta">Inget underhåll inlagt</span>}
       </div>
     </StatCard>
   )

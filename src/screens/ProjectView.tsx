@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import {
   IconArrowLeft, IconCamera, IconChecklist, IconCircleCheck, IconDots, IconFileText, IconHome, IconHomeCheck, IconLayoutGrid,
-  IconHammer, IconList, IconPhoto, IconReceipt, IconScan, IconSettings, IconShoppingCart, IconWallet,
+  IconHammer, IconList, IconPhoto, IconReceipt, IconScan, IconSettings, IconShoppingCart, IconTool, IconWallet,
 } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
@@ -16,8 +16,8 @@ import { ContractSheet, Contracts, type ContractTab } from './tabs/Contracts'
 import { Overview } from './tabs/Overview'
 import { Today } from './tabs/Today'
 import { EconomyView } from './tabs/Economy'
-import { useCare } from './tabs/ProjectHub'
 import { RenovationSheet } from './tabs/Renovations'
+import { MaintenanceSheet } from './tabs/Maintenance'
 import { activeRenovation } from '../lib/items'
 import { StatDetail } from './tabs/StatDetail'
 import { LoansSheet } from './tabs/Loans'
@@ -56,8 +56,6 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   const pickRoom = useRef<string | null | undefined>(undefined)
 
   // Läget färgar hela appen så länge hemmet är öppet.
-  // Underhållet (exempeldata tills vidare) delas av Idag (Hemmets status) och Hemmet (listan i panelen).
-  const care = useCare()
 
   // Bilder sorteras av AI:n i bakgrunden, så att man kan gå vidare direkt. Kvitton sparas som köp (osäkra rader
   // hamnar i Att granska), foton på rum hamnar på rummet och saker man vill köpa blir planerade. Kan AI:n inte
@@ -209,6 +207,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     { icon: IconCircleCheck, title: 'Klart köp eller jobb', on: () => open({ t: 'purchase', item: { ...newItem, bought: true } }) },
     { icon: IconFileText, title: 'Avtal', on: () => open({ t: 'contract', item: {} }) },
     { icon: IconHammer, title: 'Projekt', on: () => open({ t: 'renovation', item: {} }) },
+    { icon: IconTool, title: 'Underhåll', on: () => open({ t: 'maintenance', item: {} }) },
     { icon: IconHome, title: 'Rum', on: () => open({ t: 'room' }) },
   ]
 
@@ -242,9 +241,9 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       ) : (
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3, ease }}>
-            {view === 'today' && <Today {...props} care={care.items} onCare={() => { setPlace(null); go('home') }} />}
+            {view === 'today' && <Today {...props} onCare={() => { setPlace(null); go('home') }} />}
             {view === 'economy' && <EconomyView {...props} />}
-            {view === 'home' && <Overview {...props} place={place} setPlace={setPlace} care={care} />}
+            {view === 'home' && <Overview {...props} place={place} setPlace={setPlace} />}
             {view === 'log' && <Log {...props} />}
             {view === 'purchases' && <Purchases {...props} />}
             {view === 'contracts' && <Contracts {...props} tab={contractTab} />}
@@ -271,6 +270,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           <ElectricitySheet open={sheet?.t === 'el'} state={state} onClose={close} />
           <ReviewSheet open={sheet?.t === 'review'} state={state} onClose={close} />
           <RenovationSheet item={sheet?.t === 'renovation' ? sheet.item : null} state={state} open={open} onClose={close} />
+          <MaintenanceSheet item={sheet?.t === 'maintenance' ? sheet.item : null} state={state} onClose={close} />
 
           <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">
             <div className="rows">
@@ -341,6 +341,7 @@ function summary(results: FileResult[]): { title: string; body?: string } {
     }
     if (r.kind === 'photo') return { title: r.room ? `Bilden är sparad i ${r.room}` : 'Bilden är sparad' }
     if (r.kind === 'planned') return { title: `${r.item.title} är planerat`, body: 'Under Inköp.' }
+    if (r.kind === 'appliance') return { title: r.name, body: r.added.length ? `Underhåll: ${r.added.join(', ')}.` : 'Underhållet fanns redan.' }
   }
   const review = results.reduce((s, r) => s + (r.kind === 'receipt' ? r.review : 0), 0)
   return { title: `${n(results.length, 'bild', 'bilder')} sorterade`, body: review ? `${n(review, 'rad', 'rader')} att granska på Idag.` : undefined }

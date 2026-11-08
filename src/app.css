@@ -506,6 +506,13 @@
 .care-row__name { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .care-row__when { font-size: var(--fs-meta); font-weight: 600; color: var(--text-2); }
 .care-row .aring__track, .care-row .aring__fill { stroke-width: 4.5; }
+.care-row[role="button"] { cursor: pointer; border-radius: var(--r-xs); transition: background-color var(--t-fast); }
+.care-row[role="button"]:hover { background: var(--fill); }
+/* Garantier: en sköld i stället för ringen, orange när garantin snart går ut. */
+.care-row__shield { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--care-ok); background: color-mix(in srgb, var(--care-ok) 12%, transparent); }
+.care-row__shield.is-soon { color: var(--care-soon); background: color-mix(in srgb, var(--care-soon) 14%, transparent); }
+/* Förslag på vanliga sysslor när man lägger till underhåll. */
+.care-suggest { flex-wrap: wrap; }
 .care-card__done {
   margin-left: auto; flex: none; width: 34px; height: 34px; border: 0; border-radius: 999px; cursor: pointer;
   display: grid; place-items: center; background: var(--fill); color: var(--text-2);

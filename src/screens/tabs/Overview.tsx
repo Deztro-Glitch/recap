@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { IconFileText, IconX } from '@tabler/icons-react'
 import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan, type PlanTool } from '../../components/FloorPlan'
-import { CareList, PlanToolbox, type useCare } from './ProjectHub'
+import { CareList, PlanToolbox } from './ProjectHub'
 import { iconFor } from '../../components/icons'
 import { ease } from '../../components/ui'
 import { CONTRACT_KIND_LABEL, PALETTE, tileStyle, type Room } from '../../types'
@@ -18,7 +18,7 @@ import { GlassCard } from '../../components/GlassCard'
 
 // Hemmet: planritningen som en arbetsyta med verktygslådan och AI-raden, och en panel som visar hemmet
 // (Senast och Underhåll) eller det rum man tryckt på. Planritningen finns bara här.
-export function Overview({ state, open, place, setPlace, care }: ViewProps & { place: string | null; setPlace: (id: string | null) => void; care: ReturnType<typeof useCare> }) {
+export function Overview({ state, open, place, setPlace }: ViewProps & { place: string | null; setPlace: (id: string | null) => void }) {
   const project = state.project!
   // Det som hör till bostaden: renoveringen och allt som har ett rum. Mat och annan vardag finns under Ekonomi.
   const items = allItems(state).filter((i) => i.scope === 'build' || i.room_id)
@@ -57,8 +57,8 @@ export function Overview({ state, open, place, setPlace, care }: ViewProps & { p
   const sidePanel = (
     <aside className="panel glass" ref={panel}>
       {room ? <RoomPanel state={state} open={open} room={room} onClose={() => setPlace(null)} /> : <HomePanel state={state} open={open} items={items} />}
-      {/* Underhållet ligger i panelen, under hemmet. */}
-      {!room && <CareList items={care.items} done={care.done} />}
+      {/* Underhållet och garantierna ligger i panelen, under hemmet. */}
+      {!room && <CareList state={state} open={open} />}
     </aside>
   )
 
