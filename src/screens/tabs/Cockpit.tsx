@@ -1,0 +1,116 @@
+import { motion, useReducedMotion } from 'framer-motion'
+import { IconAlertTriangle, IconArrowRight, IconChartBar, IconHammer, IconSmartHome } from '@tabler/icons-react'
+import { StatCard } from '../../components/StatCard'
+import { MiniBars, grow } from '../../components/Charts'
+import { emptyEconomy, economyNumbers } from '../../lib/economy'
+import type { ProjectState, ViewProps } from '../ProjectView'
+import { byImportance, modeItems, sum, type Item } from './Items'
+import { careWarnings, type Care } from './ProjectHub'
+
+// ---------------------------------------------------------------------------
+// Cockpiten överst på Översikt i Projekt: tre mörka glaskort utan listor.
+// Aktivt projekt (rummet som renoveras och nästa steg), Månadens kassaflöde (två staplar) och Hemmets status.
+// Korten tonar in och glider upp ett i taget.
+// ---------------------------------------------------------------------------
+export function Cockpit({ state, open, onRoom, care }: { state: ProjectState; open: ViewProps['open']; onRoom: (id: string) => void; care: Care[] }) {
+  const still = useReducedMotion()
+  const items = modeItems(state)
+  const cell = (i: number) => ({
+    className: `cockpit__cell cockpit__cell--${i}`,
+    initial: still ? false : { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.3, delay: i * 0.08, ease: [0.2, 0.8, 0.2, 1] as const },
+  })
+
+  return (
+    <div className="cockpit">
+      <motion.div {...cell(0)}><ActiveProject state={state} items={items} open={open} onRoom={onRoom} /></motion.div>
+      <motion.div {...cell(1)}><MonthFlow state={state} items={items} open={open} /></motion.div>
+      <motion.div {...cell(2)}><HomeStatus care={care} /></motion.div>
+    </div>
+  )
+}
+
+// Rummet som renoveras just nu: det med planerade saker där något senast blev klart (annars flest planerade).
+function focusRoom(state: ProjectState, items: Item[]) {
+  const rooms = state.rooms
+    .map((r) => {
+      const mine = items.filter((i) => i.room_id === r.id)
+      const planned = mine.filter((i) => !i.done)
+      const last = mine.filter((i) => i.done).map((i) => i.date ?? i.created_at).sort().pop() ?? ''
+      return { room: r, mine, planned, last }
+    })
+    .filter((r) => r.planned.length > 0)
+    .sort((a, b) => b.last.localeCompare(a.last) || b.planned.length - a.planned.length)
+  return rooms[0] ?? null
+}
+
+function ActiveProject({ state, items, open, onRoom }: { state: ProjectState; items: Item[]; open: ViewProps['open']; onRoom: (id: string) => void }) {
+  const still = useReducedMotion()
+  const f = focusRoom(state, items)
+  // Hur långt det har kommit: klart i kronor av allt i rummet, eller i antal om inget har pris.
+  const total = f ? sum(f.mine) : 0
+  const share = !f ? 0 : total > 0 ? sum(f.mine.filter((i) => i.done)) / total : f.mine.filter((i) => i.done).length / f.mine.length
+  const next = f ? [...f.planned].sort(byImportance)[0] : null
+
+  return (
+    <StatCard tone="dark" className="focus" icon={IconHammer} label="Aktivt projekt" onOpen={() => (f ? onRoom(f.room.id) : open({ t: 'stat', title: 'Planerat' }))}>
+      <div className="focus__body">
+        <span className="meta">Fokusområde</span>
+        <span className="focus__name">{f ? f.room.name : 'Inget på gång'}</span>
+      </div>
+      {f && (
+        <>
+          <div className="focus__progress">
+            <div className="focus__track" role="progressbar" aria-label="Hur långt rummet har kommit" aria-valuenow={Math.round(share * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <motion.div className="focus__bar" initial={still ? false : { width: 0 }} animate={{ width: `${Math.max(share > 0 ? 3 : 0, share * 100)}%` }} transition={grow} />
+            </div>
+            <span className="focus__pct">{Math.round(share * 100)} %</span>
+          </div>
+          {next && (
+            <div className="focus__next">
+              <IconArrowRight size={15} stroke={2} />
+              <span>Nästa steg: <b>{next.title}</b></span>
+            </div>
+          )}
+        </>
+      )}
+    </StatCard>
+  )
+}
+
+// Två staplar: vad boendet kostar i månaden och vad renoveringen har kostat den här månaden.
+function MonthFlow({ state, items, open }: { state: ProjectState; items: Item[]; open: ViewProps['open'] }) {
+  const n = economyNumbers(state.project?.economy ?? emptyEconomy, state.contracts)
+  const month = new Date().toISOString().slice(0, 7)
+  const reno = sum(items.filter((i) => i.done && (i.date ?? i.created_at).startsWith(month)))
+  return (
+    <StatCard tone="dark" className="flowmini" icon={IconChartBar} label="Månadens kassaflöde" onOpen={() => open({ t: 'stat', title: 'Spenderat' })}>
+      <MiniBars bars={[{ label: 'Boende', amount: n.costs }, { label: 'Renovering', amount: reno, tone: 'accent' }]} ghost={n.costs === 0 && reno === 0} />
+    </StatCard>
+  )
+}
+
+// Smarta hemmet: det som snart behöver skötas med en orange ikon, och en grön pulserande prick för resten.
+function HomeStatus({ care }: { care: Care[] }) {
+  const warn = careWarnings(care).slice(0, 2)
+  const calm = care.length - careWarnings(care).length
+  return (
+    <StatCard tone="dark" className="homestatus" icon={IconSmartHome} label="Hemmets status" onOpen={() => document.getElementById('care')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+      <div className="homestatus__list">
+        {warn.map((c) => (
+          <div key={c.id} className="homestatus__row is-warn">
+            <span className="homestatus__icon"><IconAlertTriangle size={16} stroke={2} /></span>
+            <span><b>{c.thing}:</b> {c.todo}</span>
+          </div>
+        ))}
+        {calm > 0 && (
+          <div className="homestatus__row">
+            <span className="homestatus__dot" aria-hidden />
+            <span>{warn.length ? 'Allt annat rullar' : 'Allt rullar'}</span>
+          </div>
+        )}
+      </div>
+    </StatCard>
+  )
+}

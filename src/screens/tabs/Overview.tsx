@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
-import { IconClipboardList, IconCreditCard, IconFileText, IconX } from '@tabler/icons-react'
+import { IconFileText, IconX } from '@tabler/icons-react'
 import { api } from '../../lib/api'
 import { daysLeft, kr } from '../../lib/format'
 import { FloorPlan, type PlanTool } from '../../components/FloorPlan'
-import { CareSection, PlanToolbox } from './ProjectHub'
+import { CareSection, PlanToolbox, useCare } from './ProjectHub'
+import { Cockpit } from './Cockpit'
 import { iconFor } from '../../components/icons'
 import { Chips, ease } from '../../components/ui'
 import { CONTRACT_KIND_LABEL, MODE_LABEL, PALETTE, modeScope, tileStyle, type Mode, type Room } from '../../types'
@@ -15,8 +16,6 @@ import { RoomPhotos } from './Photos'
 import { RoomEditSheet } from './Rooms'
 import { EconomyDashboard } from './Economy'
 import { GlassCard } from '../../components/GlassCard'
-import { Counter } from '../../components/Counter'
-import { StatCard } from '../../components/StatCard'
 
 // Översikt: nyckeltal, planritningen och en panel som visar hemmet eller det rum man tryckt på.
 // I Projekt är planritningen en stor arbetsyta i mitten med verktygslådan bredvid, och under den Smart underhåll.
@@ -39,11 +38,8 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
     await state.reload()
   }
 
-  // I Boende visas ekonomin i stället, se EconomyDashboard.
-  const kpis = [
-    { label: 'Spenderat', icon: IconCreditCard, value: sum(items.filter((i) => i.done)) },
-    { label: 'Planerat', icon: IconClipboardList, value: sum(items.filter((i) => !i.done)) },
-  ]
+  // Underhållet (exempeldata tills vidare) delas av cockpitens statuskort och Smart underhåll.
+  const care = useCare()
 
   // Rummen som rutor när det inte finns någon planritning.
   const roomTiles = !project.floorplan_path && state.rooms.length > 0 && (
@@ -75,11 +71,7 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
       {mode === 'simple' ? (
         <EconomyDashboard state={state} open={open} />
       ) : (
-        <div className="kpis">
-          {kpis.map((k) => (
-            <StatCard key={k.label} tone="dark" icon={k.icon} label={k.label} value={<Counter value={k.value} />} onOpen={() => open({ t: 'stat', title: k.label })} />
-          ))}
-        </div>
+        <Cockpit state={state} open={open} onRoom={setPlace} care={care.items} />
       )}
 
       {mode === 'full' ? (
@@ -95,7 +87,7 @@ export function Overview({ state, open, place, setPlace, onFiles }: ViewProps & 
             </div>
             {sidePanel}
           </div>
-          <CareSection onFiles={(f) => onFiles?.(f)} />
+          <CareSection items={care.items} done={care.done} onFiles={(f) => onFiles?.(f)} />
         </>
       ) : (
         <div className="overview section">

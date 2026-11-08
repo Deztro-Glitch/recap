@@ -74,14 +74,15 @@ export function PlanToolbox({ tool, onTool }: { tool: PlanTool | null; onTool: (
 // skötas. Ringen visar hur stor del av intervallet som har gått och byter färg från blå/grön till orange/röd
 // ju närmare det är. Bocken ("gjort") nollställer ringen.
 // ---------------------------------------------------------------------------
-type Care = { id: string; name: string; icon: typeof IconFilter; every: number; doneDaysAgo: number }
+// thing och todo är den korta varningen på Översikten, t.ex. "Köksfläkt: Dags att byta filter".
+export type Care = { id: string; thing: string; todo: string; name: string; icon: typeof IconFilter; every: number; doneDaysAgo: number }
 
 // Exempel tills underhållet sparas i databasen. Intervall och senast gjort i dagar.
 const EXAMPLES: Care[] = [
-  { id: 'flakt', name: 'Filter köksfläkt', icon: IconFilter, every: 90, doneDaysAgo: 76 },
-  { id: 'disk', name: 'Rengöring diskmaskin', icon: IconToolsKitchen2, every: 30, doneDaysAgo: 16 },
-  { id: 'tvatt', name: 'Rengöring tvättmaskin', icon: IconWashMachine, every: 60, doneDaysAgo: 12 },
-  { id: 'frys', name: 'Frosta av frysen', icon: IconFridge, every: 180, doneDaysAgo: 175 },
+  { id: 'flakt', name: 'Filter köksfläkt', thing: 'Köksfläkt', todo: 'Dags att byta filter', icon: IconFilter, every: 90, doneDaysAgo: 76 },
+  { id: 'disk', name: 'Rengöring diskmaskin', thing: 'Diskmaskin', todo: 'Dags att rengöra', icon: IconToolsKitchen2, every: 30, doneDaysAgo: 16 },
+  { id: 'tvatt', name: 'Rengöring tvättmaskin', thing: 'Tvättmaskin', todo: 'Dags att rengöra', icon: IconWashMachine, every: 60, doneDaysAgo: 12 },
+  { id: 'frys', name: 'Frosta av frysen', thing: 'Frysen', todo: 'Dags att frosta av', icon: IconFridge, every: 180, doneDaysAgo: 175 },
 ]
 
 // Blå när det är långt kvar, grön en bit in, orange när det närmar sig och röd när det är dags.
@@ -89,12 +90,18 @@ const toneFor = (share: number) => (share >= 0.9 ? 'var(--care-due)' : share >= 
 const days = (n: number) => `${n} ${n === 1 ? 'dag' : 'dagar'}`
 const whenText = (left: number) => (left < 0 ? `${days(-left)} sen` : left === 0 ? 'Dags i dag' : `Om ${days(left)}`)
 
-export function CareSection({ onFiles }: { onFiles: (files: FileList) => void }) {
+// Underhållet delas mellan Översiktens statuskort och Smart underhåll, så att en bock syns på båda ställena.
+export function useCare() {
   const [items, setItems] = useState(EXAMPLES)
   const done = (id: string) => setItems((cur) => cur.map((c) => (c.id === id ? { ...c, doneDaysAgo: 0 } : c)))
+  return { items, done }
+}
+// Det som snart är dags (minst 80 % av intervallet har gått), det mest bråttom först.
+export const careWarnings = (items: Care[]) => items.filter((c) => c.doneDaysAgo / c.every >= 0.8).sort((a, b) => b.doneDaysAgo / b.every - a.doneDaysAgo / a.every)
 
+export function CareSection({ items, done, onFiles }: { items: Care[]; done: (id: string) => void; onFiles: (files: FileList) => void }) {
   return (
-    <section className="care section">
+    <section className="care section" id="care">
       <div className="section-head"><h2>Smart underhåll & vitvaror</h2></div>
       <div className="care__grid">
         <ScanDrop onFiles={onFiles} />
