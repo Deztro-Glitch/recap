@@ -1,6 +1,6 @@
 import { api } from './api'
 import { needsInfo, paid, type ProjectState } from './useProject'
-import { type BudgetCategory, type Detail, type K6Kind, type Purchase, type Receipt, type Scope, type Task } from '../types'
+import type { BudgetCategory, Detail, K6Kind, Purchase, Receipt, Renovation, Scope, Task } from '../types'
 
 // Inköpsmodellen: inköp och jobb som en sak (Item), hur de läses från databasen, sorteras, summeras och bockas av.
 // Används av skärmarna, komponenterna och hjälpfunktionerna; själva listorna och formulären finns i screens/tabs/Items.tsx.
@@ -37,7 +37,8 @@ export interface Item {
   stays: boolean          // följer med lägenheten
   k6: boolean             // värdehöjande förbättring
   k6Kind: K6Kind | null   // grundförbättring eller underhåll (5-årsregeln)
-  scope: Scope            // bygget eller inredningen
+  scope: Scope            // renovering (bygget) eller vardag
+  renovation_id: string | null   // projektet det hör till
   category: BudgetCategory | null   // budgetkategori, när AI:n har valt en
   receipt_id: string | null         // raden hör till ett kvitto med flera rader
   details: Detail[] | null
@@ -51,14 +52,14 @@ export interface Item {
 export const fromPurchase = (p: Purchase, receiptFile?: string | null): Item => ({
   table: 'purchases', id: p.id, title: p.title, room_id: p.room_id, done: p.bought,
   amount: p.bought ? paid(p) : Number(p.est_price) || 0, date: p.bought ? p.bought_on : null, important: p.priority === 1,
-  file: p.receipt_path ?? receiptFile ?? null, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, k6Kind: p.k6_kind ?? null, scope: p.scope ?? guessScope(p.title), category: p.category ?? null, receipt_id: p.receipt_id ?? null, details: p.details,
+  file: p.receipt_path ?? receiptFile ?? null, image: p.image_path ?? null, store: p.store, link: p.link, stays: !!p.stays, k6: !!p.k6, k6Kind: p.k6_kind ?? null, scope: p.renovation_id ? 'build' : p.scope ?? guessScope(p.title), renovation_id: p.renovation_id ?? null, category: p.category ?? null, receipt_id: p.receipt_id ?? null, details: p.details,
   missing: needsInfo(p), planned: p.bought && p.price != null && Number(p.est_price) > 0 ? Number(p.est_price) : null, created_at: p.created_at, raw: p,
 })
 
 export const fromTask = (t: Task): Item => ({
   table: 'tasks', id: t.id, title: t.title, room_id: t.room_id, done: t.status === 'done',
   amount: Number(t.cost) || 0, date: t.status === 'done' ? t.done_on : null, important: t.priority === 1,
-  file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, k6Kind: t.k6_kind ?? null, scope: 'build', category: null, receipt_id: null, details: t.details, missing: false, planned: null, created_at: t.created_at, raw: t,
+  file: t.receipt_path, image: null, store: null, link: null, stays: false, k6: !!t.k6, k6Kind: t.k6_kind ?? null, scope: 'build', renovation_id: t.renovation_id ?? null, category: null, receipt_id: null, details: t.details, missing: false, planned: null, created_at: t.created_at, raw: t,
 })
 
 export const allItems = (state: Pick<ProjectState, 'purchases' | 'tasks'> & { receipts?: Receipt[] }) => {
@@ -66,8 +67,25 @@ export const allItems = (state: Pick<ProjectState, 'purchases' | 'tasks'> & { re
   return [...state.purchases.map((p) => fromPurchase(p, p.receipt_id ? files.get(p.receipt_id) : null)), ...state.tasks.map(fromTask)]
 }
 
-// Renoveringen: köp och jobb som hör till bygget (scope build). Används av Aktivt projekt och projektbudgeten.
+// Renoveringen: köp och jobb som hör till bygget (scope build eller kopplade till ett projekt).
 export const renovationItems = (state: Pick<ProjectState, 'purchases' | 'tasks'>) => allItems(state).filter((i) => i.scope === 'build')
+
+// Projektet som pågår just nu: det senast startade som pågår, annars det senaste planerade.
+export const activeRenovation = (renovations: Renovation[]) =>
+  renovations.find((r) => r.status === 'active') ?? renovations.find((r) => r.status === 'planned') ?? null
+
+// Allt som hör till ett projekt, och hur långt det har kommit: klart i kronor av allt (eller i antal om inget har pris),
+// klart mot budgeten och nästa steg (det viktigaste som är planerat).
+export function renovationNumbers(state: Pick<ProjectState, 'purchases' | 'tasks'>, r: Renovation) {
+  const items = allItems(state).filter((i) => i.renovation_id === r.id)
+  const done = items.filter((i) => i.done)
+  const planned = items.filter((i) => !i.done)
+  const total = sum(items)
+  const spent = sum(done)
+  const progress = !items.length ? 0 : total > 0 ? spent / total : done.length / items.length
+  const budget = Number(r.budget) || 0
+  return { items, done, planned, spent, plannedSum: sum(planned), progress, budget, used: budget > 0 ? spent / budget : 0, next: [...planned].sort(byImportance)[0] ?? null }
+}
 
 // Gissar om något är bygge eller inredning när man inte har valt själv.
 const BUILD = /(riv|spackl|slip|grundm|måla|målning|stryk|kakel|klinker|fog|golvlist|golvläggning|lägga golv|parkett|laminat|tätskikt|golvbrunn|gips|regel|reglar|elarbete|elektriker|dra el|vvs|rör|avlopp|ventilation|tapet|puts|isoler|snick|stomm|bänkskiva|köksrenov|bygg|färg|spik|skruv|cement|fästmassa)/i

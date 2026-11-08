@@ -357,6 +357,30 @@
   .today__date { display: none; }
 }
 
+/* ---------- Hemmet: projekten (Renovations.tsx). Ljusa glaskort i en rad ovanför ritningen ---------- */
+.reno-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--gap); margin-bottom: var(--gap); }
+.reno-strip__cell { display: flex; min-width: 0; }
+.reno-strip__cell > .glass { flex: 1; }
+.glass.reno-card { gap: var(--s-2); }
+.reno-card__meta { margin-top: var(--s-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reno-card.is-done { opacity: .72; }
+.reno-card.is-active .kpi__badge { background: var(--accent); color: var(--on-accent); }
+/* Budgeten: klart av budget och en tunn stapel i accentfärgen, röd över budget. */
+.reno__budget { display: grid; gap: 6px; margin-top: auto; padding-top: var(--s-3); }
+.reno__budget-num { font-size: var(--fs-meta); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.reno__budget-num b { color: var(--text); font-weight: 700; font-size: var(--fs-body); }
+.reno__track { height: 6px; border-radius: 999px; background: var(--fill); overflow: hidden; }
+.reno__bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-hi)); }
+.reno__budget.is-over .reno__budget-num b { color: var(--danger); }
+.reno__budget.is-over .reno__bar { background: var(--danger); }
+/* Panelen: sammanfattningen överst, sedan formuläret och det som hör till projektet. */
+.reno-sum { display: grid; gap: var(--s-4); margin-bottom: var(--s-5); }
+.reno-sum .reno__budget { padding-top: 0; }
+.reno-sum .reno__budget-num b { font-size: var(--fs-number); font-weight: var(--fw-number); }
+.reno-loose .row { align-items: center; }
+.reno-loose .btn { flex: none; }
+.reno-form-head { margin-top: var(--s-6); }
+
 /* ---------- Hemmet: arbetsytan. Ritningen stor till vänster, panelen till höger ---------- */
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: var(--gap); align-items: start; }
 .kpis + .workspace { margin-top: var(--gap); }

@@ -8,7 +8,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { useToast } from '../../components/ui'
 import type { Purchase } from '../../types'
 import type { ProjectState } from '../view'
-import { today } from '../../lib/items'
+import { activeRenovation, today } from '../../lib/items'
 
 // Snabb inmatning på dashboarden: skriv "Vinglas 699kr" och skicka. AI:n väljer namn, belopp och kategori
 // (Edge Function quick-entry); köpet sparas som klart och syns direkt i kassaflödet, Inköp och budgeten.
@@ -34,7 +34,7 @@ export function QuickEntryCard({ state }: { state: ProjectState }) {
       }
       const row = await api.insert<Purchase>('purchases', {
         project_id: state.project.id, room_id: null, title: entry.title, est_price: 0, price: entry.amount,
-        bought: true, bought_on: today(), scope: entry.scope, category: entry.category, priority: 2, stays: false, k6: false,
+        bought: true, bought_on: today(), scope: entry.scope, renovation_id: entry.scope === 'build' ? activeRenovation(state.renovations)?.id ?? null : null, category: entry.category, priority: 2, stays: false, k6: false,
         store: null, link: null, note: null, details: null, receipt_path: null, image_path: null,
       })
       await state.reload()

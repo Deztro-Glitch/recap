@@ -10,9 +10,10 @@ import { CONTRACT_KIND_LABEL, PALETTE, tileStyle, type Room } from '../../types'
 import type { ProjectState, ViewProps } from '../view'
 import { ContractStatus } from './Contracts'
 import { ItemList, sheetFor, useMarkDone } from './Items'
-import { allItems, byDate, byImportance, roomFacts, sum, type Item } from '../../lib/items'
+import { activeRenovation, allItems, byDate, byImportance, roomFacts, sum, type Item } from '../../lib/items'
 import { RoomPhotos } from './Photos'
 import { RoomEditSheet } from './Rooms'
+import { RenovationStrip } from './Renovations'
 import { GlassCard } from '../../components/GlassCard'
 
 // Hemmet: planritningen som en arbetsyta med verktygslådan och AI-raden, och en panel som visar hemmet
@@ -66,6 +67,9 @@ export function Overview({ state, open, place, setPlace, care }: ViewProps & { p
       <div className="section-head">
         <h1>Hemmet</h1>
       </div>
+
+      {/* Projekten (renoveringarna) överst, sedan planritningen. */}
+      <RenovationStrip state={state} open={open} />
 
       <div className={`workspace ${project.floorplan_path ? 'has-plan' : ''}`}>
         <div className="workspace__stage">
@@ -161,7 +165,7 @@ function RoomPanel({ state, open, room, onClose }: { state: ProjectState; open: 
         <div className="section-head">
           <h3>Planerat</h3>
           <span className="meta">{kr(sum(items.filter((i) => !i.done)))}</span>
-          <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { room_id: room.id, scope: 'build' } })}>Lägg till</button>
+          <button className="btn btn--ghost" onClick={() => open({ t: 'purchase', item: { room_id: room.id, scope: 'build', renovation_id: activeRenovation(state.renovations)?.id ?? null } })}>Lägg till</button>
         </div>
         <ItemList items={items.filter((i) => !i.done).sort(byImportance)} state={state} open={open} onCheck={markDone} empty="Inget planerat" hideRoom />
       </div>

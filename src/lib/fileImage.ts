@@ -1,6 +1,6 @@
 import { api } from './api'
 import { readReceipt } from './receiptReader'
-import { guessScope, today } from './items'
+import { activeRenovation, guessScope, today } from './items'
 import type { Purchase, Receipt } from '../types'
 import type { ProjectState } from './useProject'
 
@@ -21,6 +21,8 @@ export async function fileImage(state: ProjectState, file: File, hint: 'receipt'
   const open = state.purchases.filter((p) => !p.bought)
   const planned = open.map((p) => ({ id: p.id, title: p.title, price: Number(p.est_price) || 0, room_id: p.room_id }))
   const scan = await readReceipt(file, { rooms: state.rooms, planned, hint })
+  // Renovering kopplas till projektet som pågår.
+  const reno = activeRenovation(state.renovations)?.id ?? null
 
   if (scan.kind === 'room') {
     // Första bilden på ett rum blir Före, sedan blir de Efter, så att jämförelsen i rummet fungerar av sig själv.
@@ -34,7 +36,7 @@ export async function fileImage(state: ProjectState, file: File, hint: 'receipt'
     const image_path = await api.uploadFile(pid, file)
     const item = await api.insert<Purchase>('purchases', {
       project_id: pid, room_id: scan.room_id, title, image_path, est_price: scan.price ?? 0, price: null, bought: false,
-      bought_on: null, receipt_path: null, priority: 2, stays: false, k6: false, scope: guessScope(title), store: null, link: null, note: null, details: null,
+      bought_on: null, receipt_path: null, priority: 2, stays: false, k6: false, scope: guessScope(title), renovation_id: guessScope(title) === 'build' ? reno : null, store: null, link: null, note: null, details: null,
     })
     return { kind: 'planned', item }
   }
@@ -61,13 +63,13 @@ export async function fileImage(state: ProjectState, file: File, hint: 'receipt'
     if (unsure) review++
     const fields = {
       title: l.title, price: l.price, room_id: l.room_id, scope: l.scope, category: l.category,
-      k6: !!l.k6Kind, k6_kind: l.k6Kind ?? null, needs_review: unsure,
+      k6: !!l.k6Kind, k6_kind: l.k6Kind ?? null, needs_review: unsure, renovation_id: l.scope === 'build' ? reno : null,
     }
     const plan = !unsure && l.match_id ? open.find((p) => p.id === l.match_id) : undefined
     if (plan) {
       // Raden är det planerade köpet: det blir klart i stället för att en ny rad skapas.
       const { project_id: _pid, ...keep } = base
-      await api.update('purchases', plan.id, { ...keep, ...fields, room_id: l.room_id ?? plan.room_id })
+      await api.update('purchases', plan.id, { ...keep, ...fields, room_id: l.room_id ?? plan.room_id, renovation_id: plan.renovation_id ?? fields.renovation_id })
       closed.push(plan.title)
       continue
     }

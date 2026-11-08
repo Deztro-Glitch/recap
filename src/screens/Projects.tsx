@@ -2,7 +2,7 @@ import { AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { IconBuilding, IconChevronRight, IconHome, IconHomeEco, IconLogout } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
-import { kr, parseNum } from '../lib/format'
+import { parseNum } from '../lib/format'
 import { Chips, Field, Loader, More, Primary, Sheet, rowAnim, useToast } from '../components/ui'
 import { Shell } from '../components/Shell'
 import { GlassCard } from '../components/GlassCard'
@@ -54,7 +54,6 @@ export function Projects({ user, onOpen }: { user: User; onOpen: (id: string) =>
                       <div className="meta">{[KIND_LABEL[p.kind], p.address].filter(Boolean).join(' · ')}</div>
                     </div>
                   </div>
-                  {p.budget > 0 && <span className="row__amount">{kr(p.budget)}</span>}
                   <IconChevronRight size={18} />
                 </GlassCard>
               )

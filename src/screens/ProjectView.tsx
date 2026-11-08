@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import {
   IconArrowLeft, IconCamera, IconChecklist, IconCircleCheck, IconDots, IconFileText, IconHome, IconHomeCheck, IconLayoutGrid,
-  IconList, IconPhoto, IconReceipt, IconScan, IconSettings, IconShoppingCart, IconWallet,
+  IconHammer, IconList, IconPhoto, IconReceipt, IconScan, IconSettings, IconShoppingCart, IconWallet,
 } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'
 import { useProject } from '../lib/useProject'
@@ -17,6 +17,8 @@ import { Overview } from './tabs/Overview'
 import { Today } from './tabs/Today'
 import { EconomyView } from './tabs/Economy'
 import { useCare } from './tabs/ProjectHub'
+import { RenovationSheet } from './tabs/Renovations'
+import { activeRenovation } from '../lib/items'
 import { StatDetail } from './tabs/StatDetail'
 import { LoansSheet } from './tabs/Loans'
 import { BudgetSheet } from './tabs/Budget'
@@ -171,8 +173,10 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
   // Nya saker hamnar i rummet som är valt i Hemmet. Från Hemmet blir nya köp renovering, annars boende.
   const here = { room_id: view === 'home' ? place : null }
   const scope: Scope = view === 'home' ? 'build' : 'home'
+  // Renovering hamnar i projektet som pågår.
+  const active = activeRenovation(state.renovations)
+  const newItem = { ...here, scope, ...(scope === 'build' && active ? { renovation_id: active.id } : {}) }
   const props: ViewProps = { state, open }
-  const showRoom = (id: string) => { setPlace(id); go('home') }
   const showContracts = (tab: ContractTab) => {
     setContractTab(tab)
     go('contracts')
@@ -201,9 +205,10 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
     { icon: IconScan, title: 'Skanna kvitto', on: () => { hint.current = 'receipt'; cameraInput.current?.click() } },
     { icon: IconCamera, title: 'Fota', on: () => { hint.current = null; cameraInput.current?.click() } },
     { icon: IconPhoto, title: 'Välj från bilder eller filer', on: () => { hint.current = null; photoInput.current?.click() } },
-    { icon: IconChecklist, title: 'Planerat köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, scope } }) },
-    { icon: IconCircleCheck, title: 'Klart köp eller jobb', on: () => open({ t: 'purchase', item: { ...here, scope, bought: true } }) },
+    { icon: IconChecklist, title: 'Planerat köp eller jobb', on: () => open({ t: 'purchase', item: newItem }) },
+    { icon: IconCircleCheck, title: 'Klart köp eller jobb', on: () => open({ t: 'purchase', item: { ...newItem, bought: true } }) },
     { icon: IconFileText, title: 'Avtal', on: () => open({ t: 'contract', item: {} }) },
+    { icon: IconHammer, title: 'Projekt', on: () => open({ t: 'renovation', item: {} }) },
     { icon: IconHome, title: 'Rum', on: () => open({ t: 'room' }) },
   ]
 
@@ -237,7 +242,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
       ) : (
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3, ease }}>
-            {view === 'today' && <Today {...props} care={care.items} onRoom={showRoom} onCare={() => { setPlace(null); go('home') }} />}
+            {view === 'today' && <Today {...props} care={care.items} onCare={() => { setPlace(null); go('home') }} />}
             {view === 'economy' && <EconomyView {...props} />}
             {view === 'home' && <Overview {...props} place={place} setPlace={setPlace} care={care} />}
             {view === 'log' && <Log {...props} />}
@@ -265,6 +270,7 @@ export function ProjectView({ pid, user, onBack }: { pid: string; user: User; on
           <MonthlyCostSheet open={sheet?.t === 'cost'} state={state} onClose={close} />
           <ElectricitySheet open={sheet?.t === 'el'} state={state} onClose={close} />
           <ReviewSheet open={sheet?.t === 'review'} state={state} onClose={close} />
+          <RenovationSheet item={sheet?.t === 'renovation' ? sheet.item : null} state={state} open={open} onClose={close} />
 
           <Sheet open={sheet?.t === 'add'} onClose={close} title="Lägg till">
             <div className="rows">

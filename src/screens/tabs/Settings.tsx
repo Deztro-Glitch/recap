@@ -11,7 +11,7 @@ import type { ProjectState, ViewProps } from '../view'
 export function Settings({ state, user, onDeleted }: ViewProps & { user: User; onDeleted: () => void }) {
   const toast = useToast()
   const p = state.project!
-  const [f, setF] = useState({ name: p.name, kind: p.kind, address: p.address ?? '', budget: p.budget ? String(p.budget) : '', area: p.economy?.area ? String(p.economy.area).replace('.', ',') : '', zone: (p.economy?.zone ?? null) as ElZone | null })
+  const [f, setF] = useState({ name: p.name, kind: p.kind, address: p.address ?? '', area: p.economy?.area ? String(p.economy.area).replace('.', ',') : '', zone: (p.economy?.zone ?? null) as ElZone | null })
   const [members, setMembers] = useState<Member[]>([])
   const [invite, setInvite] = useState('')
   const [inviteError, setInviteError] = useState('')
@@ -27,7 +27,7 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
     e.preventDefault()
     // Boarean (mått och ytor på planritningen) och elområdet (dagens elpris) ligger i economy.
     const economy = { ...(p.economy ?? emptyEconomy), area: parseNum(f.area) || undefined, zone: f.zone }
-    await api.updateProject(p.id, { name: f.name.trim(), kind: f.kind, address: f.address.trim() || null, budget: parseNum(f.budget), economy })
+    await api.updateProject(p.id, { name: f.name.trim(), kind: f.kind, address: f.address.trim() || null, economy })
     await state.reload()
     toast('Ändringarna är sparade')
   }
@@ -72,9 +72,6 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
           <span className="field__label">Elområde</span>
           <Chips value={f.zone} onChange={(z) => setF({ ...f, zone: z === f.zone ? null : z })} options={(Object.keys(EL_ZONE_LABEL) as ElZone[]).map((z) => ({ value: z as ElZone | null, label: EL_ZONE_LABEL[z] }))} />
         </div>
-        <Field label="Budget i kr">
-          <input className="input" inputMode="numeric" value={f.budget} onChange={(e) => setF({ ...f, budget: e.target.value })} />
-        </Field>
         <div><button className="btn btn--secondary">Spara ändringar</button></div>
       </form>
 

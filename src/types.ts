@@ -110,6 +110,22 @@ export const DETAIL_SUGGESTIONS = ['Färgkod', 'Kulör', 'Artikelnummer', 'Garan
 // Budgetkategori för ett köp (kassaflödets munkdiagram). Väljs av AI:n vid snabb inmatning.
 export type BudgetCategory = 'housing' | 'loans' | 'food' | 'transport' | 'home' | 'fun' | 'saving' | 'other'
 
+// Ett projekt i hemmet, t.ex. "Köksrenovering": egen budget, start, slut och rum (migration 014).
+// Tabellen heter renovations eftersom projects är hemmet. Köp och jobb kopplas med renovation_id.
+export type RenovationStatus = 'planned' | 'active' | 'done'
+export const RENOVATION_STATUS_LABEL: Record<RenovationStatus, string> = { planned: 'Planerat', active: 'Pågår', done: 'Klart' }
+export interface Renovation {
+  id: string
+  project_id: string
+  name: string
+  status: RenovationStatus
+  budget: number | null
+  starts_on: string | null
+  ends_on: string | null
+  room_ids: string[]
+  created_at: string
+}
+
 export interface Purchase {
   id: string
   project_id: string
@@ -131,6 +147,7 @@ export interface Purchase {
   receipt_path: string | null
   receipt_id?: string | null   // raden hör till ett kvitto med flera rader
   needs_review?: boolean       // AI:n var osäker, syns i Att granska (migration 013)
+  renovation_id?: string | null   // projektet köpet hör till (migration 014)
   image_path: string | null
   bought_on: string | null
   details: Detail[] | null
@@ -153,6 +170,7 @@ export interface Task {
   done_on: string | null
   details: Detail[] | null
   created_at: string
+  renovation_id?: string | null   // projektet jobbet hör till (migration 014)
 }
 
 export type ContractKind = 'el' | 'elnat' | 'forsakring' | 'bredband' | 'mobil' | 'streaming' | 'larm' | 'bolan' | 'avgift' | 'annat'

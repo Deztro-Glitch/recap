@@ -5,8 +5,9 @@ import { Counter } from '../../components/Counter'
 import { grow } from '../../components/Charts'
 import { emptyEconomy, economyNumbers } from '../../lib/economy'
 import { kr } from '../../lib/format'
-import type { ProjectState, ViewProps } from '../view'
-import { allItems, byImportance, renovationItems, sum, type Item } from '../../lib/items'
+import type { ViewProps } from '../view'
+import { activeRenovation, allItems, renovationNumbers, sum } from '../../lib/items'
+import { RENOVATION_STATUS_LABEL } from '../../types'
 import { careWarnings, type Care } from './ProjectHub'
 import { ReviewCard } from './Review'
 import { TodoCard } from './Todos'
@@ -17,9 +18,8 @@ import { QuickEntryCard } from './QuickEntry'
 // Att granska när AI:n var osäker, renoveringen (Aktivt projekt), underhållet (Hemmets status), Snabb inmatning
 // och Att göra. Korten tonar in och glider upp ett i taget.
 // ---------------------------------------------------------------------------
-export function Today({ state, open, care, onRoom, onCare }: ViewProps & { care: Care[]; onRoom: (id: string) => void; onCare: () => void }) {
+export function Today({ state, open, care, onCare }: ViewProps & { care: Care[]; onCare: () => void }) {
   const still = useReducedMotion()
-  const items = renovationItems(state)
   const cell = (i: number, area: string) => ({
     className: `today__cell today__${area}`,
     initial: still ? false : { opacity: 0, y: 10 },
@@ -37,7 +37,7 @@ export function Today({ state, open, care, onRoom, onCare }: ViewProps & { care:
       <ReviewCard state={state} open={open} />
       <div className="today">
         <motion.div {...cell(0, 'left')}><LeftCard state={state} open={open} /></motion.div>
-        <motion.div {...cell(1, 'project')}><ActiveProject state={state} items={items} open={open} onRoom={onRoom} /></motion.div>
+        <motion.div {...cell(1, 'project')}><ActiveProject state={state} open={open} /></motion.div>
         <motion.div {...cell(2, 'status')}><HomeStatus care={care} onCare={onCare} /></motion.div>
         <motion.div {...cell(3, 'quick')}><QuickEntryCard state={state} /></motion.div>
         <motion.div {...cell(4, 'todo')}><TodoCard state={state} /></motion.div>
@@ -78,61 +78,43 @@ function LeftCard({ state, open }: ViewProps) {
   )
 }
 
-// Rummet som renoveras just nu: det med planerade saker där något senast blev klart (annars flest planerade).
-function focusRoom(state: ProjectState, items: Item[]) {
-  const rooms = state.rooms
-    .map((r) => {
-      const mine = items.filter((i) => i.room_id === r.id)
-      const planned = mine.filter((i) => !i.done)
-      const last = mine.filter((i) => i.done).map((i) => i.date ?? i.created_at).sort().pop() ?? ''
-      return { room: r, mine, planned, last }
-    })
-    .filter((r) => r.planned.length > 0)
-    .sort((a, b) => b.last.localeCompare(a.last) || b.planned.length - a.planned.length)
-  return rooms[0] ?? null
-}
-
-function ActiveProject({ state, items, open, onRoom }: { state: ProjectState; items: Item[]; open: ViewProps['open']; onRoom: (id: string) => void }) {
+// Projektet som pågår (Hemmet → projekten): namnet, rummen, hur långt det har kommit, budgeten och nästa steg.
+// Kortet öppnar projektet. Finns inget projekt öppnar det ett nytt.
+function ActiveProject({ state, open }: ViewProps) {
   const still = useReducedMotion()
-  const f = focusRoom(state, items)
-  // Hur långt det har kommit: klart i kronor av allt i rummet, eller i antal om inget har pris.
-  const total = f ? sum(f.mine) : 0
-  const share = !f ? 0 : total > 0 ? sum(f.mine.filter((i) => i.done)) / total : f.mine.filter((i) => i.done).length / f.mine.length
-  const next = f ? [...f.planned].sort(byImportance)[0] : null
-  // Projektbudgeten (Budget i kr under Inställningar) mot allt som är klart i renoveringen.
-  const budget = Number(state.project?.budget) || 0
-  const spent = sum(items.filter((i) => i.done))
-  const used = budget > 0 ? spent / budget : 0
+  const r = activeRenovation(state.renovations)
+  const n = r ? renovationNumbers(state, r) : null
+  const rooms = r ? r.room_ids.map((id) => state.rooms.find((x) => x.id === id)?.name).filter(Boolean).join(' · ') : ''
 
   return (
-    <StatCard className="focus" icon={IconHammer} label="Aktivt projekt" onOpen={() => (f ? onRoom(f.room.id) : open({ t: 'stat', title: 'Planerat' }))}>
+    <StatCard className="focus" icon={IconHammer} label="Aktivt projekt" onOpen={() => open({ t: 'renovation', item: r ?? {} })}>
       <div className="focus__top">
         <div className="focus__body">
-          <span className="meta">Fokusområde</span>
-          <span className="focus__name">{f ? f.room.name : 'Inget på gång'}</span>
+          <span className="meta">{r ? rooms || RENOVATION_STATUS_LABEL[r.status] : 'Projekt'}</span>
+          <span className="focus__name">{r ? r.name : 'Inget på gång'}</span>
         </div>
-        {budget > 0 && (
-          <div className={`focus__budget ${used > 1 ? 'is-over' : ''}`}>
-            <span className="meta">Projektbudget</span>
-            <span className="focus__budget-num"><b>{kr(spent)}</b> av {kr(budget)}</span>
-            <div className="focus__budget-track" role="progressbar" aria-label="Hur mycket av budgeten som är använd" aria-valuenow={Math.round(used * 100)} aria-valuemin={0} aria-valuemax={100}>
-              <motion.div className="focus__budget-bar" initial={still ? false : { width: 0 }} animate={{ width: `${Math.min(100, Math.max(used > 0 ? 3 : 0, used * 100))}%` }} transition={{ ...grow, delay: grow.delay + 0.1 }} />
+        {n && n.budget > 0 && (
+          <div className={`focus__budget ${n.used > 1 ? 'is-over' : ''}`}>
+            <span className="meta">Budget</span>
+            <span className="focus__budget-num"><b>{kr(n.spent)}</b> av {kr(n.budget)}</span>
+            <div className="focus__budget-track" role="progressbar" aria-label="Hur mycket av budgeten som är använd" aria-valuenow={Math.round(n.used * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <motion.div className="focus__budget-bar" initial={still ? false : { width: 0 }} animate={{ width: `${Math.min(100, Math.max(n.used > 0 ? 3 : 0, n.used * 100))}%` }} transition={{ ...grow, delay: grow.delay + 0.1 }} />
             </div>
           </div>
         )}
       </div>
-      {f && (
+      {n && n.items.length > 0 && (
         <>
           <div className="focus__progress">
-            <div className="focus__track" role="progressbar" aria-label="Hur långt rummet har kommit" aria-valuenow={Math.round(share * 100)} aria-valuemin={0} aria-valuemax={100}>
-              <motion.div className="focus__bar" initial={still ? false : { width: 0 }} animate={{ width: `${Math.max(share > 0 ? 3 : 0, share * 100)}%` }} transition={grow} />
+            <div className="focus__track" role="progressbar" aria-label="Hur långt projektet har kommit" aria-valuenow={Math.round(n.progress * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <motion.div className="focus__bar" initial={still ? false : { width: 0 }} animate={{ width: `${Math.max(n.progress > 0 ? 3 : 0, n.progress * 100)}%` }} transition={grow} />
             </div>
-            <span className="focus__pct">{Math.round(share * 100)} %</span>
+            <span className="focus__pct">{Math.round(n.progress * 100)} %</span>
           </div>
-          {next && (
+          {n.next && (
             <div className="focus__next">
               <IconArrowRight size={15} stroke={2} />
-              <span>Nästa steg: <b>{next.title}</b></span>
+              <span>Nästa steg: <b>{n.next.title}</b></span>
             </div>
           )}
         </>

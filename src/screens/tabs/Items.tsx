@@ -140,7 +140,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
   const parentId = (item as Partial<Purchase> | null)?.receipt_id
   const parent = parentId ? state.receipts.find((r) => r.id === parentId) : undefined
   const siblings = parent ? state.purchases.filter((p) => p.receipt_id === parent.id).length : 0
-  const blank = { title: '', room_id: '', scope: 'build' as Scope, done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, k6Kind: 'basic' as K6Kind, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
+  const blank = { title: '', room_id: '', renovation: '', scope: 'build' as Scope, done: false, amount: '', date: '', store: '', link: '', note: '', important: false, stays: false, k6: false, k6Kind: 'basic' as K6Kind, receipt: null as string | null, image: null as string | null, details: [] as Detail[] }
   const [f, setF] = useState(blank)
   const [urls, setUrls] = useState<{ receipt?: string; image?: string }>({})
 
@@ -155,7 +155,8 @@ export function ItemSheet({ table, item, state, onClose, title }: {
     setF({
       title: item.title ?? '',
       room_id: item.room_id ?? '',
-      scope: p.scope ?? (item.id ? guessScope(item.title ?? '') : 'home'),
+      renovation: item.renovation_id ?? '',
+      scope: item.renovation_id ? 'build' : p.scope ?? (item.id ? guessScope(item.title ?? '') : 'home'),
       done,
       amount: amount ? String(amount) : '',
       date: (isTask ? t.done_on : p.bought_on) ?? '',
@@ -189,6 +190,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
       k6_kind: f.k6 ? f.k6Kind : null,
       receipt_path: f.receipt,
       details: cleanDetails(f.details),
+      renovation_id: f.renovation || null,
     }
     const row = isTask
       ? { ...common, cost: amount ?? 0, status: f.done ? 'done' : (item as Task).status === 'doing' ? 'doing' : 'todo', done_on: date }
@@ -201,7 +203,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
           store: f.store.trim() || null,
           link: f.link.trim() || null,
           stays: f.stays,
-          scope: f.scope,
+          scope: f.renovation ? 'build' : f.scope,
           image_path: f.image,
         }
     try {
@@ -231,7 +233,7 @@ export function ItemSheet({ table, item, state, onClose, title }: {
         </Field>
         <div className="form__row">
           <Chips value={f.done} onChange={setDoneField} options={[{ value: false, label: 'Planerat' }, { value: true, label: 'Klart' }]} />
-          {!isTask && <Chips value={f.scope} onChange={(v) => setF({ ...f, scope: v })} options={(['build', 'home'] as Scope[]).map((v) => ({ value: v, label: SCOPE_LABEL[v] }))} />}
+          {(!isTask || state.renovations.length > 0) && <ProjectPick state={state} renovation={f.renovation} scope={f.scope} onChange={(renovation, scope) => setF({ ...f, renovation, scope })} />}
         </div>
         <div className="form__row">
           <Field label={f.done ? 'Kostade' : 'Kostar ungefär'}>
@@ -298,6 +300,19 @@ export function ItemSheet({ table, item, state, onClose, title }: {
         </div>
       </form>
     </Sheet>
+  )
+}
+
+// Vad ett köp hör till: ett projekt (renovering) eller inget (vardag). Utan projekt i hemmet väljer man Renovering eller Vardag.
+export function ProjectPick({ state, renovation, scope, onChange }: { state: ProjectState; renovation: string; scope: Scope; onChange: (renovation: string, scope: Scope) => void }) {
+  if (!state.renovations.length) {
+    return <Chips value={scope} onChange={(v) => onChange('', v)} options={(['build', 'home'] as Scope[]).map((v) => ({ value: v, label: SCOPE_LABEL[v] }))} />
+  }
+  return (
+    <select className="select" aria-label="Projekt" value={renovation} onChange={(e) => onChange(e.target.value, e.target.value ? 'build' : 'home')}>
+      <option value="">Inget projekt (vardag)</option>
+      {state.renovations.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+    </select>
   )
 }
 

@@ -1,5 +1,5 @@
 import type { ProjectState } from '../lib/useProject'
-import type { Contract, Purchase, Room, Task } from '../types'
+import type { Contract, Purchase, Renovation, Room, Task } from '../types'
 
 // Typerna som skärmarna delar: vilket formulär eller vilken panel som är öppen (SheetState) och vad varje vy får (ViewProps).
 // De ligger här i stället för i ProjectView.tsx, så att flikarna inte behöver importera skärmen som visar dem.
@@ -11,6 +11,7 @@ export type SheetState =
   | { t: 'contract'; item: Contract | Partial<Contract> }
   | { t: 'pick'; room_id?: string | null }   // kameran, med ett rum förvalt
   | { t: 'room' }
+  | { t: 'renovation'; item: Renovation | Partial<Renovation> }   // ett projekt (renovering): visa, ändra eller lägg till
   | { t: 'review' }                                   // Att granska: kvittorader AI:n var osäker på
   | { t: 'stat'; title: string }   // detaljvyn för ett statistikkort
   | { t: 'loans'; id: string | null }                 // övriga lån: redigera det valda eller lägg till (null)

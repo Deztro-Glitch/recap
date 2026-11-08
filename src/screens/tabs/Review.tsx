@@ -6,10 +6,11 @@ import { kr, parseNum } from '../../lib/format'
 import { CATEGORY } from '../../lib/budget'
 import { suggestPlanned } from '../../lib/receiptReader'
 import { GlassCard } from '../../components/GlassCard'
-import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
-import { K6_LABEL, SCOPE_LABEL, type BudgetCategory, type K6Kind, type Purchase, type Scope } from '../../types'
+import { Field, Primary, Sheet, useToast } from '../../components/ui'
+import { K6_LABEL, type BudgetCategory, type K6Kind, type Purchase, type Scope } from '../../types'
 import type { ProjectState, ViewProps } from '../view'
 import { fmtDate } from '../../lib/items'
+import { ProjectPick } from './Items'
 
 // Det AI:n var osäker på när den sorterade kvitton. Syns i båda lägena, oavsett om raden hör till Projekt eller Boende.
 export const toReview = (state: Pick<ProjectState, 'purchases'>) =>
@@ -82,7 +83,8 @@ function ReviewForm({ item, state, place, onSkip }: { item: Purchase; state: Pro
     title: item.title,
     price: String(item.price ?? item.est_price ?? '').replace('.', ','),
     category: (item.category ?? 'other') as BudgetCategory,
-    scope: (item.scope ?? 'home') as Scope,
+    scope: (item.renovation_id ? 'build' : item.scope ?? 'home') as Scope,
+    renovation: item.renovation_id ?? '',
     room_id: item.room_id ?? '',
     k6: (item.k6 ? item.k6_kind ?? 'basic' : '') as K6Kind | '',
   })
@@ -96,7 +98,7 @@ function ReviewForm({ item, state, place, onSkip }: { item: Purchase; state: Pro
   const [link, setLink] = useState(false)
 
   const fields = () => ({
-    title: f.title.trim() || item.title, price: parseNum(f.price), category: f.category, scope: f.scope,
+    title: f.title.trim() || item.title, price: parseNum(f.price), category: f.category, scope: f.renovation ? 'build' as Scope : f.scope, renovation_id: f.renovation || null,
     room_id: f.room_id || null, k6: !!f.k6, k6_kind: f.k6 || null, needs_review: false,
   })
   const ok = async () => {
@@ -146,7 +148,7 @@ function ReviewForm({ item, state, place, onSkip }: { item: Purchase; state: Pro
       </Field>
       <div className="field">
         <span className="field__label">Hör till</span>
-        <Chips value={f.scope} onChange={(scope) => setF({ ...f, scope })} options={(['build', 'home'] as Scope[]).map((v) => ({ value: v, label: SCOPE_LABEL[v] }))} />
+        <ProjectPick state={state} renovation={f.renovation} scope={f.scope} onChange={(renovation, scope) => setF({ ...f, renovation, scope })} />
       </div>
       <Field label="Rum">
         <select className={`select ${f.room_id ? '' : 'is-empty'}`} value={f.room_id} onChange={(e) => setF({ ...f, room_id: e.target.value })}>
