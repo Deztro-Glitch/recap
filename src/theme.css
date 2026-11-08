@@ -98,7 +98,8 @@
   --warning: #E6B450;
   --danger: #F0716A;
 
-  /* Underhållsringar (Projekt): nyss gjort, snart dags, dags nu. */
+  /* Underhållsringar (Projekt): långt kvar, en bit kvar, snart dags, dags nu. */
+  --care-fresh: #60A5FA;
   --care-ok: #34D399;
   --care-soon: #FB923C;
   --care-due: #F0716A;

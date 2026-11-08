@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { IconPhoto, IconTrash, IconUserPlus, IconX } from '@tabler/icons-react'
 import { api, type User } from '../../lib/api'
 import { parseNum } from '../../lib/format'
+import { emptyEconomy } from '../../lib/economy'
 import { Chips, Field, useToast } from '../../components/ui'
 import { initials } from '../../components/Shell'
 import { KIND_LABEL, type Kind, type Member } from '../../types'
@@ -10,7 +11,7 @@ import type { ProjectState, ViewProps } from '../ProjectView'
 export function Settings({ state, user, onDeleted }: ViewProps & { user: User; onDeleted: () => void }) {
   const toast = useToast()
   const p = state.project!
-  const [f, setF] = useState({ name: p.name, kind: p.kind, address: p.address ?? '', budget: p.budget ? String(p.budget) : '' })
+  const [f, setF] = useState({ name: p.name, kind: p.kind, address: p.address ?? '', budget: p.budget ? String(p.budget) : '', area: p.economy?.area ? String(p.economy.area).replace('.', ',') : '' })
   const [members, setMembers] = useState<Member[]>([])
   const [invite, setInvite] = useState('')
   const [inviteError, setInviteError] = useState('')
@@ -24,7 +25,9 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
-    await api.updateProject(p.id, { name: f.name.trim(), kind: f.kind, address: f.address.trim() || null, budget: parseNum(f.budget) })
+    // Boarean ligger i economy och används för att räkna mått och ytor på planritningen.
+    const economy = { ...(p.economy ?? emptyEconomy), area: parseNum(f.area) || undefined }
+    await api.updateProject(p.id, { name: f.name.trim(), kind: f.kind, address: f.address.trim() || null, budget: parseNum(f.budget), economy })
     await state.reload()
     toast('Ändringarna är sparade')
   }
@@ -61,6 +64,9 @@ export function Settings({ state, user, onDeleted }: ViewProps & { user: User; o
         </div>
         <Field label="Adress">
           <input className="input" value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} />
+        </Field>
+        <Field label="Boarea (kvm)">
+          <input className="input" inputMode="decimal" placeholder="58" value={f.area} onChange={(e) => setF({ ...f, area: e.target.value })} />
         </Field>
         <Field label="Budget i kr">
           <input className="input" inputMode="numeric" value={f.budget} onChange={(e) => setF({ ...f, budget: e.target.value })} />

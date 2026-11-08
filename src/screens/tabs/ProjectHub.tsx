@@ -71,20 +71,21 @@ export function PlanToolbox({ tool, onTool }: { tool: PlanTool | null; onTool: (
 
 // ---------------------------------------------------------------------------
 // Smart underhåll & vitvaror: en yta för att skanna kvitto eller vitvara, och en ring per sak som behöver
-// skötas. Ringen visar hur stor del av intervallet som har gått: grön strax efter, orange när det närmar sig,
-// röd när det är dags. Bocken ("gjort") nollställer ringen.
+// skötas. Ringen visar hur stor del av intervallet som har gått och byter färg från blå/grön till orange/röd
+// ju närmare det är. Bocken ("gjort") nollställer ringen.
 // ---------------------------------------------------------------------------
 type Care = { id: string; name: string; icon: typeof IconFilter; every: number; doneDaysAgo: number }
 
 // Exempel tills underhållet sparas i databasen. Intervall och senast gjort i dagar.
 const EXAMPLES: Care[] = [
   { id: 'flakt', name: 'Filter köksfläkt', icon: IconFilter, every: 90, doneDaysAgo: 76 },
-  { id: 'disk', name: 'Rengöring diskmaskin', icon: IconToolsKitchen2, every: 30, doneDaysAgo: 6 },
-  { id: 'tvatt', name: 'Rengöring tvättmaskin', icon: IconWashMachine, every: 60, doneDaysAgo: 41 },
+  { id: 'disk', name: 'Rengöring diskmaskin', icon: IconToolsKitchen2, every: 30, doneDaysAgo: 16 },
+  { id: 'tvatt', name: 'Rengöring tvättmaskin', icon: IconWashMachine, every: 60, doneDaysAgo: 12 },
   { id: 'frys', name: 'Frosta av frysen', icon: IconFridge, every: 180, doneDaysAgo: 175 },
 ]
 
-const toneFor = (share: number) => (share >= 0.9 ? 'var(--care-due)' : share >= 0.6 ? 'var(--care-soon)' : 'var(--care-ok)')
+// Blå när det är långt kvar, grön en bit in, orange när det närmar sig och röd när det är dags.
+const toneFor = (share: number) => (share >= 0.9 ? 'var(--care-due)' : share >= 0.65 ? 'var(--care-soon)' : share >= 0.3 ? 'var(--care-ok)' : 'var(--care-fresh)')
 const days = (n: number) => `${n} ${n === 1 ? 'dag' : 'dagar'}`
 const whenText = (left: number) => (left < 0 ? `${days(-left)} sen` : left === 0 ? 'Dags i dag' : `Om ${days(left)}`)
 
@@ -109,7 +110,7 @@ export function CareSection({ onFiles }: { onFiles: (files: FileList) => void })
                 </ActivityRing>
                 <div className="care-card__text">
                   <span className="care-card__name">{c.name}</span>
-                  <span className="care-card__when" style={share >= 0.6 ? { color: tone } : undefined}>{whenText(c.every - c.doneDaysAgo)}</span>
+                  <span className="care-card__when" style={share >= 0.65 ? { color: tone } : undefined}>{whenText(c.every - c.doneDaysAgo)}</span>
                   <span className="meta">Var {days(c.every)}</span>
                 </div>
                 <button type="button" className="care-card__done" onClick={() => done(c.id)} disabled={c.doneDaysAgo === 0} aria-label={`${c.name}: gjort`}>

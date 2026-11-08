@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { IconArrowBackUp, IconDots } from '@tabler/icons-react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { IconArrowBackUp, IconDots, IconRestore } from '@tabler/icons-react'
+import { mergeGroups, sharedWalls } from '../lib/walls'
 import { api } from '../lib/api'
 import { growRooms, fromV1, inside, labelPoint, loadBarriers, polygonize, type Barriers } from '../lib/plangrid'
 import { presetFor, readRoomNames } from '../lib/readplan'
@@ -16,6 +18,19 @@ const toPolys = (m: PlanMap | null): Polys => (!m ? {} : 'v' in m ? { ...m.rooms
 export type PlanTool = 'measure' | 'demolish' | 'area'
 
 const dec = (n: number, d = 1) => n.toLocaleString('sv-SE', { minimumFractionDigits: d, maximumFractionDigits: d })
+
+// Rummens färger som riktiga färgvärden, så att framer-motion kan tona mellan dem när rum slås ihop.
+const paints = new Map<string, string>()
+const paint = (c: string) => {
+  if (!paints.has(c)) paints.set(c, getComputedStyle(document.documentElement).getPropertyValue(`--c-${c}-bg`).trim() || '#A2C7F0')
+  return paints.get(c)!
+}
+
+// Rivna väggar sparas i webbläsaren per hem, så att man kan leka med ritningen utan att något ändras på riktigt.
+const wallKey = (pid: string) => `recap-rivna-${pid}`
+const loadGone = (pid: string): string[] => {
+  try { return JSON.parse(localStorage.getItem(wallKey(pid)) ?? '[]') } catch { return [] }
+}
 
 // Planritningen. Tryck på ett rum för att öppna det. Under "Justera" drar man i rummens hörn,
 // ungefär som när man beskär en bild, och plustecknen mitt på kanterna ger nya hörn.
@@ -40,14 +55,20 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
   const saveTimer = useRef<number>(undefined)
   const autoDetect = useRef(false)
   const H = W * aspect
-  // Verktygen: markerade väggar för rivning, den uppmätta väggen och rummet vars yta visas. Sparas inte än.
-  const [demolish, setDemolish] = useState<Set<string>>(new Set())
+  // Verktygen: rivna väggar (i ordning, för Ångra), den uppmätta väggen, rummet vars yta visas och rummet under pekaren.
+  const still = useReducedMotion()
+  const maskId = `plan-cut-${useId().replace(/:/g, '')}`
+  const [gone, setGone] = useState<string[]>(() => loadGone(project.id))
   const [measured, setMeasured] = useState<string | null>(null)
   const [areaRoom, setAreaRoom] = useState<string | null>(null)
+  const [hover, setHover] = useState<string | null>(null)
   useEffect(() => {
     setMeasured(null)
     setAreaRoom(null)
   }, [tool])
+  useEffect(() => {
+    try { localStorage.setItem(wallKey(project.id), JSON.stringify(gone)) } catch { /* privat läge */ }
+  }, [gone])
 
   // Ändringar från någon annan syns när man inte själv redigerar.
   useEffect(() => {
@@ -254,17 +275,32 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
   const drawnArea = shown.reduce((s, [, p]) => s + polyArea(p), 0)
   const boarea = project.economy?.area
   const m2PerUnit = boarea && drawnArea ? boarea / drawnArea : null
+  // Kanterna (för att mäta) och väggarna mellan två rum (för att riva). Rivna väggar slår ihop rummen till grupper.
   const walls = shown.flatMap(([id, p]) => p.map((a, i) => ({ key: `${id}:${i}`, a, b: p[(i + 1) % p.length] })))
   const wallLength = (a: Pt, b: Pt) => Math.hypot((b.x - a.x) * W, (b.y - a.y) * H)
-  const toggleDemolish = (key: string) => setDemolish((cur) => {
-    const next = new Set(cur)
-    if (next.has(key)) next.delete(key)
-    else next.add(key)
-    return next
-  })
+  const shared = useMemo(() => sharedWalls(shown, W, H), [polys, rooms, aspect])
+  const goneWalls = shared.filter((w) => gone.includes(w.id))
+  const groups = useMemo(() => mergeGroups(shown.map(([id]) => id), shared, gone), [shared, gone])
+  const groupOf = (id: string) => groups.get(id) ?? [id]
+  const groupArea = (id: string) => groupOf(id).reduce((s, x) => s + (polys[x] ? polyArea(polys[x]) : 0), 0)
+  // Gruppens färg och namn kommer från det största rummet; namnen står i storleksordning.
+  const bySize = (id: string) => [...groupOf(id)].sort((a, b) => polyArea(polys[b]) - polyArea(polys[a]))
+  const lead = (id: string) => bySize(id)[0]
+  const groupName = (id: string) => bySize(id).map((x) => roomById(x)?.name).join(' & ')
+  const areaText = (id: string) => (m2PerUnit ? `≈ ${dec(groupArea(id) * m2PerUnit)} m²` : `${Math.round((groupArea(id) / drawnArea) * 100)} % av ytan`)
+
+  const demolish = (id: string) => {
+    const wall = shared.find((w) => w.id === id)
+    if (gone.includes(id)) setGone(gone.filter((x) => x !== id))
+    else {
+      setGone([...gone, id])
+      if (wall) setAreaRoom(wall.rooms[0])   // visa den sammanslagna ytan direkt
+    }
+  }
   const wallTool = !editing && (tool === 'measure' || tool === 'demolish')
   const m = walls.find((w) => w.key === measured)
-  const areaPoly = areaRoom ? polys[areaRoom] : null
+  const shownArea = !editing ? areaRoom ?? (tool !== 'measure' && tool !== 'demolish' ? hover : null) : null
+  const areaPoly = shownArea ? polys[lead(shownArea)] : null
 
   const fileInput = <input ref={input} type="file" accept="image/*" hidden onChange={(e) => upload(e.target.files?.[0])} />
 
@@ -356,7 +392,8 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
       )}
 
       <div className={`plan ${editing ? 'is-editing' : ''} ${wallTool ? 'has-wall-tool' : ''} ${tool && !editing ? `tool-${tool}` : ''}`}>
-        <img src={url} alt="Planritning" crossOrigin="anonymous" onLoad={(e) => setAspect(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth)} />
+        {/* Bilden ger planens storlek; den syns i SVG:n nedan, där rivna väggar kan tonas bort med en mask. */}
+        <img className="plan__size" src={url} alt="Planritning" crossOrigin="anonymous" onLoad={(e) => setAspect(e.currentTarget.naturalHeight / e.currentTarget.naturalWidth)} />
         <svg
           ref={svg}
           className="plan__layer"
@@ -367,14 +404,40 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
           onPointerUp={onSvgUp}
           onPointerCancel={onSvgUp}
         >
+          <defs>
+            {/* Vitt syns, svart döljs: de rivna väggarna tonas bort ur ritningen. */}
+            <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
+              <rect width={W} height={H} fill="#FFFFFF" />
+              <AnimatePresence>
+                {goneWalls.map((w) => (
+                  <motion.line
+                    key={w.id}
+                    x1={w.a.x} y1={w.a.y} x2={w.b.x} y2={w.b.y}
+                    stroke="#000000" strokeWidth={w.gap + 14}
+                    initial={still ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.7, ease: [0.65, 0, 0.35, 1] }}
+                  />
+                ))}
+              </AnimatePresence>
+            </mask>
+          </defs>
+          {url && <image href={url} x="0" y="0" width={W} height={H} preserveAspectRatio="none" className="plan__image" mask={`url(#${maskId})`} />}
+
           {shown.map(([id, p]) => {
             const r = roomById(id)!
+            const c = paint(roomById(lead(id))!.color)
             return (
-              <polygon
+              <motion.polygon
                 key={id}
-                className={`plan__room ${id === selected ? 'is-selected' : ''}`}
+                className={`plan__room ${id === selected ? 'is-selected' : ''} ${shownArea && groupOf(shownArea).includes(id) ? 'is-lit' : ''}`}
                 points={p.map((q) => `${q.x * W},${q.y * H}`).join(' ')}
-                style={{ fill: `var(--c-${r.color}-bg)`, stroke: `var(--c-${r.color}-bg)` }}
+                initial={false}
+                animate={{ fill: c, stroke: c }}
+                transition={{ duration: 0.8, ease: [0.65, 0, 0.35, 1] }}
+                onPointerEnter={() => setHover(id)}
+                onPointerLeave={() => setHover((h) => (h === id ? null : h))}
                 onClick={() => {
                   if (editing) return
                   if (tool === 'area') setAreaRoom(id === areaRoom ? null : id)
@@ -383,17 +446,38 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
               />
             )
           })}
-          {/* Väggar som är markerade för rivning syns alltid; de klickbara väggarna bara med ett väggverktyg. */}
-          {walls.filter((w) => demolish.has(w.key)).map((w) => (
-            <line key={`d${w.key}`} className="plan__wall-mark" x1={w.a.x * W} y1={w.a.y * H} x2={w.b.x * W} y2={w.b.y * H} />
-          ))}
+          {/* Där en vägg är riven fylls glipan mellan rummen med gruppens färg, så att de blir en yta. */}
+          <AnimatePresence>
+            {goneWalls.map((w) => (
+              <motion.polygon
+                key={`gap${w.id}`}
+                className="plan__gap"
+                points={w.quad.map((q) => `${q.x},${q.y}`).join(' ')}
+                style={{ fill: paint(roomById(lead(w.rooms[0]))!.color) }}
+                initial={still ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.7, delay: still ? 0 : 0.2 }}
+              />
+            ))}
+          </AnimatePresence>
           {m && <line className="plan__wall-measure" x1={m.a.x * W} y1={m.a.y * H} x2={m.b.x * W} y2={m.b.y * H} />}
-          {wallTool && walls.map((w) => (
+          {!editing && tool === 'measure' && walls.map((w) => (
             <line
               key={w.key}
               className="plan__wall"
               x1={w.a.x * W} y1={w.a.y * H} x2={w.b.x * W} y2={w.b.y * H}
-              onClick={() => (tool === 'demolish' ? toggleDemolish(w.key) : setMeasured(w.key === measured ? null : w.key))}
+              onClick={() => setMeasured(w.key === measured ? null : w.key)}
+            />
+          ))}
+          {/* Bara väggar mellan två rum går att riva. Rivna väggar visas streckade och kan klickas tillbaka. */}
+          {!editing && tool === 'demolish' && shared.map((w) => (
+            <line
+              key={w.id}
+              className={`plan__wall plan__wall--shared ${gone.includes(w.id) ? 'is-gone' : ''}`}
+              x1={w.a.x} y1={w.a.y} x2={w.b.x} y2={w.b.y}
+              style={{ strokeWidth: Math.max(14, w.gap + 8) }}
+              onClick={() => demolish(w.id)}
             />
           ))}
           {editing && sel && (
@@ -420,28 +504,53 @@ export function FloorPlan({ state, onRoom, onAddRoom, tool = null }: { state: Pr
             </g>
           )}
         </svg>
-        {labels.map((l) => (
-          <span key={l.id} className="plan__label" style={{ left: `${l.at.x * 100}%`, top: `${l.at.y * 100}%` }}>
-            {l.room.name}
-          </span>
-        ))}
+        {/* Ett namn per grupp: sammanslagna rum får ett gemensamt namn på det största rummets plats. */}
+        <AnimatePresence initial={false}>
+          {labels.filter((l) => lead(l.id) === l.id).map((l) => (
+            <motion.span
+              key={l.id + groupOf(l.id).length}
+              className="plan__label"
+              style={{ left: `${l.at.x * 100}%`, top: `${l.at.y * 100}%` }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: shownArea && lead(shownArea) === l.id ? 0 : 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+            >
+              {groupName(l.id)}
+            </motion.span>
+          ))}
+        </AnimatePresence>
         {m && (
           <span className="plan__measure" style={{ left: `${((m.a.x + m.b.x) / 2) * 100}%`, top: `${((m.a.y + m.b.y) / 2) * 100}%` }}>
             {m2PerUnit ? `≈ ${dec(wallLength(m.a, m.b) * Math.sqrt(m2PerUnit))} m` : 'Boarea saknas'}
           </span>
         )}
-        {areaPoly && areaRoom && (
-          <span className="plan__measure plan__measure--area" style={{ left: `${labelPoint(areaPoly).x * 100}%`, top: `${labelPoint(areaPoly).y * 100}%` }}>
-            <b>{m2PerUnit ? `≈ ${dec(polyArea(areaPoly) * m2PerUnit)} m²` : `${Math.round((polyArea(areaPoly) / drawnArea) * 100)} %`}</b>
-            <small>{roomById(areaRoom)?.name}{m2PerUnit ? ` · ${Math.round((polyArea(areaPoly) / drawnArea) * 100)} % av ytan` : ' av ytan'}</small>
-          </span>
-        )}
-        {demolish.size > 0 && !editing && (
-          <div className="plan__chip">
-            <span>{demolish.size === 1 ? '1 vägg' : `${demolish.size} väggar`} för rivning</span>
-            <button type="button" onClick={() => setDemolish(new Set())}>Rensa</button>
-          </div>
-        )}
+        {/* Ytan för rummet (eller de sammanslagna rummen) under pekaren, eller det man har klickat på. */}
+        <AnimatePresence>
+          {areaPoly && shownArea && (
+            <motion.span
+              key={lead(shownArea) + groupArea(shownArea)}
+              className={`plan__measure plan__measure--area ${areaRoom ? 'is-pinned' : ''}`}
+              style={{ left: `${labelPoint(areaPoly).x * 100}%`, top: `${labelPoint(areaPoly).y * 100}%` }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+            >
+              <b>{areaText(shownArea)}</b>
+              <small>{groupName(shownArea)}{m2PerUnit && groupOf(shownArea).length === 1 ? ` · ${Math.round((groupArea(shownArea) / drawnArea) * 100)} %` : ''}</small>
+            </motion.span>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {gone.length > 0 && goneWalls.length > 0 && !editing && (
+            <motion.div className="plan__chip" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
+              <span>{goneWalls.length === 1 ? '1 vägg riven' : `${goneWalls.length} väggar rivna`}</span>
+              <button type="button" onClick={() => { setGone(gone.slice(0, -1)); setAreaRoom(null) }}><IconArrowBackUp size={14} /> Ångra</button>
+              <button type="button" onClick={() => { setGone([]); setAreaRoom(null) }}><IconRestore size={14} /> Återställ</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       {fileInput}
     </div>

@@ -231,12 +231,16 @@
    och linjerna blir ljusa. (Invert + blandningsläge fungerar inte, glaset isolerar bilden.)
    Rummens färger ligger i ett eget lager ovanpå och påverkas inte. */
 .plan { position: relative; max-width: 880px; border-radius: var(--r-sm); overflow: hidden; user-select: none; -webkit-user-select: none; }
-.plan img { display: block; width: 100%; height: auto; pointer-events: none; filter: url(#plan-ink); }
+/* Bilden ger bara storleken; den syns som <image> i SVG:n, där rivna väggar kan maskas bort. */
+.plan img.plan__size { display: block; width: 100%; height: auto; pointer-events: none; visibility: hidden; }
+.plan__image { filter: url(#plan-ink); pointer-events: none; }
 .plan__layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .plan.is-editing .plan__layer { touch-action: none; }
 /* Rummen: genomskinlig färg och en tunn kant i samma färg (fill och stroke sätts per rum i FloorPlan). */
 .plan__room { fill-opacity: .18; stroke-opacity: .7; stroke-width: 1.5; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill-opacity var(--t-fast), stroke-opacity var(--t-fast); }
-.plan__room:hover { fill-opacity: .3; stroke-opacity: 1; }
+.plan__room:hover, .plan__room.is-lit { fill-opacity: .3; stroke-opacity: 1; }
+/* Glipan där en vägg har rivits: samma färg och genomskinlighet som rummen, så att de blir en yta. */
+.plan__gap { fill-opacity: .3; pointer-events: none; }
 .plan.is-editing .plan__room { fill-opacity: .14; }
 .plan .plan__room.is-selected { fill-opacity: .32; stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.5; cursor: move; }
 .plan__vertex { fill: #FFFFFF; stroke: var(--accent); stroke-width: 3; vector-effect: non-scaling-stroke; cursor: grab; pointer-events: none; }
@@ -260,11 +264,10 @@
 }
 .plan__wall:hover { stroke-opacity: .55; }
 .plan.tool-demolish .plan__wall:hover { stroke: var(--demolish); }
-.plan__wall-mark {
-  stroke: var(--demolish); stroke-width: 4; stroke-dasharray: 8 6; stroke-linecap: round;
-  vector-effect: non-scaling-stroke; pointer-events: none;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--demolish) 70%, transparent));
-}
+.plan__wall--shared { stroke: var(--demolish); }
+.plan__wall--shared:hover { stroke-opacity: .6; }
+.plan__wall--shared.is-gone { stroke-opacity: .55; stroke-dasharray: 2 7; stroke-width: 3 !important; }
+.plan__wall--shared.is-gone:hover { stroke: var(--accent); stroke-opacity: .9; }
 .plan__wall-measure {
   stroke: var(--accent-hi); stroke-width: 4; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none;
   filter: drop-shadow(0 0 6px var(--accent));
@@ -286,7 +289,10 @@
   background: var(--sheet-bg); -webkit-backdrop-filter: var(--glass-blur-heavy); backdrop-filter: var(--glass-blur-heavy);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--demolish) 60%, transparent);
 }
-.plan__chip button { border: 0; border-radius: 999px; padding: 4px 10px; cursor: pointer; background: var(--fill); color: var(--text); font-weight: 600; }
+.plan__chip button { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 999px; padding: 5px 10px; cursor: pointer; background: var(--fill); color: var(--text); font-weight: 600; transition: background-color var(--t-fast); }
+.plan__chip button:hover { background: var(--glass-hover); }
+.plan__measure--area { pointer-events: none; }
+.plan__measure--area.is-pinned { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent), 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent); }
 
 /* ---------- Projekt: arbetsytan. Verktygslådan, ritningen stor i mitten och panelen till höger ---------- */
 .workspace { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(300px, 380px); gap: var(--gap); align-items: start; }
