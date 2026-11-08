@@ -4,7 +4,7 @@ import { kr } from '../../lib/format'
 import { Sheet } from '../../components/ui'
 import { Counter } from '../../components/Counter'
 import { grow } from '../../components/Charts'
-import type { ProjectState } from '../ProjectView'
+import type { ProjectState } from '../view'
 
 // Färg per rad, samma i stapeln och i listan.
 const TONE: Record<CostGroup['key'], string> = {

@@ -1,4 +1,4 @@
-import type { Item } from '../screens/tabs/Items'
+import { type Item } from './items'
 
 // K6 för bostadsrätt (Skatteverkets regler, förenklat):
 // - Grundförbättring (ny- eller ombyggnad, t.ex. nytt kök där det inte fanns ett): avdragsgill oavsett när.
@@ -6,7 +6,6 @@ import type { Item } from '../screens/tabs/Items'
 //   eller de fem kalenderåren före.
 // - Båda räknas bara för år där utgifterna av den sorten är minst 5 000 kr.
 export const K6_MIN_PER_YEAR = 5000
-export const GAIN_TAX = 0.22   // 22/30 av vinsten beskattas med 30 %
 
 export const itemYear = (i: Item) => Number((i.date ?? i.created_at).slice(0, 4))
 export const lastSaleYear = (i: Item) => itemYear(i) + 5

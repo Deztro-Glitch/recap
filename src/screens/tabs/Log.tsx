@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { IconPhoto, IconShoppingBag, IconTool } from '@tabler/icons-react'
 import { kr } from '../../lib/format'
@@ -9,8 +9,9 @@ import { SwipeRow } from '../../components/SwipeRow'
 import { GlassCard } from '../../components/GlassCard'
 import { Chips, rowAnim } from '../../components/ui'
 import type { Photo } from '../../types'
-import type { ViewProps } from '../ProjectView'
-import { ItemTags, allItems, itemText, removeRow, sheetFor, type Item } from './Items'
+import type { ViewProps } from '../view'
+import { ItemTags, sheetFor } from './Items'
+import { allItems, itemText, removeRow, type Item } from '../../lib/items'
 import { PhotoGrid } from './Photos'
 
 interface Entry {

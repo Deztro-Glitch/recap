@@ -6,7 +6,7 @@ import { api } from '../../lib/api'
 import { BeforeAfter } from '../../components/BeforeAfter'
 import { Chips, ease } from '../../components/ui'
 import type { Photo, PhotoKind } from '../../types'
-import type { ProjectState } from '../ProjectView'
+import type { ProjectState } from '../view'
 
 const KIND_LABEL: Record<PhotoKind, string> = { before: 'Före', after: 'Efter', inspo: 'Inspiration' }
 const KINDS: PhotoKind[] = ['before', 'after', 'inspo']

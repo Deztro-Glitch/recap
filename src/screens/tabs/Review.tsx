@@ -8,8 +8,8 @@ import { suggestPlanned } from '../../lib/receiptReader'
 import { GlassCard } from '../../components/GlassCard'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { K6_LABEL, type BudgetCategory, type K6Kind, type Purchase, type Scope } from '../../types'
-import type { ProjectState, ViewProps } from '../ProjectView'
-import { fmtDate } from './Items'
+import type { ProjectState, ViewProps } from '../view'
+import { fmtDate } from '../../lib/items'
 
 // Det AI:n var osäker på när den sorterade kvitton. Syns i båda lägena, oavsett om raden hör till Projekt eller Boende.
 export const toReview = (state: Pick<ProjectState, 'purchases'>) =>

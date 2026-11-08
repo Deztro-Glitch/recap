@@ -1,6 +1,6 @@
 import type { BudgetCategory, Economy, Receipt, Scope } from '../types'
-import type { Item } from '../screens/tabs/Items'
-import type { ProjectState } from '../screens/ProjectView'
+import { type Item } from './items'
+import type { ProjectState } from './useProject'
 import { api } from './api'
 import { economyNumbers } from './economy'
 import { parseNum } from './format'

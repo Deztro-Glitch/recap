@@ -1,5 +1,5 @@
 import { api, compressImage } from './api'
-import { guessScope } from '../screens/tabs/Items'
+import { guessScope } from './items'
 import { guessCategory } from './budget'
 import type { BudgetCategory, K6Kind, Room, Scope } from '../types'
 

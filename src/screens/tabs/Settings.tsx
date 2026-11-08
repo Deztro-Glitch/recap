@@ -6,7 +6,7 @@ import { emptyEconomy } from '../../lib/economy'
 import { Chips, Field, useToast } from '../../components/ui'
 import { initials } from '../../components/Shell'
 import { EL_ZONE_LABEL, KIND_LABEL, type ElZone, type Kind, type Member } from '../../types'
-import type { ProjectState, ViewProps } from '../ProjectView'
+import type { ProjectState, ViewProps } from '../view'
 
 export function Settings({ state, user, onDeleted }: ViewProps & { user: User; onDeleted: () => void }) {
   const toast = useToast()

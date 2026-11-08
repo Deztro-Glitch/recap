@@ -1,5 +1,5 @@
 import { IconAdjustmentsHorizontal, IconSearch } from '@tabler/icons-react'
-import type { ProjectState } from '../screens/ProjectView'
+import type { ProjectState } from '../lib/useProject'
 import type { Scope } from '../types'
 
 export type Flag = 'all' | 'stays' | 'k6'

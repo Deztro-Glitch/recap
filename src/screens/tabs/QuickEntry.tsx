@@ -7,8 +7,8 @@ import { kr } from '../../lib/format'
 import { GlassCard } from '../../components/GlassCard'
 import { useToast } from '../../components/ui'
 import type { Purchase } from '../../types'
-import type { ProjectState } from '../ProjectView'
-import { today } from './Items'
+import type { ProjectState } from '../view'
+import { today } from '../../lib/items'
 
 // Snabb inmatning på dashboarden: skriv "Vinglas 699kr" och skicka. AI:n väljer namn, belopp och kategori
 // (Edge Function quick-entry); köpet sparas som klart och syns direkt i kassaflödet, Inköp och budgeten.

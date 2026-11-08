@@ -61,21 +61,6 @@ export function More({ open: initial, children }: { open?: boolean; children: Re
   )
 }
 
-// En sektion som går att fälla ihop, t.ex. det som redan är klart.
-export function Collapsible({ title, meta, startOpen = true, children }: { title: string; meta?: string; startOpen?: boolean; children: ReactNode }) {
-  const [open, setOpen] = useState(startOpen)
-  return (
-    <div className="collapsible">
-      <button type="button" className="collapsible__head" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <h2>{title}</h2>
-        {meta && <span className="meta">{meta}</span>}
-        <IconChevronDown size={18} className="collapsible__chevron" />
-      </button>
-      {open && children}
-    </div>
-  )
-}
-
 export function Primary({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button className="btn btn--primary" {...props}>

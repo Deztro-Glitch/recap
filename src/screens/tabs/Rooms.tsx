@@ -3,7 +3,7 @@ import { api } from '../../lib/api'
 import { ICONS } from '../../components/icons'
 import { Chips, Field, Primary, Sheet } from '../../components/ui'
 import { COLOR_LABEL, PALETTE, ROOM_PRESETS, type IconKey, type Palette, type Room } from '../../types'
-import type { ProjectState } from '../ProjectView'
+import type { ProjectState } from '../view'
 
 // Byta namn och färg på ett rum, eller ta bort det.
 export function RoomEditSheet({ room, state, onClose, onDeleted }: { room: Room | null; state: ProjectState; onClose: () => void; onDeleted: () => void }) {

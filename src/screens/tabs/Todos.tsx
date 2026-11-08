@@ -5,7 +5,7 @@ import { api } from '../../lib/api'
 import { GlassCard } from '../../components/GlassCard'
 import { useToast } from '../../components/ui'
 import type { Todo } from '../../types'
-import type { ProjectState } from '../ProjectView'
+import type { ProjectState } from '../view'
 
 // "Att göra" i Boende: skriv och tryck Enter för att lägga till, bocka av med den runda rutan.
 // Avbockade uppgifter blir gråa, stryks över och glider ner under de som är kvar.

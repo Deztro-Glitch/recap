@@ -11,8 +11,9 @@ import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import { COMMON_CONTRACTS, CONTRACT_KIND_LABEL, HOME_CONTRACTS, K6_LABEL, PROVIDERS, type Contract, type ContractKind } from '../../types'
 import { contractScope, homeContracts } from '../../lib/economy'
 import { K6_MIN_PER_YEAR, k6Deductions, lastSaleYear } from '../../lib/k6'
-import type { ProjectState, ViewProps } from '../ProjectView'
-import { allItems, byDate, fmtDate, removeRow, roomFacts, sheetFor, sum, type Item } from './Items'
+import type { ProjectState, ViewProps } from '../view'
+import { sheetFor } from './Items'
+import { allItems, byDate, fmtDate, removeRow, roomFacts, sum, type Item } from '../../lib/items'
 
 const KINDS = Object.keys(CONTRACT_KIND_LABEL) as ContractKind[]
 const SOON = 30

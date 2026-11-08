@@ -6,10 +6,10 @@ import { api } from '../lib/api'
 import { growRooms, fromV1, inside, labelPoint, loadBarriers, polygonize, type Barriers } from '../lib/plangrid'
 import { presetFor, readRoomNames } from '../lib/readplan'
 import type { PlanMap, Pt, Room } from '../types'
-import type { ProjectState } from '../screens/ProjectView'
+import type { ProjectState } from '../lib/useProject'
 import { Loader, useToast } from './ui'
 import { Copilot } from './Copilot'
-import { allItems } from '../screens/tabs/Items'
+import { allItems } from '../lib/items'
 import { kr } from '../lib/format'
 
 type Polys = Record<string, Pt[]>

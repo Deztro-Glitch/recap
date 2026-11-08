@@ -1,8 +1,8 @@
 import { api } from './api'
 import { readReceipt } from './receiptReader'
-import { guessScope, today } from '../screens/tabs/Items'
+import { guessScope, today } from './items'
 import type { Purchase, Receipt } from '../types'
-import type { ProjectState } from '../screens/ProjectView'
+import type { ProjectState } from './useProject'
 
 // Vad som blev av en bild, för meddelandet efteråt.
 export type FileResult =

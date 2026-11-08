@@ -6,7 +6,7 @@ import { kwhCost, ore, useElPrice, type ElPrice } from '../../lib/elpris'
 import { parseNum } from '../../lib/format'
 import { Field, Primary, Sheet, useToast } from '../../components/ui'
 import { AreaChart } from '../../components/Charts'
-import type { ProjectState } from '../ProjectView'
+import type { ProjectState } from '../view'
 
 // Ungefärlig förbrukning per körning. Uppskattningar tills vidare; senare kan man välja sina egna maskiner.
 const MACHINES = [

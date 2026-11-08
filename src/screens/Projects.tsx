@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { IconBuilding, IconChevronRight, IconHome, IconHomeEco, IconLogout } from '@tabler/icons-react'
 import { api, type User } from '../lib/api'

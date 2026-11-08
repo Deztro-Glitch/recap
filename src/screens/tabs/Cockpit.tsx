@@ -4,8 +4,8 @@ import { StatCard } from '../../components/StatCard'
 import { MiniBars, grow } from '../../components/Charts'
 import { emptyEconomy, economyNumbers } from '../../lib/economy'
 import { kr } from '../../lib/format'
-import type { ProjectState, ViewProps } from '../ProjectView'
-import { byImportance, modeItems, sum, type Item } from './Items'
+import type { ProjectState, ViewProps } from '../view'
+import { byImportance, modeItems, sum, type Item } from '../../lib/items'
 import { careWarnings, type Care } from './ProjectHub'
 
 // ---------------------------------------------------------------------------

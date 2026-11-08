@@ -6,7 +6,7 @@ import { kr, parseNum } from '../../lib/format'
 import { Field, Primary, Sheet, useToast } from '../../components/ui'
 import { Counter } from '../../components/Counter'
 import { grow } from '../../components/Charts'
-import type { ProjectState } from '../ProjectView'
+import type { ProjectState } from '../view'
 
 const amount = (n?: number) => (n ? Math.round(n).toLocaleString('sv-SE') : '')
 const percent = (n?: number) => (n ? String(n).replace('.', ',') : '')

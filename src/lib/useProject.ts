@@ -91,3 +91,6 @@ export const paid = (p: Purchase) => Number(p.price ?? p.est_price) || 0
 
 // Ett kvitto som fotats men inte fyllts i än.
 export const needsInfo = (p: Purchase) => p.bought && p.price == null && !(Number(p.est_price) > 0)
+
+// Allt om hemmet som är öppet: data, reload och patch. Delas av skärmar, komponenter och hjälpfunktioner.
+export type ProjectState = ReturnType<typeof useProject>

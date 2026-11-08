@@ -8,9 +8,9 @@ import { TodoCard } from './Todos'
 import { QuickEntryCard } from './QuickEntry'
 import { Counter } from '../../components/Counter'
 import { Gauge, MiniBars, PriceMeter, Ring, Segmented, type Bar } from '../../components/Charts'
-import { allItems } from './Items'
+import { allItems } from '../../lib/items'
 import type { Scope } from '../../types'
-import type { ProjectState, ViewProps } from '../ProjectView'
+import type { ProjectState, ViewProps } from '../view'
 
 // Boendeläget, appens hubb: bolånet som stort kort, kassaflödet med flikar och stapeldiagram, ett kort per annat lån
 // (t.ex. MC-lånet), Ren månadskostnad, Elpris och Att göra. Varje kort öppnar sin detaljvy; därifrån når man Ekonomi.

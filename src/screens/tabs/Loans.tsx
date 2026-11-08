@@ -5,8 +5,8 @@ import { durationText, emptyEconomy, monthsToDebtFree, otherLoanNumbers } from '
 import { kr, parseNum } from '../../lib/format'
 import { Chips, Field, Primary, Sheet, useToast } from '../../components/ui'
 import type { Economy, OtherLoan } from '../../types'
-import type { ProjectState } from '../ProjectView'
-import { today } from './Items'
+import type { ProjectState } from '../view'
+import { today } from '../../lib/items'
 
 // Ett lån medan det redigeras: beloppen som text, som i fälten.
 type Draft = { id: string; name: string; debt: string; amortization: string; rate: string; fee: string; loan: string }

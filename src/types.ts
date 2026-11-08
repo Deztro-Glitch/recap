@@ -97,27 +97,13 @@ export interface Room {
 }
 
 export type Condition = 1 | 2 | 3
-export const CONDITION_LABEL: Record<Condition, string> = { 1: 'Renoveringsbehov', 2: 'Bruksskick', 3: 'Nyrenoverat' }
 
 // Typ av K6-avdrag för bostadsrätt: grundförbättring gäller alltid, förbättrande reparation och
 // underhåll bara om det gjorts under försäljningsåret eller de fem åren före.
 export type K6Kind = 'basic' | 'maintenance'
 export const K6_LABEL: Record<K6Kind, string> = { basic: 'Grundförbättring', maintenance: 'Underhåll/ytskikt (5-årsregel)' }
 
-export interface Folder {
-  id: string
-  project_id: string
-  name: string
-  icon: IconKey
-  color: Palette
-  budget: number | null
-  note: string | null
-  sort: number
-  created_at: string
-}
-
 export type Priority = 1 | 2 | 3
-export const PRIORITY_LABEL: Record<Priority, string> = { 1: 'Hög', 2: 'Normal', 3: 'Låg' }
 
 // Fria fält på inköp och jobb, t.ex. färgkod eller garanti.
 export interface Detail { label: string; value: string }
@@ -150,18 +136,6 @@ export interface Purchase {
   image_path: string | null
   bought_on: string | null
   details: Detail[] | null
-  created_at: string
-}
-
-export interface Idea {
-  id: string
-  project_id: string
-  room_id: string | null
-  folder_id: string | null
-  title: string
-  note: string | null
-  link: string | null
-  image_path: string | null
   created_at: string
 }
 

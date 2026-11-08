@@ -7,8 +7,8 @@ import { kr, parseNum } from '../../lib/format'
 import { Field, Sheet, useToast } from '../../components/ui'
 import { Counter } from '../../components/Counter'
 import { Donut } from '../../components/Charts'
-import type { ProjectState } from '../ProjectView'
-import { allItems } from './Items'
+import type { ProjectState } from '../view'
+import { allItems } from '../../lib/items'
 
 const txt = (n?: number) => (n ? Math.round(n).toLocaleString('sv-SE') : '')
 const day = (d: string) => new Date(d).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })
